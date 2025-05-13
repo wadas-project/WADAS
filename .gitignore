@@ -40,6 +40,7 @@ build/
 *.onnx
 *.bin
 *.xml
+model/request
 
 # DB
 *.db
