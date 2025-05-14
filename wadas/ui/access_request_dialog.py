@@ -19,12 +19,15 @@
 
 import os
 from pathlib import Path
+import requests
+from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 import json
 
 import keyring
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
+from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_access_request import Ui_DialogModelAccessRequest
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +39,7 @@ model_request_id_path = Path(module_dir_path).parent.parent / "model" / "request
 #  "rationale": "some rationale",
 #  "request_id": 101
 #}
+WADAS_SERVER_URL = "https://localhost:8443/"
 
 class Request():
     """Class to model Ai model access request."""
@@ -83,7 +87,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.request = None
         self.initialize_dialog()
 
-    def get_request(self):
+    def get_request_from_local(self):
         """Method to retrieve the request id from file, if any"""
 
         try:
@@ -104,10 +108,31 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         """Method to retrieve credentials from keyring, if any"""
         return keyring.get_credential(f"WADAS_Ai_model_request", "")
 
-    def get_request_status(self):
+    def get_request_status(self, request_id):
         """Get request status from server"""
-        # TODO: query server for request status
-        self.ui.label_request_status.setText("Pending")
+
+        status_url = f'{WADAS_SERVER_URL}/api/v1/access_requests/{request_id}/status'
+
+        # Common headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        try:
+            status_response = requests.get(status_url, headers=headers, timeout=10)
+            status_response.raise_for_status()
+            status = status_response.json().get('status')
+
+            self.ui.label_request_status.setText(status)
+        except (ConnectionError, Timeout) as conn_err:
+            WADASErrorMessage("Network error",
+                              f"Network error while checking request status: {conn_err}").exec()
+        except HTTPError as http_err:
+            WADASErrorMessage("Network error",
+                              f"HTTP error while checking request status: {http_err}").exec()
+        except RequestException as req_err:
+            WADASErrorMessage("Network error",
+                              f"Unexpected error while checking request status: {req_err}").exec()
 
     def initialize_dialog(self):
         """Method to initialize dialog"""
@@ -116,9 +141,14 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         if credentials:= self.get_credentials():
             self.ui.lineEdit_email.setText(credentials.username)
             self.ui.lineEdit_token.setText(credentials.password)
-        self.get_request()
+        self.get_request_from_local()
         if self.request:
             self.ui.checkBox_new_request.setChecked(True)
+            self.ui.pushButton_clear_request.setVisible(True)
+            self.ui.pushButton_clear_request.setEnabled(True)
+        else:
+            self.ui.pushButton_clear_request.setVisible(False)
+
         self.on_new_request_toggled()
 
     def on_new_request_toggled(self):
@@ -131,7 +161,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.ui.label_status_title.setVisible(new_request)
         self.ui.pushButton_check_request.setVisible(new_request)
         if new_request:
-            self.get_request_status()
+            self.get_request_status(self.request.id)
 
             self.ui.lineEdit_organization.setText(self.request.organization)
             self.ui.lineEdit_node_num.setText(self.request.nodes_num)
@@ -143,6 +173,20 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
 
         self.ui.groupBox_new_request.setVisible(self.ui.checkBox_new_request.isChecked())
         self.adjustSize()
+
+    def on_clear_request_triggered(self):
+        """Method to clear local history of previously submitted model request"""
+
+        if os.path.isfile(model_request_id_path):
+            os.remove(model_request_id_path)
+            self.ui.pushButton_clear_request.setVisible(False)
+            # Clear dialog input fields
+            self.ui.lineEdit_token.setText("")
+            self.ui.lineEdit_email.setText("")
+            self.ui.lineEdit_node_num.setText("1")
+            self.ui.lineEdit_organization.setText("")
+            self.ui.lineEdit_name_surname.setText("")
+            self.ui.plainTextEdit_rationale.setPlainText("")
 
     def validate(self):
         """Method to validate input fields"""
@@ -166,10 +210,43 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.ui.label_error.setText(message)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(valid)
 
+    def issue_new_request_to_server(self):
+        """Method to submit a new request to WADAS server via https"""
+
+        # Common headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        # Submit the request (POST)
+        submit_url = f'{WADAS_SERVER_URL}/api/v1/access_requests'
+        payload = {
+            "name": self.request.name,
+            "email": self.request.email,
+            "org_name": self.request.organization,
+            "text": self.request.rationale
+        }
+
+        try:
+            submit_response = requests.post(submit_url, json=payload, headers=headers, timeout=10)
+            submit_response.raise_for_status()  # Raises HTTPError for bad responses (4xx/5xx)
+            request_id = submit_response.json().get('request_id')
+
+            return request_id
+        except (ConnectionError, Timeout) as conn_err:
+            WADASErrorMessage("Network error",
+                              f"Network error while submitting the request: {conn_err}").exec()
+        except HTTPError as http_err:
+            WADASErrorMessage("Network error",
+                              f"HTTP error while submitting the request: {http_err}").exec()
+        except RequestException as req_err:
+            WADASErrorMessage("Network error",
+                              f"Unexpected error while submitting the request: {req_err}").exec()
+
     def accept_and_close(self):
         """When Ok is clicked, perform changes"""
 
-        #TODO: send data to server and obtain request id
+        request_id = self.issue_new_request_to_server()
 
         # Store credentials in keyring
         keyring.set_password(
@@ -178,7 +255,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             self.ui.lineEdit_token.text(),
         )
 
-        self.request = Request("1", #TODO: replace with server provided id
+        self.request = Request(request_id,
                                self.ui.lineEdit_name_surname.text(),
                                self.ui.lineEdit_organization.text(),
                                self.ui.lineEdit_email.text(),

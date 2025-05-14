@@ -14,13 +14,6 @@
    <string>Ai models access request</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="6" column="0" colspan="3">
-    <widget class="QLabel" name="label_error">
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
    <item row="7" column="0" colspan="4">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
@@ -89,20 +82,6 @@
       <string>New model request</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Rationale:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="text">
-         <string>Number of nodes:</string>
-        </property>
-       </widget>
-      </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_status_title">
         <property name="text">
@@ -123,6 +102,51 @@
         </property>
         <property name="text">
          <string>check now</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Number of nodes:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QLineEdit" name="lineEdit_organization">
+        <property name="placeholderText">
+         <string>If you are part of an organization tell us which one</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Rationale:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1" colspan="2">
+       <widget class="QPlainTextEdit" name="plainTextEdit_rationale">
+        <property name="placeholderText">
+         <string>Tell us why you want to use WADAS (E.g., development, wildlife conservation, other)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QLineEdit" name="lineEdit_node_num"/>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QLineEdit" name="lineEdit_name_surname">
+        <property name="placeholderText">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="3">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>By submitting AI model access request you have read, understood and accepted the WADAS Term of Use.</string>
         </property>
        </widget>
       </item>
@@ -153,34 +177,10 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0" colspan="3">
-       <widget class="QLabel" name="label_9">
+      <item row="8" column="0" colspan="3">
+       <widget class="QLabel" name="label_8">
         <property name="text">
-         <string>By submitting AI model access request you have read, understood and accepted the WADAS Term of Use.</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1" colspan="2">
-       <widget class="QPlainTextEdit" name="plainTextEdit_rationale">
-        <property name="placeholderText">
-         <string>Tell us why you want to use WADAS (E.g., development, wildlife conservation, other)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1" colspan="2">
-       <widget class="QLineEdit" name="lineEdit_node_num"/>
-      </item>
-      <item row="1" column="1" colspan="2">
-       <widget class="QLineEdit" name="lineEdit_organization">
-        <property name="placeholderText">
-         <string>If you are part of an organization tell us which one</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QLineEdit" name="lineEdit_name_surname">
-        <property name="placeholderText">
-         <string/>
+         <string>Click Ok to submit the request. If you wish to modify a submitted request contact us at info@wadas.it</string>
         </property>
        </widget>
       </item>
@@ -194,8 +194,33 @@
      </property>
     </widget>
    </item>
+   <item row="1" column="3">
+    <widget class="QPushButton" name="pushButton_clear_request">
+     <property name="text">
+      <string>Clear previous request</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="4">
+    <widget class="QLabel" name="label_error">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>lineEdit_email</tabstop>
+  <tabstop>lineEdit_token</tabstop>
+  <tabstop>checkBox_new_request</tabstop>
+  <tabstop>pushButton_clear_request</tabstop>
+  <tabstop>lineEdit_name_surname</tabstop>
+  <tabstop>lineEdit_organization</tabstop>
+  <tabstop>lineEdit_node_num</tabstop>
+  <tabstop>plainTextEdit_rationale</tabstop>
+  <tabstop>pushButton_check_request</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
