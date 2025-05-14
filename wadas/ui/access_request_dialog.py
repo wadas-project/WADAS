@@ -92,8 +92,8 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         """Method to retrieve the request id from file, if any"""
 
         try:
-            with open(model_request_id_path, 'r') as file:
-                data = json.load(file)
+            with open(model_request_id_path, 'r') as json_file:
+                data = json.load(json_file)
                 self.request = Request(
                     data.get('request_id'),
                     data.get('name'),
@@ -112,7 +112,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     def get_request_status(self, request_id):
         """Get request status from server"""
 
-        status_url = f'{WADAS_SERVER_URL}/api/v1/access_requests/{request_id}/status'
+        status_url = f'{WADAS_SERVER_URL}api/v1/access_requests/{request_id}/status'
 
         # Common headers
         headers = {
@@ -120,7 +120,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         }
 
         try:
-            status_response = requests.get(status_url, headers=headers, timeout=10)
+            status_response = requests.get(status_url, headers=headers, timeout=10, verify=False)
             status_response.raise_for_status()
             status = status_response.json().get('status')
 
@@ -220,7 +220,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         }
 
         # Submit the request (POST)
-        submit_url = f'{WADAS_SERVER_URL}/api/v1/access_requests'
+        submit_url = f'{WADAS_SERVER_URL}api/v1/access_requests'
         payload = {
             "name": self.request.name,
             "email": self.request.email,
@@ -229,7 +229,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         }
 
         try:
-            submit_response = requests.post(submit_url, json=payload, headers=headers, timeout=10)
+            submit_response = requests.post(submit_url, json=payload, headers=headers, timeout=10, verify=False)
             submit_response.raise_for_status()  # Raises HTTPError for bad responses (4xx/5xx)
             request_id = submit_response.json().get('request_id')
 
