@@ -43,7 +43,7 @@ WADAS_SERVER_URL = "https://localhost:8443/"
 
 class Request():
     """Class to model Ai model access request."""
-    def __init__(self, id, name, organization, email, nodes_num, rationale):
+    def __init__(self, name, organization, email, nodes_num, rationale, id=0):
         self.id = id
         self.name = name
         self.organization = organization
@@ -82,6 +82,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.ui.lineEdit_email.textChanged.connect(self.validate)
         self.ui.lineEdit_token.textChanged.connect(self.validate)
         self.ui.lineEdit_name_surname.textChanged.connect(self.validate)
+        self.ui.plainTextEdit_rationale.textChanged.connect(self.validate)
         self.ui.pushButton_check_request.clicked.connect(self.get_request_status)
 
         self.request = None
@@ -203,7 +204,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         if self.ui.checkBox_new_request.isChecked() and not self.ui.lineEdit_name_surname.text():
             valid = False
             message = "Name and Surname field cannot be empty!"
-        if self.ui.checkBox_new_request.isChecked() and not self.ui.plainTextEdit_rationale.toPlainText():
+        if self.ui.checkBox_new_request.isChecked() and not self.ui.plainTextEdit_rationale.toPlainText().strip():
             valid = False
             message = "Rationale field cannot be empty!"
 
@@ -246,20 +247,25 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     def accept_and_close(self):
         """When Ok is clicked, perform changes"""
 
-        request_id = self.issue_new_request_to_server()
-
-        # Store credentials in keyring
-        keyring.set_password(
-            f"WADAS_Ai_model_request",
-            self.ui.lineEdit_email.text(),
-            self.ui.lineEdit_token.text(),
-        )
-
-        self.request = Request(request_id,
+        self.request = Request(
                                self.ui.lineEdit_name_surname.text(),
                                self.ui.lineEdit_organization.text(),
                                self.ui.lineEdit_email.text(),
                                self.ui.lineEdit_node_num.text(),
-                               self.ui.plainTextEdit_rationale.toPlainText())
-        self.request.to_json()
-        self.accept()
+                               self.ui.plainTextEdit_rationale.toPlainText()
+        )
+        self.request.id = self.issue_new_request_to_server()
+
+        if self.request.id != 0:
+            # Store credentials in keyring
+            keyring.set_password(
+                f"WADAS_Ai_model_request",
+                self.ui.lineEdit_email.text(),
+                self.ui.lineEdit_token.text(),
+            )
+
+            self.request.to_json()
+            self.accept()
+        else:
+            WADASErrorMessage("Unable to complete the request",
+                              f"Invalid request id returned from the server.").exec()
