@@ -127,6 +127,9 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             status = status_response.json().get('status')
 
             self.ui.label_request_status.setText(status)
+
+            if status != "pending":
+                self.on_processed_request()
         except (ConnectionError, Timeout) as conn_err:
             WADASErrorMessage("Network error",
                               f"Network error while checking request status: {conn_err}").exec()
@@ -153,6 +156,14 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             self.ui.pushButton_clear_request.setVisible(False)
 
         self.on_new_request_toggled()
+
+    def on_processed_request(self):
+        """Method to prevent modification from dialog when request is approved"""
+
+        self.ui.lineEdit_node_num.setEnabled(False)
+        self.ui.lineEdit_name_surname.setEnabled(False)
+        self.ui.plainTextEdit_rationale.setEnabled(False)
+        self.ui.lineEdit_organization.setEnabled(False)
 
     def on_new_request_toggled(self):
         """Method to show new request input fields in dialog"""
