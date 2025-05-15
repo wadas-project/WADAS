@@ -44,18 +44,19 @@ WADAS_SERVER_URL = "https://localhost:8443/"
 class Request():
     """Class to model Ai model access request."""
     def __init__(self, name, organization, email, nodes_num, rationale, id=0):
-        self.id = id
         self.name = name
         self.organization = organization
         self.email = email
         self.nodes_num = nodes_num
         self.rationale = rationale
+        self.id = id
 
     def to_json(self):
         data = {
             "name": self.name,
             "email": self.email,
             "num_of_nodes": self.nodes_num,
+            "organization": self.organization,
             "rationale": self.rationale,
             "request_id": self.id
         }
@@ -84,6 +85,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.ui.lineEdit_name_surname.textChanged.connect(self.validate)
         self.ui.plainTextEdit_rationale.textChanged.connect(self.validate)
         self.ui.pushButton_check_request.clicked.connect(self.get_request_status)
+        self.ui.pushButton_clear_request.clicked.connect(self.on_clear_request_triggered)
 
         self.request = None
         self.initialize_dialog()
@@ -95,12 +97,12 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             with open(model_request_id_path, 'r') as json_file:
                 data = json.load(json_file)
                 self.request = Request(
-                    data.get('request_id'),
                     data.get('name'),
                     data.get('email'),
                     data.get('num_of_nodes'),
                     data.get('rationale'),
-                    data.get('organization')
+                    data.get('organization'),
+                    data.get('request_id')
                 )
         except (FileNotFoundError, json.JSONDecodeError, TypeError):
             self.request = None
@@ -109,10 +111,10 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         """Method to retrieve credentials from keyring, if any"""
         return keyring.get_credential(f"WADAS_Ai_model_request", "")
 
-    def get_request_status(self, request_id):
+    def get_request_status(self):
         """Get request status from server"""
 
-        status_url = f'{WADAS_SERVER_URL}api/v1/access_requests/{request_id}/status'
+        status_url = f'{WADAS_SERVER_URL}api/v1/access_requests/{self.request.id}/status'
 
         # Common headers
         headers = {
@@ -162,10 +164,10 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.ui.label_status_title.setVisible(new_request)
         self.ui.pushButton_check_request.setVisible(new_request)
         if new_request:
-            self.get_request_status(self.request.id)
+            self.get_request_status()
 
             self.ui.lineEdit_organization.setText(self.request.organization)
-            self.ui.lineEdit_node_num.setText(self.request.nodes_num)
+            self.ui.lineEdit_node_num.setText(str(self.request.nodes_num))
             self.ui.lineEdit_name_surname.setText(self.request.name)
             self.ui.plainTextEdit_rationale.setPlainText(self.request.rationale)
         else:
@@ -188,6 +190,10 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             self.ui.lineEdit_organization.setText("")
             self.ui.lineEdit_name_surname.setText("")
             self.ui.plainTextEdit_rationale.setPlainText("")
+            self.ui.label_request_status.setText("")
+            self.ui.label_request_status.setVisible(False)
+            self.ui.label_status_title.setVisible(False)
+            self.ui.pushButton_check_request.setVisible(False)
 
     def validate(self):
         """Method to validate input fields"""
@@ -214,12 +220,10 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     def issue_new_request_to_server(self):
         """Method to submit a new request to WADAS server via https"""
 
-        # Common headers
         headers = {
             'Content-Type': 'application/json'
         }
 
-        # Submit the request (POST)
         submit_url = f'{WADAS_SERVER_URL}api/v1/access_requests'
         payload = {
             "name": self.request.name,
@@ -230,16 +234,29 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
 
         try:
             submit_response = requests.post(submit_url, json=payload, headers=headers, timeout=10, verify=False)
-            submit_response.raise_for_status()  # Raises HTTPError for bad responses (4xx/5xx)
-            request_id = submit_response.json().get('request_id')
+            submit_response.raise_for_status()  # Raises HTTPError for bad responses
+
+            response_data = submit_response.json()
+
+            if not isinstance(response_data, dict) or "request_id" not in response_data:
+                raise ValueError("Invalid response format: 'request_id' not found.")
+
+            request_id = response_data["request_id"]
+
+            if not isinstance(request_id, int):
+                raise ValueError(f"Invalid 'request_id' type: expected int, got {type(request_id).__name__}")
 
             return request_id
+
         except (ConnectionError, Timeout) as conn_err:
             WADASErrorMessage("Network error",
                               f"Network error while submitting the request: {conn_err}").exec()
         except HTTPError as http_err:
             WADASErrorMessage("Network error",
                               f"HTTP error while submitting the request: {http_err}").exec()
+        except ValueError as val_err:
+            WADASErrorMessage("Response error",
+                              f"Invalid server response: {val_err}").exec()
         except RequestException as req_err:
             WADASErrorMessage("Network error",
                               f"Unexpected error while submitting the request: {req_err}").exec()
