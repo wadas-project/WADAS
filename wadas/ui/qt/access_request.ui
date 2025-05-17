@@ -37,7 +37,7 @@
       <item row="0" column="1">
        <widget class="QPushButton" name="pushButton_terms_of_use">
         <property name="text">
-         <string>Therms Of Use</string>
+         <string>Terms Of Use</string>
         </property>
        </widget>
       </item>
@@ -75,7 +75,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>check now</string>
+         <string>Check status now</string>
         </property>
        </widget>
       </item>
@@ -233,11 +233,17 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>lineEdit_email</tabstop>
   <tabstop>lineEdit_name_surname</tabstop>
   <tabstop>lineEdit_organization</tabstop>
   <tabstop>lineEdit_node_num</tabstop>
   <tabstop>plainTextEdit_rationale</tabstop>
   <tabstop>pushButton_check_request</tabstop>
+  <tabstop>pushButton_clear_request</tabstop>
+  <tabstop>checkBox_terms_of_use</tabstop>
+  <tabstop>pushButton_terms_of_use</tabstop>
+  <tabstop>scrollArea</tabstop>
+  <tabstop>checkBox_gdpr</tabstop>
  </tabstops>
  <resources/>
  <connections>

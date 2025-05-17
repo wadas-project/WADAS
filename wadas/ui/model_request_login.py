@@ -53,6 +53,13 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
 
         self.initialize_dialog()
 
+
+    def update_request_fields(self):
+        """Method to update access request UI related widgets"""
+        if os.path.isfile(model_request_id_path):
+            self.ui.label_request_title.setText("Check submitted request:")
+            self.ui.pushButton_request.setText("Check request")
+
     def initialize_dialog(self):
         """Method to initialize dialog"""
 
@@ -61,15 +68,13 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
         if credentials:
             self.ui.lineEdit_email.setText(credentials.username)
             self.ui.lineEdit_token.setText(credentials.password)
-
-        if os.path.isfile(model_request_id_path):
-            self.ui.label_request_title.setText("Check submitted request:")
-            self.ui.pushButton_request.setText("Check request")
+        self.update_request_fields()
 
     def handle_request(self):
         """Method to handle new or submitted request"""
 
-        AccessRequestDialog().exec()
+        if (access_request_dialog := AccessRequestDialog()).exec():
+            self.update_request_fields()
 
     def validate(self):
         """Method to validate input fields"""

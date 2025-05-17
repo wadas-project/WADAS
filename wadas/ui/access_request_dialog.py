@@ -83,6 +83,8 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.ui.pushButton_check_request.clicked.connect(self.get_request_status)
         self.ui.pushButton_clear_request.clicked.connect(self.on_clear_request_triggered)
         self.ui.pushButton_terms_of_use.clicked.connect(self.show_terms_of_use)
+        self.ui.checkBox_gdpr.clicked.connect(self.validate)
+        self.ui.checkBox_terms_of_use.clicked.connect(self.validate)
 
         self.request = None
         self.initialize_dialog()
