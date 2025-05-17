@@ -77,6 +77,7 @@ from wadas.ui.configure_whatsapp_dialog import DialogConfigureWhatsApp
 from wadas.ui.configure_web_interface import DialogConfigureWebInterface
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.license_dialog import LicenseDialog
+from wadas.ui.model_request_login import DialogModelRequestLogin
 from wadas.ui.select_animal_species import DialogSelectAnimalSpecies
 from wadas.ui.select_mode_dialog import DialogSelectMode
 from wadas.ui.select_test_mode_input import DialogSelectTestModeInput

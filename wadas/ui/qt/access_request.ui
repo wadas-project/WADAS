@@ -6,71 +6,45 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>595</width>
-    <height>462</height>
+    <width>587</width>
+    <height>546</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Ai models access request</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="7" column="0" colspan="4">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Orientation::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+   <item row="7" column="0" colspan="3">
+    <widget class="QLabel" name="label_error">
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>
-   <item row="0" column="0" colspan="4">
-    <widget class="QGroupBox" name="groupBox_login">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
+   <item row="5" column="0" colspan="3">
+    <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>Login</string>
+      <string>Terms of Use and Privacy</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Email:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Token:</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
-       <widget class="QLabel" name="label">
+       <widget class="QCheckBox" name="checkBox_terms_of_use">
         <property name="text">
-         <string>Insert your credentials to download the AI models:</string>
+         <string>I have read, understood and accepted the WADAS Ai models Terms of Use.</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_token">
-        <property name="echoMode">
-         <enum>QLineEdit::EchoMode::Password</enum>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="pushButton_terms_of_use">
+        <property name="text">
+         <string>Therms Of Use</string>
         </property>
        </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLineEdit" name="lineEdit_email"/>
       </item>
      </layout>
     </widget>
    </item>
-   <item row="5" column="0" colspan="4">
+   <item row="3" column="0" colspan="3">
     <widget class="QGroupBox" name="groupBox_new_request">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -82,20 +56,20 @@
       <string>New model request</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_status_title">
+      <item row="4" column="1" colspan="2">
+       <widget class="QLineEdit" name="lineEdit_node_num"/>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>Status of the request:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+         <string>Number of nodes:</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="2">
+      <item row="7" column="2">
        <widget class="QPushButton" name="pushButton_check_request">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -105,66 +79,48 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="text">
-         <string>Number of nodes:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1" colspan="2">
+      <item row="3" column="1" colspan="2">
        <widget class="QLineEdit" name="lineEdit_organization">
         <property name="placeholderText">
          <string>If you are part of an organization tell us which one</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Rationale:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1" colspan="2">
-       <widget class="QPlainTextEdit" name="plainTextEdit_rationale">
-        <property name="placeholderText">
-         <string>Tell us why you want to use WADAS (E.g., development, wildlife conservation, other)</string>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="1" colspan="2">
-       <widget class="QLineEdit" name="lineEdit_node_num"/>
-      </item>
-      <item row="0" column="1" colspan="2">
        <widget class="QLineEdit" name="lineEdit_name_surname">
         <property name="placeholderText">
          <string/>
         </property>
        </widget>
       </item>
-      <item row="7" column="0" colspan="3">
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>By submitting AI model access request you have read, understood and accepted the WADAS Term of Use.</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
          <string>Organization:</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Name and Surname:</string>
+      <item row="5" column="1" colspan="2">
+       <widget class="QPlainTextEdit" name="plainTextEdit_rationale">
+        <property name="placeholderText">
+         <string>Tell us why you want to use WADAS (E.g., development, wildlife conservation, other)</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="1">
+      <item row="0" column="1" colspan="2">
+       <widget class="QLineEdit" name="lineEdit_email"/>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_status_title">
+        <property name="text">
+         <string>Status of the request:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
        <widget class="QLabel" name="label_request_status">
         <property name="sizePolicy">
          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -177,44 +133,106 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0" colspan="3">
-       <widget class="QLabel" name="label_8">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Click Ok to submit the request. If you wish to modify a submitted request contact us at info@wadas.it</string>
+         <string>Email:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Name and Surname:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Rationale:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="2">
+       <widget class="QPushButton" name="pushButton_clear_request">
+        <property name="text">
+         <string>Clear previous request</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0" colspan="2">
+       <widget class="QLabel" name="label_clear_request">
+        <property name="text">
+         <string>If you want to submit a new request you must clear current one.</string>
         </property>
        </widget>
       </item>
      </layout>
     </widget>
    </item>
-   <item row="1" column="0" colspan="3">
-    <widget class="QCheckBox" name="checkBox_new_request">
-     <property name="text">
-      <string>Raise new AI modell access request</string>
+   <item row="9" column="0" colspan="3">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
      </property>
     </widget>
    </item>
-   <item row="1" column="3">
-    <widget class="QPushButton" name="pushButton_clear_request">
+   <item row="8" column="0" colspan="3">
+    <widget class="QLabel" name="label_8">
      <property name="text">
-      <string>Clear previous request</string>
+      <string>Click Ok to submit the request. If you wish to modify a submitted request contact us at info@wadas.it</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="0" colspan="4">
-    <widget class="QLabel" name="label_error">
-     <property name="text">
-      <string/>
+   <item row="6" column="0" colspan="3">
+    <widget class="QGroupBox" name="groupBox_gdpr">
+     <property name="title">
+      <string>Privacy</string>
      </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="checkBox_gdpr">
+        <property name="text">
+         <string>I give my consent to use my data for the purposed outlined above.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>535</width>
+           <height>298</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Privacy Disclaimer for WADAS (GDPR Compliance)&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;In accordance with the General Data Protection Regulation (EU) 2016/679 (GDPR), &lt;/p&gt;&lt;p&gt;we inform you that the personal data collected through the WADAS application — &lt;/p&gt;&lt;p&gt;specifically &lt;span style=&quot; font-weight:700;&quot;&gt;Name&lt;/span&gt;, &lt;span style=&quot; font-weight:700;&quot;&gt;Surname&lt;/span&gt;, &lt;span style=&quot; font-weight:700;&quot;&gt;Email Address&lt;/span&gt;, and &lt;span style=&quot; font-weight:700;&quot;&gt;Organization&lt;/span&gt; — are collected and&lt;/p&gt;&lt;p&gt;processed solely for the purpose of &lt;span style=&quot; font-style:italic;&quot;&gt;identifying and contacting users of the application&lt;/span&gt;.&lt;br/&gt;&lt;br/&gt;Your data will &lt;span style=&quot; font-weight:700;&quot;&gt;not be shared with third parties&lt;/span&gt; under any circumstances and will be&lt;/p&gt;&lt;p&gt;treated with the utmost care and confidentiality.&lt;br/&gt;&lt;br/&gt;By providing your information, you consent to its use for the purposes outlined above.&lt;/p&gt;&lt;p&gt;You have the right to access, rectify, or request the deletion of your data at any time by&lt;/p&gt;&lt;p&gt;contacting the WADAS team at info@wadas.it. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>lineEdit_email</tabstop>
-  <tabstop>lineEdit_token</tabstop>
-  <tabstop>checkBox_new_request</tabstop>
-  <tabstop>pushButton_clear_request</tabstop>
   <tabstop>lineEdit_name_surname</tabstop>
   <tabstop>lineEdit_organization</tabstop>
   <tabstop>lineEdit_node_num</tabstop>

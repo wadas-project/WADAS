@@ -23,7 +23,6 @@ import requests
 from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 import json
 
-import keyring
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
@@ -75,17 +74,15 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         self.setWindowIcon(QIcon((Path(module_dir_path).parent / "img" / "mainwindow_icon.jpg").resolve().as_posix()))
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.label_error.setStyleSheet("color: red")
-        self.ui.groupBox_new_request.setVisible(False)
 
         # Slots
         self.ui.buttonBox.accepted.connect(self.accept_and_close)
-        self.ui.checkBox_new_request.clicked.connect(self.on_new_request_toggled)
         self.ui.lineEdit_email.textChanged.connect(self.validate)
-        self.ui.lineEdit_token.textChanged.connect(self.validate)
         self.ui.lineEdit_name_surname.textChanged.connect(self.validate)
         self.ui.plainTextEdit_rationale.textChanged.connect(self.validate)
         self.ui.pushButton_check_request.clicked.connect(self.get_request_status)
         self.ui.pushButton_clear_request.clicked.connect(self.on_clear_request_triggered)
+        self.ui.pushButton_terms_of_use.clicked.connect(self.show_terms_of_use)
 
         self.request = None
         self.initialize_dialog()
@@ -98,18 +95,14 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
                 data = json.load(json_file)
                 self.request = Request(
                     data.get('name'),
+                    data.get('organization'),
                     data.get('email'),
                     data.get('num_of_nodes'),
                     data.get('rationale'),
-                    data.get('organization'),
                     data.get('request_id')
                 )
         except (FileNotFoundError, json.JSONDecodeError, TypeError):
             self.request = None
-
-    def get_credentials(self):
-        """Method to retrieve credentials from keyring, if any"""
-        return keyring.get_credential(f"WADAS_Ai_model_request", "")
 
     def get_request_status(self):
         """Get request status from server"""
@@ -128,8 +121,6 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
 
             self.ui.label_request_status.setText(status)
 
-            if status != "pending":
-                self.on_processed_request()
         except (ConnectionError, Timeout) as conn_err:
             WADASErrorMessage("Network error",
                               f"Network error while checking request status: {conn_err}").exec()
@@ -143,40 +134,40 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     def initialize_dialog(self):
         """Method to initialize dialog"""
 
-        # Credentials
-        if credentials:= self.get_credentials():
-            self.ui.lineEdit_email.setText(credentials.username)
-            self.ui.lineEdit_token.setText(credentials.password)
         self.get_request_from_local()
         if self.request:
-            self.ui.checkBox_new_request.setChecked(True)
-            self.ui.pushButton_clear_request.setVisible(True)
-            self.ui.pushButton_clear_request.setEnabled(True)
+            self.ui.checkBox_terms_of_use.setChecked(True)
+            self.ui.checkBox_gdpr.setChecked(True)
+            self.enable_editing(False)
         else:
             self.ui.pushButton_clear_request.setVisible(False)
 
-        self.on_new_request_toggled()
+        self.update_request_fields()
 
-    def on_processed_request(self):
+    def enable_editing(self, editing):
         """Method to prevent modification from dialog when request is approved"""
 
-        self.ui.lineEdit_node_num.setEnabled(False)
-        self.ui.lineEdit_name_surname.setEnabled(False)
-        self.ui.plainTextEdit_rationale.setEnabled(False)
-        self.ui.lineEdit_organization.setEnabled(False)
+        self.ui.lineEdit_email.setEnabled(editing)
+        self.ui.lineEdit_node_num.setEnabled(editing)
+        self.ui.lineEdit_name_surname.setEnabled(editing)
+        self.ui.plainTextEdit_rationale.setEnabled(editing)
+        self.ui.lineEdit_organization.setEnabled(editing)
+        self.ui.checkBox_terms_of_use.setEnabled(editing)
+        self.ui.checkBox_gdpr.setEnabled(editing)
 
-    def on_new_request_toggled(self):
+    def update_request_fields(self):
         """Method to show new request input fields in dialog"""
 
         # Request
-        new_request = True if self.request else False
+        submitted_request = True if self.request else False
 
-        self.ui.label_request_status.setVisible(new_request)
-        self.ui.label_status_title.setVisible(new_request)
-        self.ui.pushButton_check_request.setVisible(new_request)
-        if new_request:
+        self.ui.label_request_status.setVisible(submitted_request)
+        self.ui.label_status_title.setVisible(submitted_request)
+        self.ui.pushButton_check_request.setVisible(submitted_request)
+        if submitted_request:
             self.get_request_status()
 
+            self.ui.lineEdit_email.setText(self.request.email)
             self.ui.lineEdit_organization.setText(self.request.organization)
             self.ui.lineEdit_node_num.setText(str(self.request.nodes_num))
             self.ui.lineEdit_name_surname.setText(self.request.name)
@@ -185,17 +176,13 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             self.ui.label_request_status.setText("")
             self.ui.lineEdit_node_num.setText("1")
 
-        self.ui.groupBox_new_request.setVisible(self.ui.checkBox_new_request.isChecked())
-        self.adjustSize()
-
     def on_clear_request_triggered(self):
         """Method to clear local history of previously submitted model request"""
 
         if os.path.isfile(model_request_id_path):
             os.remove(model_request_id_path)
-            self.ui.pushButton_clear_request.setVisible(False)
+
             # Clear dialog input fields
-            self.ui.lineEdit_token.setText("")
             self.ui.lineEdit_email.setText("")
             self.ui.lineEdit_node_num.setText("1")
             self.ui.lineEdit_organization.setText("")
@@ -205,6 +192,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             self.ui.label_request_status.setVisible(False)
             self.ui.label_status_title.setVisible(False)
             self.ui.pushButton_check_request.setVisible(False)
+            self.enable_editing(True)
 
     def validate(self):
         """Method to validate input fields"""
@@ -212,18 +200,21 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         valid = True
         message = ""
 
-        if not self.ui.lineEdit_token.text():
-            valid = False
-            message = "Token field cannot be empty!"
         if not self.ui.lineEdit_email.text():
             valid = False
             message = "Email field cannot be empty!"
-        if self.ui.checkBox_new_request.isChecked() and not self.ui.lineEdit_name_surname.text():
+        if not self.ui.lineEdit_name_surname.text():
             valid = False
             message = "Name and Surname field cannot be empty!"
-        if self.ui.checkBox_new_request.isChecked() and not self.ui.plainTextEdit_rationale.toPlainText().strip():
+        if not self.ui.plainTextEdit_rationale.toPlainText().strip():
             valid = False
             message = "Rationale field cannot be empty!"
+        if not self.ui.checkBox_terms_of_use.isChecked():
+            valid = False
+            message = "You must accept WADAS Ai models Terms of Use!"
+        if not self.ui.checkBox_gdpr.isChecked():
+            valid = False
+            message = "You must check privacy disclaimer!"
 
         self.ui.label_error.setText(message)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(valid)
@@ -272,28 +263,29 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
             WADASErrorMessage("Network error",
                               f"Unexpected error while submitting the request: {req_err}").exec()
 
+    def show_terms_of_use(self):
+        """Method to show WADAS Ai models terms of use"""
+        #TODO: implement this part as request to WADAS server
+        pass
+
     def accept_and_close(self):
         """When Ok is clicked, perform changes"""
 
-        self.request = Request(
-                               self.ui.lineEdit_name_surname.text(),
-                               self.ui.lineEdit_organization.text(),
-                               self.ui.lineEdit_email.text(),
-                               self.ui.lineEdit_node_num.text(),
-                               self.ui.plainTextEdit_rationale.toPlainText()
-        )
-        self.request.id = self.issue_new_request_to_server()
-
-        if self.request.id != 0:
-            # Store credentials in keyring
-            keyring.set_password(
-                f"WADAS_Ai_model_request",
-                self.ui.lineEdit_email.text(),
-                self.ui.lineEdit_token.text(),
+        if not self.request:
+            self.request = Request(
+                                   self.ui.lineEdit_name_surname.text(),
+                                   self.ui.lineEdit_organization.text(),
+                                   self.ui.lineEdit_email.text(),
+                                   self.ui.lineEdit_node_num.text(),
+                                   self.ui.plainTextEdit_rationale.toPlainText()
             )
+            self.request.id = self.issue_new_request_to_server()
 
-            self.request.to_json()
-            self.accept()
+            if self.request.id != 0:
+                self.request.to_json()
+                self.accept()
+            else:
+                WADASErrorMessage("Unable to complete the request",
+                                  f"Invalid request id returned from the server.").exec()
         else:
-            WADASErrorMessage("Unable to complete the request",
-                              f"Invalid request id returned from the server.").exec()
+            self.accept()
