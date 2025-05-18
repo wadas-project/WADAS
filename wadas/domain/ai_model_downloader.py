@@ -19,11 +19,12 @@
 
 import logging
 import os
-import shutil
 from pathlib import Path
 
-from huggingface_hub import hf_hub_download, list_repo_files
+import requests
 from PySide6.QtCore import QObject, Signal
+
+from wadas.ui.error_message_dialog import WADASErrorMessage
 
 logger = logging.getLogger(__name__)
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -71,36 +72,50 @@ class AiModelsDownloader(QObject):
             ]
             models_folders = absolute_det_dir_path + absolute_class_dir_path
             remote_files = []
-            # Get list of all files in the repository
-            try:
-                all_files = list_repo_files(repo_id=REPO_ID, use_auth_token=self.token)
-            except Exception as e:
-                self.error_happened.emit(f"Error listing files: {str(e)}")
-                return
 
-            for folder in models_folders:
+            for _folder in models_folders:
                 if self.stop_flag:
                     break
-
-                # Filter only files that belongs to current folder
-                cur_dir_remote_files = [f for f in all_files if f.startswith(str(folder))]
-                # Add cur dir files to total list files
-                remote_files.extend(cur_dir_remote_files)
-
+            # TODO: update iteration logic
             for i, remote_file_path in enumerate(remote_files):
                 if self.stop_flag:
                     break
 
                 local_file_path = Path(SAVE_DIRECTORY, remote_file_path)
+                model_name = "DFv1.2"
+                model_file_extension = "bin"
 
                 # Download the file
                 try:
-                    cached_file_path = hf_hub_download(
-                        repo_id=REPO_ID, filename=remote_file_path, use_auth_token=self.token
+                    DOWNLOAD_URL = (
+                        f"{WADAS_SERVER_URL}api/v1/nodes/{self.node_id}/models/download?model_name="
+                        f"{model_name}"
+                        f"&type_ext={model_file_extension}"
                     )
                     # Make sure destination dir exists
                     os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-                    shutil.move(cached_file_path, local_file_path)
+
+                    destination_file = Path(f"{model_name}.{model_file_extension}")
+                    try:
+                        response = requests.get(DOWNLOAD_URL, stream=True, timeout=30)
+
+                        if response.status_code == 200:
+                            with open(destination_file, "wb") as f:
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    if chunk:
+                                        f.write(chunk)
+                            print(f"Modello scaricato correttamente: {destination_file}")
+                        elif response.status_code == 401:
+                            WADASErrorMessage(
+                                "Authentication failed!", "(401): unauthorized access."
+                            ).exec()
+                        else:
+                            WADASErrorMessage(
+                                "Download error", f"Error code: {response.status_code}"
+                            ).exec()
+
+                    except requests.exceptions.RequestException as e:
+                        WADASErrorMessage("Error while downloading model file", str(e)).exec()
 
                     if remote_files:
                         self.run_progress.emit((i + 1) * 100 // len(remote_files))

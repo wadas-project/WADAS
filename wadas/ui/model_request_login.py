@@ -19,6 +19,7 @@
 
 import os
 from pathlib import Path
+import requests
 
 import keyring
 from PySide6.QtGui import QIcon
@@ -26,11 +27,12 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
 from wadas.ui.access_request_dialog import AccessRequestDialog
 from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
+from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_model_request_login import Ui_DialogModelRequestLogin
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 model_request_id_path = Path(module_dir_path).parent.parent / "model" / "request"
-
+WADAS_SERVER_URL = "https://localhost:8443/"
 
 class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
     """Class to instantiate UI dialog to configure Ai model parameters."""
@@ -101,10 +103,42 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
                 self.ui.lineEdit_email.text(),
                 self.ui.lineEdit_token.text(),
             )
-        # TODO: implement login to server and response logic
 
-        # Run AiModelDownloadDialog
+        url = f"{WADAS_SERVER_URL}api/v1/organizations_login"
+        payload = {
+            "username": self.ui.lineEdit_email.text().strip(),
+            "password": self.ui.lineEdit_token.text()
+        }
+
+        try:
+            response = requests.post(url, json=payload, timeout=10)
+            if response.status_code == 401:
+                WADASErrorMessage("Login failed", "Invalid credentials!").exec()
+                return
+            else:
+                response.raise_for_status()
+
+                # Parsing JSON response
+                response_data = response.json()
+                org_code = response_data.get("org_code")
+
+                if org_code:
+                    with open("org_code", "w", encoding="utf-8") as f:
+                        f.write(org_code)
+                else:
+                    WADASErrorMessage("Error in receiving organization code.",
+                                      "Organization code not found in server response.").exec()
+                    return
+
+        except requests.exceptions.HTTPError as http_err:
+            WADASErrorMessage("HTTP error occurred", str(http_err))
+        except requests.exceptions.RequestException as req_err:
+            WADASErrorMessage("Request error occurred", str(req_err))
+        except ValueError as json_err:
+            WADASErrorMessage("Failed to parse JSON", str(json_err))
+        except Exception as e:
+            WADASErrorMessage("Unexpected error", str(e))
+
         self.accept()
-
         download_dialog = AiModelDownloadDialog()
         download_dialog.exec()
