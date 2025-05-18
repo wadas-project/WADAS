@@ -19,8 +19,10 @@
 
 import os
 from pathlib import Path
-import json
+import requests
+from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 
+import yaml
 from PySide6.QtCore import QThread
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -28,18 +30,19 @@ from PySide6.QtWidgets import (
     QDialog,
     QGroupBox,
     QScrollArea,
-    QVBoxLayout,
+    QVBoxLayout, QMessageBox,
 )
 
 from wadas.domain.ai_model_downloader import AiModelsDownloader
-from wadas.ui.ai_model_downloader_selector_dialog import Dialog_AiModelDownloaderSelector
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_ai_model_download import Ui_AiModelDownloadDialog
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
-ai_available_models_file = (Path(module_dir_path).parent.parent / "model" / "wadas_models.json").resolve()
-ai_det_models_dir_path = (Path(module_dir_path).parent.parent / "model" / "detection").resolve()
-ai_class_models_dir_path = (Path(module_dir_path).parent.parent / "model" / "classification").resolve()
+AI_DET_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "detection").resolve()
+AI_CLASS_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "classification").resolve()
+MODEL_REQUEST_CFG = (Path(module_dir_path).parent.parent / "model" / "request").resolve()
+AVAILABLE_MODELS_CFG_LOCAL = (Path(module_dir_path).parent.parent / "model" / "wadas_models.yaml").resolve()
+WADAS_SERVER_URL = "https://localhost:8443/"
 
 class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     """Class to implement AI model download dialog."""
@@ -52,6 +55,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         self.det_models = []
         self.class_models = []
+        self.node_id = None
         self.thread = None
         self.downloader = None
         self.stop_flag = False
@@ -76,16 +80,70 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.adjustSize()
 
     def get_available_models(self):
-        """Get list of available Ai models to download"""
+        """Returns the names of available models from a YAML config file downloaded
+        from WADAS server."""
 
-        #TODO: implement GET to server
+        try:
+            if not os.path.isfile(AVAILABLE_MODELS_CFG_LOCAL): #TODO: remove once server implementation is complete
+                self.get_available_model_cfg_file()
+                return
 
-        # Load the JSON file
-        with open(ai_available_models_file) as f:
-            data = json.load(f)
+            with open(AVAILABLE_MODELS_CFG_LOCAL) as available_models_file:
+                config = yaml.safe_load(available_models_file)
+                self.detection_models = config.get("detection_models", ())
+                self.classification_models = config.get("classification_models", ())
+        except Exception as e:
+            WADASErrorMessage("Error while requesting available models from server", str(e)).exec()
 
-        self.classification_models = data.get('classification_models', [])
-        self.detection_models = data.get('detection_models', [])
+    def get_default_models(self):
+        """Returns the default detection and classification models from the YAML config file."""
+
+        try:
+            if not os.path.isfile(AVAILABLE_MODELS_CFG_LOCAL): #TODO: remove once server implementation is complete
+                self.get_available_model_cfg_file()
+
+            with open(AVAILABLE_MODELS_CFG_LOCAL) as available_models_file:
+                config = yaml.safe_load(available_models_file)
+                default_detection_model = config.get("default_detection_model", None)
+                default_classification_model = config.get("default_classification_model", None)
+                return (
+                    [default_detection_model] if default_detection_model else [],
+                    [default_classification_model] if default_classification_model else [],
+                )
+        except Exception:
+            return (), ()
+
+    def get_available_model_cfg_file(self):
+        """Method to get available models list form WADAS server"""
+
+        if not self.node_id:
+            WADASErrorMessage("Invalid node id!",
+                              "Could not obtain available models list as provided node id is invalid.")
+            return
+
+        status_url = f'{WADAS_SERVER_URL}api/v1/nodes/{self.node_id}/models_yaml'
+
+        # Common headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        try:
+            status_response = requests.get(status_url, headers=headers, timeout=10, verify=False)
+            status_response.raise_for_status()
+
+            # Save content to file
+            with open(AVAILABLE_MODELS_CFG_LOCAL, "w", encoding="utf-8") as f:
+                f.write(status_response.text)
+        except (ConnectionError, Timeout) as conn_err:
+            WADASErrorMessage("Network error",
+                              f"Network error while getting available Ai models list from server: {conn_err}").exec()
+        except HTTPError as http_err:
+            WADASErrorMessage("Network error",
+                              f"HTTP error while getting available Ai models list from server: {http_err}").exec()
+        except RequestException as req_err:
+            WADASErrorMessage("Network error",
+                              f"Unexpected error while getting available Ai models list from server: {req_err}").exec()
 
     def initialize_models_list(self):
         """Method to handle AI models list initialization"""
@@ -93,15 +151,15 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.get_available_models()
 
         # Ensure local directories exist
-        ai_det_models_dir_path.mkdir(parents=True, exist_ok=True)
-        ai_class_models_dir_path.mkdir(parents=True, exist_ok=True)
+        AI_DET_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
+        AI_CLASS_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
         # Get names of locally available models
         local_det_models = [
-            d.name.replace("_openvino_model", "") for d in ai_det_models_dir_path.iterdir() if d.is_dir()
+            d.name.replace("_openvino_model", "") for d in AI_DET_MODELS_DIR_PATH.iterdir() if d.is_dir()
         ]
         local_class_models = [
-            d.name.replace("_openvino_model", "") for d in ai_class_models_dir_path.iterdir() if d.is_dir()
+            d.name.replace("_openvino_model", "") for d in AI_CLASS_MODELS_DIR_PATH.iterdir() if d.is_dir()
         ]
 
         # Check if available models were successfully loaded
@@ -127,9 +185,9 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         # Build the detection models group
         groupBox_detection = QGroupBox("Detection models", self)
         vertical_layout_detection = QVBoxLayout(groupBox_detection)
-        for model in self.detection_models:
-            checkbox = QCheckBox(model["name"], self)
-            if model["name"] in local_det_models:
+        for model_name in self.detection_models:
+            checkbox = QCheckBox(model_name, self)
+            if model_name in local_det_models:
                 checkbox.setChecked(True)
                 checkbox.setEnabled(False)
             vertical_layout_detection.addWidget(checkbox)
@@ -141,9 +199,9 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         # Build the classification models group
         groupBox_classification = QGroupBox("Classification models", self)
         vertical_layout_classification = QVBoxLayout(groupBox_classification)
-        for model in self.classification_models:
-            checkbox = QCheckBox(model["name"], self)
-            if model["name"] in local_class_models:
+        for model_name in self.classification_models:
+            checkbox = QCheckBox(model_name, self)
+            if model_name in local_class_models:
                 checkbox.setChecked(True)
                 checkbox.setEnabled(False)
             vertical_layout_classification.addWidget(checkbox)
@@ -187,7 +245,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.thread = QThread()
 
         # Move downloader to a dedicated thread
-        self.downloader = AiModelsDownloader(token, self.det_models, self.class_models)
+        self.downloader = AiModelsDownloader(self.det_models, self.class_models)
         self.downloader.moveToThread(self.thread)
 
         # Connect signals
@@ -208,7 +266,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     def handle_error(self, error_message):
         """Method to handle download errors"""
 
-        QMessageBox.critical(self, "Error", f"An error occurred: {error_message}")
+        WADASErrorMessage("Error", f"An error occurred: {error_message}").exec()
         self.ui.pushButton_download.setEnabled(True)
         self.ui.progressBar.setEnabled(False)
 

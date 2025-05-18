@@ -41,7 +41,7 @@ build/
 *.bin
 *.xml
 model/request
-model/wadas_models.json
+model/wadas_models.yaml
 
 # DB
 *.db

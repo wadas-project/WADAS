@@ -22,13 +22,16 @@ import os
 import shutil
 from pathlib import Path
 
-import yaml
 from huggingface_hub import hf_hub_download, list_repo_files
 from PySide6.QtCore import QObject, Signal
 
 logger = logging.getLogger(__name__)
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 
+AVAILABLE_MODELS_CFG_LOCAL = (
+    Path(module_dir_path).parent.parent / "model" / "wadas_models.yaml"
+).resolve()
+MODEL_REQUEST_CFG = (Path(module_dir_path).parent.parent / "model" / "request").resolve()
 MODEL_FILES = [
     "detection_model.xml",
     "detection_model.bin",
@@ -37,7 +40,7 @@ MODEL_FILES = [
 ]
 REPO_ID = "wadas-it/wadas"
 SAVE_DIRECTORY = (Path(module_dir_path).parent.parent / "model").resolve()
-CONFIG_FILE = "wadas_models.yaml"
+WADAS_SERVER_URL = "https://localhost:8443/"
 
 
 class AiModelsDownloader(QObject):
@@ -47,9 +50,9 @@ class AiModelsDownloader(QObject):
     run_progress = Signal(int)
     error_happened = Signal(str)
 
-    def __init__(self, token, det_model_files, class_model_files):
+    def __init__(self, node_id, det_model_files, class_model_files):
         super(AiModelsDownloader, self).__init__()
-        self.token = token
+        self.node_id = node_id
         self.stop_flag = False
         self.det_model_directories = det_model_files
         self.class_model_directories = class_model_files
@@ -116,41 +119,3 @@ class AiModelsDownloader(QObject):
         if self.thread().isInterruptionRequested():
             self.stop_flag = True
             logger.error("Ai Models download cancelled by user.")
-
-    @classmethod
-    def get_available_models(self, token):
-        """Returns the names of available models from a YAML config file downloaded
-        from Hugging Face."""
-        try:
-            # Download configuration file from Hugging Face
-            config_file_path = hf_hub_download(
-                repo_id=REPO_ID, filename=CONFIG_FILE, use_auth_token=token
-            )
-
-            with open(config_file_path, "r") as file_:
-                config = yaml.safe_load(file_)
-                detection_models = config.get("detection_models", ())
-                classification_models = config.get("classification_models", ())
-                return detection_models, classification_models
-        except Exception:
-            return (), ()
-
-    @classmethod
-    def get_default_models(self, token):
-        """Returns the default detection and classification models from the YAML config file."""
-        try:
-            # Download configuration file from Hugging Face
-            config_file_path = hf_hub_download(
-                repo_id=REPO_ID, filename=CONFIG_FILE, use_auth_token=token
-            )
-
-            with open(config_file_path, "r") as file:
-                config = yaml.safe_load(file)
-                default_detection_model = config.get("default_detection_model", None)
-                default_classification_model = config.get("default_classification_model", None)
-                return (
-                    [default_detection_model] if default_detection_model else [],
-                    [default_classification_model] if default_classification_model else [],
-                )
-        except Exception:
-            return (), ()
