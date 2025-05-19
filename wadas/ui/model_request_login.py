@@ -16,7 +16,7 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2024-08-14
 # Description: Ai models access request module.
-
+import json
 import os
 from pathlib import Path
 import requests
@@ -29,9 +29,12 @@ from wadas.ui.access_request_dialog import AccessRequestDialog
 from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_model_request_login import Ui_DialogModelRequestLogin
+from wadas_runtime import WADASModelServer
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
-model_request_id_path = Path(module_dir_path).parent.parent / "model" / "request"
+MODELS_FOLDER = Path(module_dir_path).parent.parent / "model"
+MODEL_REQUEST_CFG = MODELS_FOLDER / "request"
+MODEL_NODE_ID = MODELS_FOLDER / "user"
 WADAS_SERVER_URL = "https://localhost:8443/"
 
 class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
@@ -53,12 +56,13 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
         self.ui.lineEdit_email.textChanged.connect(self.validate)
         self.ui.lineEdit_token.textChanged.connect(self.validate)
 
+        self.wadas_model_server = WADASModelServer(WADAS_SERVER_URL)
         self.initialize_dialog()
 
 
     def update_request_fields(self):
         """Method to update access request UI related widgets"""
-        if os.path.isfile(model_request_id_path):
+        if os.path.isfile(MODEL_REQUEST_CFG):
             self.ui.label_request_title.setText("Check submitted request:")
             self.ui.pushButton_request.setText("Check request")
 
@@ -103,46 +107,21 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
                 self.ui.lineEdit_email.text(),
                 self.ui.lineEdit_token.text(),
             )
-
-        url = f"{WADAS_SERVER_URL}api/v1/organizations_login"
-        payload = {
-            "username": self.ui.lineEdit_email.text().strip(),
-            "password": self.ui.lineEdit_token.text()
-        }
-
-        try:
-            response = requests.post(url, json=payload, timeout=10, verify=False) #TODO: remove verify=False
-            if response.status_code == 401:
-                WADASErrorMessage("Login failed", "Invalid credentials!").exec()
+        if not os.path.isfile(MODEL_NODE_ID):
+            try:
+                node_id = self.wadas_model_server.register_node(username=self.ui.lineEdit_email.text().strip(),
+                                                                password=self.ui.lineEdit_token.text())
+                # Store user id locally
+                data = {"node_id": node_id}
+                with open(MODEL_NODE_ID, "w") as json_file:
+                    json.dump(data, json_file, indent=4)
+            except Exception as e:
+                WADASErrorMessage("User registration error", str(e)).exec()
                 return
-            else:
-                response.raise_for_status()
-
-                # Parsing JSON response
-                response_data = response.json()
-                org_code = response_data.get("org_code")
-
-                if org_code:
-                    with open("org_code", "w", encoding="utf-8") as f:
-                        f.write(org_code)
-                else:
-                    WADASErrorMessage("Error in receiving organization code.",
-                                      "Organization code not found in server response.").exec()
-                    return
-
-        except requests.exceptions.HTTPError as http_err:
-            WADASErrorMessage("HTTP error occurred", str(http_err)).exec()
-            return
-        except requests.exceptions.RequestException as req_err:
-            WADASErrorMessage("Request error occurred", str(req_err)).exec()
-            return
-        except ValueError as json_err:
-            WADASErrorMessage("Failed to parse JSON", str(json_err)).exec()
-            return
-        except Exception as e:
-            WADASErrorMessage("Unexpected error", str(e)).exec()
-            return
-
+        else:
+            with open(MODEL_NODE_ID) as json_file:
+                data = json.load(json_file)
+            node_id = data.get("node_id")
         self.accept()
-        download_dialog = AiModelDownloadDialog()
+        download_dialog = AiModelDownloadDialog(node_id)
         download_dialog.exec()

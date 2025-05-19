@@ -16,7 +16,7 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-01-01
 # Description: Module containing Ai Model Downloader Dialog class and methods.
-
+import json
 import os
 from pathlib import Path
 import requests
@@ -36,18 +36,20 @@ from PySide6.QtWidgets import (
 from wadas.domain.ai_model_downloader import AiModelsDownloader
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_ai_model_download import Ui_AiModelDownloadDialog
+from wadas_runtime import WADASModelServer
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 AI_DET_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "detection").resolve()
 AI_CLASS_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "classification").resolve()
 MODEL_REQUEST_CFG = (Path(module_dir_path).parent.parent / "model" / "request").resolve()
+NODE_ID_CFG = "" #TODO: fix node_id path
 AVAILABLE_MODELS_CFG_LOCAL = (Path(module_dir_path).parent.parent / "model" / "wadas_models.yaml").resolve()
 WADAS_SERVER_URL = "https://localhost:8443/"
 
 class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     """Class to implement AI model download dialog."""
 
-    def __init__(self, no_model=False):
+    def __init__(self, node_id):
         super().__init__()
         self.ui = Ui_AiModelDownloadDialog()
         self.setWindowTitle("Download AI Models")
@@ -55,11 +57,12 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         self.det_models = []
         self.class_models = []
-        self.node_id = None
+        self.node_id = node_id
         self.thread = None
         self.downloader = None
         self.stop_flag = False
         self.download_success = False
+        self.wadas_model_server = WADASModelServer(WADAS_SERVER_URL)
 
         self.ui.setupUi(self)
         self.ui.progressBar.setRange(0, 100)
@@ -78,6 +81,12 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.ui.checkBox_select_versions.clicked.connect(self.on_select_model_version_checkbox_clicked)
 
         self.adjustSize()
+        self.get_node_id()
+
+    def get_node_id(self):
+        """Method to retrieve the node_id"""
+
+        self.wadas_model_server.register_user()
 
     def get_available_models(self):
         """Returns the names of available models from a YAML config file downloaded
@@ -235,7 +244,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         if not self.ui.checkBox_select_versions.isChecked():
             # Fetch default versions if no custom selection is checked
-            self.det_models, self.class_models = AiModelsDownloader.get_default_models(self.ui.lineEdit_token.text())
+            self.det_models, self.class_models = self.get_default_models()
 
         self.ui.progressBar.setVisible(True)
         self.ui.progressBar.setEnabled(True)
@@ -245,7 +254,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.thread = QThread()
 
         # Move downloader to a dedicated thread
-        self.downloader = AiModelsDownloader(self.det_models, self.class_models)
+        self.downloader = AiModelsDownloader(self.node_id, self.det_models, self.class_models)
         self.downloader.moveToThread(self.thread)
 
         # Connect signals

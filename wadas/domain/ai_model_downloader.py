@@ -59,7 +59,7 @@ class AiModelsDownloader(QObject):
         self.class_model_directories = class_model_files
 
     def run(self):
-        """AI Model Download running in a dedicated thread"""
+        """AI Model(s) Download running in a dedicated thread"""
         try:
             os.makedirs(SAVE_DIRECTORY, exist_ok=True)
 
@@ -71,17 +71,17 @@ class AiModelsDownloader(QObject):
                 Path("classification", item).as_posix() for item in self.class_model_directories
             ]
             models_folders = absolute_det_dir_path + absolute_class_dir_path
-            remote_files = []
 
             for _folder in models_folders:
                 if self.stop_flag:
                     break
+
             # TODO: update iteration logic
-            for i, remote_file_path in enumerate(remote_files):
+            for file_path in enumerate(self.det_model_directories + self.class_model_directories):
                 if self.stop_flag:
                     break
 
-                local_file_path = Path(SAVE_DIRECTORY, remote_file_path)
+                local_file_path = Path(SAVE_DIRECTORY, file_path)
                 model_name = "DFv1.2"
                 model_file_extension = "bin"
 
@@ -117,10 +117,10 @@ class AiModelsDownloader(QObject):
                     except requests.exceptions.RequestException as e:
                         WADASErrorMessage("Error while downloading model file", str(e)).exec()
 
-                    if remote_files:
-                        self.run_progress.emit((i + 1) * 100 // len(remote_files))
+                    # if remote_files:
+                    # self.run_progress.emit((i + 1) * 100 // len(remote_files))
                 except Exception as e:
-                    self.error_happened.emit(f"Error downloading {remote_file_path}: {e}")
+                    self.error_happened.emit(f"Error downloading {file_path}: {e}")
                     continue
 
             self.run_finished.emit()

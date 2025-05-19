@@ -30,7 +30,9 @@ from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_access_request import Ui_DialogModelAccessRequest
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
-model_request_id_path = Path(module_dir_path).parent.parent / "model" / "request"
+MODELS_DIR = Path(module_dir_path).parent.parent / "model"
+MODEL_REQUEST_CFG = MODELS_DIR / "request"
+# Example of MODEL_REQUEST_CFG format:
 #{
 #  "name": "Mario Rossi",
 #  "email": "mario.rossi@example.com",
@@ -59,7 +61,7 @@ class Request():
             "rationale": self.rationale,
             "request_id": self.id
         }
-        with open(model_request_id_path, 'w') as f:
+        with open(MODEL_REQUEST_CFG, 'w') as f:
             json.dump(data, f, indent=4)
 
 class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
@@ -93,7 +95,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         """Method to retrieve the request id from file, if any"""
 
         try:
-            with open(model_request_id_path, 'r') as json_file:
+            with open(MODEL_REQUEST_CFG, 'r') as json_file:
                 data = json.load(json_file)
                 self.request = Request(
                     data.get('name'),
@@ -181,8 +183,8 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     def on_clear_request_triggered(self):
         """Method to clear local history of previously submitted model request"""
 
-        if os.path.isfile(model_request_id_path):
-            os.remove(model_request_id_path)
+        if os.path.isfile(MODEL_REQUEST_CFG):
+            os.remove(MODEL_REQUEST_CFG)
 
             # Clear dialog input fields
             self.ui.lineEdit_email.setText("")
@@ -267,8 +269,25 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
 
     def show_terms_of_use(self):
         """Method to show WADAS Ai models terms of use"""
-        #TODO: implement this part as request to WADAS server
-        pass
+
+        terms_url = f"{WADAS_SERVER_URL}api/v1/terms/download"
+        destination_path = MODELS_DIR / "TERMS_AND_CONDITIONS"
+
+        try:
+            response = requests.get(terms_url, stream=True, verify=False, timeout=10) #TODO: remove verify=False
+
+            if response.status_code == 200:
+                with open(destination_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            elif response.status_code == 401:
+                WADASErrorMessage("Error while downloading terms and conditions",
+                                  "Unauthorized access (401).").exec()
+            else:
+                WADASErrorMessage("Download error", f"Code: {response.status_code}").exec()
+        except requests.exceptions.RequestException as e:
+            WADASErrorMessage("Error while downloading terms and conditions", str(e)).exec()
 
     def accept_and_close(self):
         """When Ok is clicked, perform changes"""
