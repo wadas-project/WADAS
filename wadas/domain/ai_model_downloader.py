@@ -41,7 +41,7 @@ MODEL_FILES = [
 ]
 REPO_ID = "wadas-it/wadas"
 SAVE_DIRECTORY = (Path(module_dir_path).parent.parent / "model").resolve()
-WADAS_SERVER_URL = "https://localhost:8443/"
+WADAS_SERVER_URL = "https://api-dev.wadas.it:8443/"
 
 
 class AiModelsDownloader(QObject):

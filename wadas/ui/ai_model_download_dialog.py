@@ -33,7 +33,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QMessageBox,
 )
 
-from wadas.domain.ai_model_downloader import AiModelsDownloader
+from wadas.domain.ai_model_downloader import AiModelsDownloader, WADAS_SERVER_URL
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_ai_model_download import Ui_AiModelDownloadDialog
 from wadas_runtime import WADASModelServer
@@ -44,7 +44,6 @@ AI_CLASS_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "cla
 MODEL_REQUEST_CFG = (Path(module_dir_path).parent.parent / "model" / "request").resolve()
 NODE_ID_CFG = "" #TODO: fix node_id path
 AVAILABLE_MODELS_CFG_LOCAL = (Path(module_dir_path).parent.parent / "model" / "wadas_models.yaml").resolve()
-WADAS_SERVER_URL = "https://localhost:8443/"
 
 class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     """Class to implement AI model download dialog."""
@@ -138,7 +137,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         }
 
         try:
-            status_response = requests.get(status_url, headers=headers, timeout=10, verify=False)
+            status_response = requests.get(status_url, headers=headers, timeout=10)
             status_response.raise_for_status()
 
             # Save content to file

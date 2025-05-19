@@ -25,6 +25,7 @@ import keyring
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
+from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.ui.access_request_dialog import AccessRequestDialog
 from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
 from wadas.ui.error_message_dialog import WADASErrorMessage
@@ -34,8 +35,8 @@ from wadas_runtime import WADASModelServer
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 MODELS_FOLDER = Path(module_dir_path).parent.parent / "model"
 MODEL_REQUEST_CFG = MODELS_FOLDER / "request"
-MODEL_NODE_ID = MODELS_FOLDER / "user"
-WADAS_SERVER_URL = "https://localhost:8443/"
+MODEL_NODE_CFG = MODELS_FOLDER / "user"
+
 
 class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
     """Class to instantiate UI dialog to configure Ai model parameters."""
@@ -101,25 +102,30 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
     def accept_and_close(self):
         """Method to trigger login phase and move to models selection"""
 
-        if not (keyring.get_credential(f"WADAS_Ai_model_request", "")):
+        if not (credentials := keyring.get_credential(f"WADAS_Ai_model_request", "")) or (
+                new_credential := (credentials.username != self.ui.lineEdit_email.text())):
             keyring.set_password(
                 f"WADAS_Ai_model_request",
                 self.ui.lineEdit_email.text(),
                 self.ui.lineEdit_token.text(),
             )
-        if not os.path.isfile(MODEL_NODE_ID):
+
+        if not os.path.isfile(MODEL_NODE_CFG) or new_credential:
             try:
-                node_id = self.wadas_model_server.register_node(username=self.ui.lineEdit_email.text().strip(),
-                                                                password=self.ui.lineEdit_token.text())
+                node_id, org_id = self.wadas_model_server.register_node(username=self.ui.lineEdit_email.text().strip(),
+                                                                        password=self.ui.lineEdit_token.text())
                 # Store user id locally
-                data = {"node_id": node_id}
-                with open(MODEL_NODE_ID, "w") as json_file:
+                data = {
+                    "node_id": node_id,
+                    "org_id": org_id
+                }
+                with open(MODEL_NODE_CFG, "w") as json_file:
                     json.dump(data, json_file, indent=4)
             except Exception as e:
                 WADASErrorMessage("User registration error", str(e)).exec()
                 return
         else:
-            with open(MODEL_NODE_ID) as json_file:
+            with open(MODEL_NODE_CFG) as json_file:
                 data = json.load(json_file)
             node_id = data.get("node_id")
         self.accept()

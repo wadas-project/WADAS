@@ -26,6 +26,7 @@ import json
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
+from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_access_request import Ui_DialogModelAccessRequest
 
@@ -40,7 +41,6 @@ MODEL_REQUEST_CFG = MODELS_DIR / "request"
 #  "rationale": "some rationale",
 #  "request_id": 101
 #}
-WADAS_SERVER_URL = "https://localhost:8443/"
 
 class Request():
     """Class to model Ai model access request."""
@@ -119,7 +119,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         }
 
         try:
-            status_response = requests.get(status_url, headers=headers, timeout=10, verify=False)
+            status_response = requests.get(status_url, headers=headers, timeout=10)
             status_response.raise_for_status()
             status = status_response.json().get('status')
 
@@ -239,7 +239,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         }
 
         try:
-            submit_response = requests.post(submit_url, json=payload, headers=headers, timeout=10, verify=False)
+            submit_response = requests.post(submit_url, json=payload, headers=headers, timeout=10)
             submit_response.raise_for_status()  # Raises HTTPError for bad responses
 
             response_data = submit_response.json()
@@ -274,7 +274,7 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
         destination_path = MODELS_DIR / "TERMS_AND_CONDITIONS"
 
         try:
-            response = requests.get(terms_url, stream=True, verify=False, timeout=10) #TODO: remove verify=False
+            response = requests.get(terms_url, stream=True, timeout=10)
 
             if response.status_code == 200:
                 with open(destination_path, "wb") as f:
