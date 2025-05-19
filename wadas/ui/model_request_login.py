@@ -111,7 +111,7 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
         }
 
         try:
-            response = requests.post(url, json=payload, timeout=10)
+            response = requests.post(url, json=payload, timeout=10, verify=False) #TODO: remove verify=False
             if response.status_code == 401:
                 WADASErrorMessage("Login failed", "Invalid credentials!").exec()
                 return
@@ -131,13 +131,17 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
                     return
 
         except requests.exceptions.HTTPError as http_err:
-            WADASErrorMessage("HTTP error occurred", str(http_err))
+            WADASErrorMessage("HTTP error occurred", str(http_err)).exec()
+            return
         except requests.exceptions.RequestException as req_err:
-            WADASErrorMessage("Request error occurred", str(req_err))
+            WADASErrorMessage("Request error occurred", str(req_err)).exec()
+            return
         except ValueError as json_err:
-            WADASErrorMessage("Failed to parse JSON", str(json_err))
+            WADASErrorMessage("Failed to parse JSON", str(json_err)).exec()
+            return
         except Exception as e:
-            WADASErrorMessage("Unexpected error", str(e))
+            WADASErrorMessage("Unexpected error", str(e)).exec()
+            return
 
         self.accept()
         download_dialog = AiModelDownloadDialog()
