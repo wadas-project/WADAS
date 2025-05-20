@@ -54,8 +54,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.setWindowTitle("Download AI Models")
         self.setWindowIcon(QIcon((Path(module_dir_path).parent / "img" / "mainwindow_icon.jpg").resolve().as_posix()))
 
-        self.det_models = []
-        self.class_models = []
+        self.models = []
         self.node_id = node_id
         self.thread = None
         self.downloader = None
@@ -92,34 +91,14 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         from WADAS server."""
 
         try:
-            if not os.path.isfile(AVAILABLE_MODELS_CFG_LOCAL): #TODO: remove once server implementation is complete
-                self.get_available_model_cfg_file()
-                return
-
-            with open(AVAILABLE_MODELS_CFG_LOCAL) as available_models_file:
-                config = yaml.safe_load(available_models_file)
-                self.detection_models = config.get("detection_models", ())
-                self.classification_models = config.get("classification_models", ())
+            self.models = self.wadas_model_server.available_models(self.node_id)
         except Exception as e:
             WADASErrorMessage("Error while requesting available models from server", str(e)).exec()
 
     def get_default_models(self):
         """Returns the default detection and classification models from the YAML config file."""
 
-        try:
-            if not os.path.isfile(AVAILABLE_MODELS_CFG_LOCAL): #TODO: remove once server implementation is complete
-                self.get_available_model_cfg_file()
-
-            with open(AVAILABLE_MODELS_CFG_LOCAL) as available_models_file:
-                config = yaml.safe_load(available_models_file)
-                default_detection_model = config.get("default_detection_model", None)
-                default_classification_model = config.get("default_classification_model", None)
-                return (
-                    [default_detection_model] if default_detection_model else [],
-                    [default_classification_model] if default_classification_model else [],
-                )
-        except Exception:
-            return (), ()
+        #TODO: implement this logic from wadas-library provided data model
 
     def get_available_model_cfg_file(self):
         """Method to get available models list form WADAS server"""
@@ -157,6 +136,8 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         """Method to handle AI models list initialization"""
 
         self.get_available_models()
+
+        #TODO: update logic according to wadas-runtime data model
 
         # Ensure local directories exist
         AI_DET_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
@@ -226,8 +207,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.ui.groupBox_available_models.setVisible(True)
         self.ui.progressBar.setVisible(True)
         self.ui.pushButton_download.setEnabled(True)
-
-        self.adjustSize()
 
     def on_select_model_version_checkbox_clicked(self):
         """Method to enable select model button basing on checkbox status"""
