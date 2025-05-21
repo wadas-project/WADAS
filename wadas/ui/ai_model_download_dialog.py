@@ -16,101 +16,187 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-01-01
 # Description: Module containing Ai Model Downloader Dialog class and methods.
-
+import json
 import os
 from pathlib import Path
+import requests
+from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 
+import yaml
 from PySide6.QtCore import QThread
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
-    QMessageBox
+    QGroupBox,
+    QScrollArea,
+    QVBoxLayout, QMessageBox,
 )
 
-from wadas.domain.ai_model_downloader import AiModelsDownloader
-from wadas.ui.ai_model_downloader_selector_dialog import Dialog_AiModelDownloaderSelector
+from wadas.domain.ai_model_downloader import AiModelsDownloader, WADAS_SERVER_URL
+from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_ai_model_download import Ui_AiModelDownloadDialog
+from wadas_runtime import WADASModelServer
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
+AI_DET_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "detection").resolve()
+AI_CLASS_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "classification").resolve()
+MODEL_REQUEST_CFG = (Path(module_dir_path).parent.parent / "model" / "request").resolve()
+NODE_ID_CFG = "" #TODO: fix node_id path
+AVAILABLE_MODELS_CFG_LOCAL = (Path(module_dir_path).parent.parent / "model" / "wadas_models.yaml").resolve()
 
 class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     """Class to implement AI model download dialog."""
 
-    def __init__(self, no_model=False):
+    def __init__(self, node_id):
         super().__init__()
         self.ui = Ui_AiModelDownloadDialog()
         self.setWindowTitle("Download AI Models")
         self.setWindowIcon(QIcon((Path(module_dir_path).parent / "img" / "mainwindow_icon.jpg").resolve().as_posix()))
 
-        self.det_models = []
-        self.class_models = []
+        self.models = []
+        self.node_id = node_id
         self.thread = None
         self.downloader = None
         self.stop_flag = False
         self.download_success = False
+        self.wadas_model_server = WADASModelServer(WADAS_SERVER_URL)
 
         self.ui.setupUi(self)
         self.ui.progressBar.setRange(0, 100)
         self.ui.progressBar.setValue(0)
         self.ui.progressBar.setEnabled(False)
         self.ui.pushButton_download.setEnabled(False)
-        self.ui.pushButton_select_model_version.setVisible(False)
-        self.ui.pushButton_select_model_version.setEnabled(False)
+        self.ui.groupBox_available_models.setVisible(False)
         self.ui.progressBar.setVisible(False)
-        self.ui.lineEdit_token.textChanged.connect(self.validate)
+
+        self.classification_models = None
+        self.detection_models = None
+
+        # Slots
         self.ui.pushButton_download.clicked.connect(self.download_models)
         self.ui.pushButton_cancel.clicked.connect(self.cancel_download)
-        self.ui.pushButton_select_model_version.clicked.connect(self.on_select_model_version_button_clicked)
         self.ui.checkBox_select_versions.clicked.connect(self.on_select_model_version_checkbox_clicked)
 
-        welcome_message = "Download WADAS models from Huggingface.co/wadas-it/wadas" if not no_model else\
-            "Ai Model files not found. Download them from Huggingface.co/wadas-it/wadas."
-        self.ui.label_welcome_message.setText(welcome_message)
+        self.adjustSize()
+
+    def get_available_models(self):
+        """Returns the names of available models from a YAML config file downloaded
+        from WADAS server."""
+
+        try:
+            self.models = self.wadas_model_server.available_models(self.node_id)
+        except Exception as e:
+            WADASErrorMessage("Error while requesting available models from server", str(e)).exec()
+
+    def get_default_models(self):
+        """Returns the default detection and classification models from the YAML config file."""
+
+        #TODO: implement this logic from wadas-library provided data model
+
+    def initialize_models_list(self):
+        """Method to handle AI models list initialization"""
+
+        self.get_available_models()  # This should populate self.models (a list of dicts)
+
+        # Ensure local directories exist
+        AI_DET_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
+        AI_CLASS_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
+
+        # Get names of locally available models
+        local_det_models = [
+            d.name.replace("_openvino_model", "") for d in AI_DET_MODELS_DIR_PATH.iterdir() if d.is_dir()
+        ]
+        local_class_models = [
+            d.name.replace("_openvino_model", "") for d in AI_CLASS_MODELS_DIR_PATH.iterdir() if d.is_dir()
+        ]
+
+        # Group models by path
+        self.detection_models = [m["name"] for m in self.models if m["path"].startswith("detection")]
+        self.classification_models = [m["name"] for m in self.models if m["path"].startswith("classification")]
+
+        # Check if available models were successfully loaded
+        if not (self.detection_models or self.classification_models):
+            WADASErrorMessage(
+                "Error while downloading WADAS models",
+                "An error occurred while fetching available models list. Please retry."
+            ).exec()
+            return
+
+        # Ensure the groupBox has a layout; create one if not
+        if self.ui.groupBox_available_models.layout() is None:
+            layout = QVBoxLayout(self.ui.groupBox_available_models)
+            self.ui.groupBox_available_models.setLayout(layout)
+        else:
+            layout = self.ui.groupBox_available_models.layout()
+            # Remove previously added widgets
+            for i in reversed(range(layout.count())):
+                widget = layout.itemAt(i).widget()
+                if widget is not None:
+                    widget.setParent(None)
+
+        # Build the detection models group
+        if self.detection_models:
+            groupBox_detection = QGroupBox("Detection models", self)
+            vertical_layout_detection = QVBoxLayout(groupBox_detection)
+            for model_name in self.detection_models:
+                checkbox = QCheckBox(model_name, self)
+                if model_name in local_det_models:
+                    checkbox.setChecked(True)
+                    checkbox.setEnabled(False)
+                vertical_layout_detection.addWidget(checkbox)
+
+            scroll_area_detection = QScrollArea(self)
+            scroll_area_detection.setWidgetResizable(True)
+            scroll_area_detection.setWidget(groupBox_detection)
+            layout.addWidget(scroll_area_detection)
+
+        # Build the classification models group
+        if self.classification_models:
+            groupBox_classification = QGroupBox("Classification models", self)
+            vertical_layout_classification = QVBoxLayout(groupBox_classification)
+            for model_name in self.classification_models:
+                checkbox = QCheckBox(model_name, self)
+                if model_name in local_class_models:
+                    checkbox.setChecked(True)
+                    checkbox.setEnabled(False)
+                vertical_layout_classification.addWidget(checkbox)
+
+            scroll_area_classification = QScrollArea(self)
+            scroll_area_classification.setWidgetResizable(True)
+            scroll_area_classification.setWidget(groupBox_classification)
+            layout.addWidget(scroll_area_classification)
+
+        # Enable and show relevant UI elements
+        self.ui.groupBox_available_models.setVisible(True)
+        self.ui.progressBar.setVisible(True)
+        self.ui.pushButton_download.setEnabled(True)
 
     def on_select_model_version_checkbox_clicked(self):
         """Method to enable select model button basing on checkbox status"""
 
-        self.ui.pushButton_select_model_version.setVisible(self.ui.checkBox_select_versions.isChecked())
-        self.update_select_model_button_enablement()
-
-    def on_select_model_version_button_clicked(self):
-        """Method to select Ai model versions to download"""
-
-        dialog = Dialog_AiModelDownloaderSelector(self.ui.lineEdit_token.text())
-        if not dialog.exec():
-            self.ui.checkBox_select_versions.setChecked(False)
-            self.ui.pushButton_select_model_version.setVisible(False)
-        else:
-            self.det_models = dialog.selected_detection_models
-            self.class_models = dialog.selected_classification_models
-
-    def update_select_model_button_enablement(self):
-        """Method to enable/disable select model versions button"""
-
-        self.ui.pushButton_select_model_version.setEnabled(bool(self.ui.lineEdit_token.text()))
+        list_models = self.ui.checkBox_select_versions.isChecked()
+        self.ui.groupBox_available_models.setVisible(list_models)
+        if list_models:
+            self.initialize_models_list()
+        self.adjustSize()
 
     def download_models(self):
         """Method to trigger the model download"""
 
-        token = self.ui.lineEdit_token.text().strip()
-        if not token:
-            QMessageBox.critical(self, "Error", "Token field cannot be empty.")
-            return
-
         if not self.ui.checkBox_select_versions.isChecked():
             # Fetch default versions if no custom selection is checked
-            self.det_models, self.class_models = AiModelsDownloader.get_default_models(self.ui.lineEdit_token.text())
+            self.det_models, self.class_models = self.get_default_models()
 
         self.ui.progressBar.setVisible(True)
         self.ui.progressBar.setEnabled(True)
         self.ui.pushButton_download.setEnabled(False)
         self.ui.pushButton_cancel.setEnabled(True)
-        self.ui.lineEdit_token.setEnabled(False)
 
         self.thread = QThread()
 
         # Move downloader to a dedicated thread
-        self.downloader = AiModelsDownloader(token, self.det_models, self.class_models)
+        self.downloader = AiModelsDownloader(self.node_id, self.det_models, self.class_models)
         self.downloader.moveToThread(self.thread)
 
         # Connect signals
@@ -131,10 +217,9 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     def handle_error(self, error_message):
         """Method to handle download errors"""
 
-        QMessageBox.critical(self, "Error", f"An error occurred: {error_message}")
+        WADASErrorMessage("Error", f"An error occurred: {error_message}").exec()
         self.ui.pushButton_download.setEnabled(True)
         self.ui.progressBar.setEnabled(False)
-        self.ui.lineEdit_token.setEnabled(True)
 
     def on_download_complete(self):
         """Handle successful download"""
@@ -160,7 +245,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         """Method to validate the dialog input fields"""
 
         self.update_select_model_button_enablement()
-        self.ui.pushButton_download.setEnabled(bool(self.ui.lineEdit_token.text()))
 
     def closeEvent(self, event):
         """Handle the dialog close event."""

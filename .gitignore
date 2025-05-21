@@ -40,6 +40,8 @@ build/
 *.onnx
 *.bin
 *.xml
+model/request
+model/wadas_models.yaml
 
 # DB
 *.db
