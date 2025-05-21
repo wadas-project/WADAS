@@ -79,12 +79,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.ui.checkBox_select_versions.clicked.connect(self.on_select_model_version_checkbox_clicked)
 
         self.adjustSize()
-        self.get_node_id()
-
-    def get_node_id(self):
-        """Method to retrieve the node_id"""
-
-        self.wadas_model_server.register_user()
 
     def get_available_models(self):
         """Returns the names of available models from a YAML config file downloaded
@@ -100,44 +94,10 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         #TODO: implement this logic from wadas-library provided data model
 
-    def get_available_model_cfg_file(self):
-        """Method to get available models list form WADAS server"""
-
-        if not self.node_id:
-            WADASErrorMessage("Invalid node id!",
-                              "Could not obtain available models list as provided node id is invalid.")
-            return
-
-        status_url = f'{WADAS_SERVER_URL}api/v1/nodes/{self.node_id}/models_yaml'
-
-        # Common headers
-        headers = {
-            'Content-Type': 'application/json'
-        }
-
-        try:
-            status_response = requests.get(status_url, headers=headers, timeout=10)
-            status_response.raise_for_status()
-
-            # Save content to file
-            with open(AVAILABLE_MODELS_CFG_LOCAL, "w", encoding="utf-8") as f:
-                f.write(status_response.text)
-        except (ConnectionError, Timeout) as conn_err:
-            WADASErrorMessage("Network error",
-                              f"Network error while getting available Ai models list from server: {conn_err}").exec()
-        except HTTPError as http_err:
-            WADASErrorMessage("Network error",
-                              f"HTTP error while getting available Ai models list from server: {http_err}").exec()
-        except RequestException as req_err:
-            WADASErrorMessage("Network error",
-                              f"Unexpected error while getting available Ai models list from server: {req_err}").exec()
-
     def initialize_models_list(self):
         """Method to handle AI models list initialization"""
 
-        self.get_available_models()
-
-        #TODO: update logic according to wadas-runtime data model
+        self.get_available_models()  # This should populate self.models (a list of dicts)
 
         # Ensure local directories exist
         AI_DET_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
@@ -151,8 +111,12 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
             d.name.replace("_openvino_model", "") for d in AI_CLASS_MODELS_DIR_PATH.iterdir() if d.is_dir()
         ]
 
+        # Group models by path
+        self.detection_models = [m["name"] for m in self.models if m["path"].startswith("detection")]
+        self.classification_models = [m["name"] for m in self.models if m["path"].startswith("classification")]
+
         # Check if available models were successfully loaded
-        if not (self.detection_models and self.classification_models):
+        if not (self.detection_models or self.classification_models):
             WADASErrorMessage(
                 "Error while downloading WADAS models",
                 "An error occurred while fetching available models list. Please retry."
@@ -172,36 +136,36 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
                     widget.setParent(None)
 
         # Build the detection models group
-        groupBox_detection = QGroupBox("Detection models", self)
-        vertical_layout_detection = QVBoxLayout(groupBox_detection)
-        for model_name in self.detection_models:
-            checkbox = QCheckBox(model_name, self)
-            if model_name in local_det_models:
-                checkbox.setChecked(True)
-                checkbox.setEnabled(False)
-            vertical_layout_detection.addWidget(checkbox)
+        if self.detection_models:
+            groupBox_detection = QGroupBox("Detection models", self)
+            vertical_layout_detection = QVBoxLayout(groupBox_detection)
+            for model_name in self.detection_models:
+                checkbox = QCheckBox(model_name, self)
+                if model_name in local_det_models:
+                    checkbox.setChecked(True)
+                    checkbox.setEnabled(False)
+                vertical_layout_detection.addWidget(checkbox)
 
-        scroll_area_detection = QScrollArea(self)
-        scroll_area_detection.setWidgetResizable(True)
-        scroll_area_detection.setWidget(groupBox_detection)
+            scroll_area_detection = QScrollArea(self)
+            scroll_area_detection.setWidgetResizable(True)
+            scroll_area_detection.setWidget(groupBox_detection)
+            layout.addWidget(scroll_area_detection)
 
         # Build the classification models group
-        groupBox_classification = QGroupBox("Classification models", self)
-        vertical_layout_classification = QVBoxLayout(groupBox_classification)
-        for model_name in self.classification_models:
-            checkbox = QCheckBox(model_name, self)
-            if model_name in local_class_models:
-                checkbox.setChecked(True)
-                checkbox.setEnabled(False)
-            vertical_layout_classification.addWidget(checkbox)
+        if self.classification_models:
+            groupBox_classification = QGroupBox("Classification models", self)
+            vertical_layout_classification = QVBoxLayout(groupBox_classification)
+            for model_name in self.classification_models:
+                checkbox = QCheckBox(model_name, self)
+                if model_name in local_class_models:
+                    checkbox.setChecked(True)
+                    checkbox.setEnabled(False)
+                vertical_layout_classification.addWidget(checkbox)
 
-        scroll_area_classification = QScrollArea(self)
-        scroll_area_classification.setWidgetResizable(True)
-        scroll_area_classification.setWidget(groupBox_classification)
-
-        # Add scroll areas to the layout in the group box
-        layout.addWidget(scroll_area_detection)
-        layout.addWidget(scroll_area_classification)
+            scroll_area_classification = QScrollArea(self)
+            scroll_area_classification.setWidgetResizable(True)
+            scroll_area_classification.setWidget(groupBox_classification)
+            layout.addWidget(scroll_area_classification)
 
         # Enable and show relevant UI elements
         self.ui.groupBox_available_models.setVisible(True)
