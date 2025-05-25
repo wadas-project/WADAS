@@ -19,11 +19,11 @@
 import json
 import os
 from pathlib import Path
-import requests
 
 import keyring
+import validators
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
 from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.ui.access_request_dialog import AccessRequestDialog
@@ -35,7 +35,8 @@ from wadas_runtime import WADASModelServer
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 MODELS_FOLDER = Path(module_dir_path).parent.parent / "model"
 MODEL_REQUEST_CFG = MODELS_FOLDER / "request"
-MODEL_NODE_CFG = MODELS_FOLDER / "user"
+MODEL_NODE_CFG = MODELS_FOLDER / "node"
+ORGANIZATION_CFG = Path(module_dir_path).parent.parent / "organization"
 
 
 class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
@@ -67,20 +68,33 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
             self.ui.label_request_title.setText("Check submitted request:")
             self.ui.pushButton_request.setText("Check request")
 
-    def initialize_dialog(self):
-        """Method to initialize dialog"""
+    def update_group_boxes(self):
+        """Method to handle group boxes visibility."""
 
         credentials= keyring.get_credential(f"WADAS_Ai_model_request", "")
-
         if credentials:
             self.ui.lineEdit_email.setText(credentials.username)
             self.ui.lineEdit_token.setText(credentials.password)
+        if os.path.isfile(ORGANIZATION_CFG) and os.path.isfile(MODEL_NODE_CFG):
+            with open(MODEL_NODE_CFG) as json_file:
+                data = json.load(json_file)
+            node_id = data.get("node_id")
+            self.ui.label_node_id.setText(node_id)
+            with open(ORGANIZATION_CFG) as json_file:
+                data = json.load(json_file)
+            org_id = data.get("org_id")
+            self.ui.label_org_id.setText(org_id)
+
+    def initialize_dialog(self):
+        """Method to initialize dialog"""
+
+        self.update_group_boxes()
         self.update_request_fields()
 
     def handle_request(self):
         """Method to handle new or submitted request"""
 
-        if (access_request_dialog := AccessRequestDialog()).exec():
+        if AccessRequestDialog().exec():
             self.update_request_fields()
 
     def validate(self):
@@ -95,31 +109,57 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
         if not self.ui.lineEdit_email.text():
             valid = False
             message = "Email field cannot be empty!"
-
+        if not validators.email(self.ui.lineEdit_email.text()):
+            valid = False
+            message = "Provided email is not a valid email format!"
         self.ui.label_error.setText(message)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(valid)
 
+    def show_confirmation_dialog(self):
+        """Method to show confirmation dialog to user"""
+
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Overwrite current settings?")
+        msg_box.setText("By proceeding with modification credentials, node ID and "
+                        "organization ID might be overwritten.\n"
+                        "Are you sure you want to continue?")
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+
+        return msg_box.exec()
+
     def accept_and_close(self):
         """Method to trigger login phase and move to models selection"""
+        credentials = keyring.get_credential(f"WADAS_Ai_model_request", "")
+        new_credential = credentials.username != self.ui.lineEdit_email.text()
 
-        if not (credentials := keyring.get_credential(f"WADAS_Ai_model_request", "")) or (
-                new_credential := (credentials.username != self.ui.lineEdit_email.text())):
+        # Ask user if is ok to proceed as old credentials, node and organization id will be overwritten
+        if new_credential and self.show_confirmation_dialog() == QMessageBox.No:
+            return
+
+        # Save credentials
+        if not credentials or new_credential:
             keyring.set_password(
                 f"WADAS_Ai_model_request",
                 self.ui.lineEdit_email.text(),
                 self.ui.lineEdit_token.text(),
             )
 
-        if not os.path.isfile(MODEL_NODE_CFG) or new_credential:
+        if not os.path.isfile(MODEL_NODE_CFG) or not os.path.isfile(ORGANIZATION_CFG) or new_credential:
             try:
-                node_id, org_id = self.wadas_model_server.register_node(username=self.ui.lineEdit_email.text().strip(),
+                node_id  = self.wadas_model_server.register_node(username=self.ui.lineEdit_email.text().strip(),
                                                                         password=self.ui.lineEdit_token.text())
                 # Store user id locally
                 data = {
-                    "node_id": node_id,
-                    "org_id": org_id
+                    "node_id": node_id
                 }
                 with open(MODEL_NODE_CFG, "w") as json_file:
+                    json.dump(data, json_file, indent=4)
+                # Store organization id locally
+                data = {
+                    "org_id": node_id
+                }
+                with open(ORGANIZATION_CFG, "w") as json_file:
                     json.dump(data, json_file, indent=4)
             except Exception as e:
                 WADASErrorMessage("User registration error", str(e)).exec()

@@ -19,10 +19,7 @@
 import json
 import os
 from pathlib import Path
-import requests
-from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 
-import yaml
 from PySide6.QtCore import QThread
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -89,11 +86,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         except Exception as e:
             WADASErrorMessage("Error while requesting available models from server", str(e)).exec()
 
-    def get_default_models(self):
-        """Returns the default detection and classification models from the YAML config file."""
-
-        #TODO: implement this logic from wadas-library provided data model
-
     def initialize_models_list(self):
         """Method to handle AI models list initialization"""
 
@@ -112,8 +104,8 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         ]
 
         # Group models by path
-        self.detection_models = [m["name"] for m in self.models if m["path"].startswith("detection")]
-        self.classification_models = [m["name"] for m in self.models if m["path"].startswith("classification")]
+        self.detection_models = [m for m in self.models if m["type"] == "detection"]
+        self.classification_models = [m for m in self.models if m["type"] == "classification"]
 
         # Check if available models were successfully loaded
         if not (self.detection_models or self.classification_models):
@@ -139,13 +131,27 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         if self.detection_models:
             groupBox_detection = QGroupBox("Detection models", self)
             vertical_layout_detection = QVBoxLayout(groupBox_detection)
-            for model_name in self.detection_models:
+
+            for model in self.detection_models:
+                model_name = model["name"]
+                is_local = model_name in local_det_models
+                is_default = model.get("is_default", False)
+
                 checkbox = QCheckBox(model_name, self)
-                if model_name in local_det_models:
+
+                if is_local:
                     checkbox.setChecked(True)
                     checkbox.setEnabled(False)
+                elif is_default:
+                    checkbox.setChecked(True)
+
+                if is_default:
+                    checkbox.setStyleSheet("font-weight: bold;")
+                    checkbox.setText(f"{model_name} (default)")
+
                 vertical_layout_detection.addWidget(checkbox)
 
+            groupBox_detection.setMinimumHeight(150)
             scroll_area_detection = QScrollArea(self)
             scroll_area_detection.setWidgetResizable(True)
             scroll_area_detection.setWidget(groupBox_detection)
@@ -155,13 +161,27 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         if self.classification_models:
             groupBox_classification = QGroupBox("Classification models", self)
             vertical_layout_classification = QVBoxLayout(groupBox_classification)
-            for model_name in self.classification_models:
+
+            for model in self.classification_models:
+                model_name = model["name"]
+                is_local = model_name in local_class_models
+                is_default = model.get("is_default", False)
+
                 checkbox = QCheckBox(model_name, self)
-                if model_name in local_class_models:
+
+                if is_local:
                     checkbox.setChecked(True)
                     checkbox.setEnabled(False)
+                elif is_default:
+                    checkbox.setChecked(True)
+
+                if is_default:
+                    checkbox.setStyleSheet("font-weight: bold;")
+                    checkbox.setText(f"{model_name} (default)")
+
                 vertical_layout_classification.addWidget(checkbox)
 
+            groupBox_classification.setMinimumHeight(150)
             scroll_area_classification = QScrollArea(self)
             scroll_area_classification.setWidgetResizable(True)
             scroll_area_classification.setWidget(groupBox_classification)
