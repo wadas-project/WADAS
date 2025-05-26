@@ -41,7 +41,7 @@ build/
 *.bin
 *.xml
 model/request
-model/node
+model/TERMS_AND_CONDITIONS
 organization
 
 # DB

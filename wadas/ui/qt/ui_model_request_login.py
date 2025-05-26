@@ -23,41 +23,9 @@ class Ui_DialogModelRequestLogin(object):
     def setupUi(self, DialogModelRequestLogin):
         if not DialogModelRequestLogin.objectName():
             DialogModelRequestLogin.setObjectName(u"DialogModelRequestLogin")
-        DialogModelRequestLogin.resize(424, 288)
+        DialogModelRequestLogin.resize(424, 206)
         self.gridLayout = QGridLayout(DialogModelRequestLogin)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.groupBox_node_info = QGroupBox(DialogModelRequestLogin)
-        self.groupBox_node_info.setObjectName(u"groupBox_node_info")
-        self.gridLayout_3 = QGridLayout(self.groupBox_node_info)
-        self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.label_4 = QLabel(self.groupBox_node_info)
-        self.label_4.setObjectName(u"label_4")
-
-        self.gridLayout_3.addWidget(self.label_4, 0, 0, 1, 1)
-
-        self.label_node_id = QLabel(self.groupBox_node_info)
-        self.label_node_id.setObjectName(u"label_node_id")
-
-        self.gridLayout_3.addWidget(self.label_node_id, 0, 1, 1, 1)
-
-        self.label_5 = QLabel(self.groupBox_node_info)
-        self.label_5.setObjectName(u"label_5")
-
-        self.gridLayout_3.addWidget(self.label_5, 1, 0, 1, 1)
-
-        self.label_org_id = QLabel(self.groupBox_node_info)
-        self.label_org_id.setObjectName(u"label_org_id")
-
-        self.gridLayout_3.addWidget(self.label_org_id, 1, 1, 1, 1)
-
-
-        self.gridLayout.addWidget(self.groupBox_node_info, 1, 0, 1, 2)
-
-        self.pushButton_request = QPushButton(DialogModelRequestLogin)
-        self.pushButton_request.setObjectName(u"pushButton_request")
-
-        self.gridLayout.addWidget(self.pushButton_request, 2, 1, 1, 1)
-
         self.groupBox_login = QGroupBox(DialogModelRequestLogin)
         self.groupBox_login.setObjectName(u"groupBox_login")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
@@ -94,17 +62,12 @@ class Ui_DialogModelRequestLogin(object):
         self.gridLayout_2.addWidget(self.label, 0, 0, 1, 2)
 
 
-        self.gridLayout.addWidget(self.groupBox_login, 0, 0, 1, 2)
+        self.gridLayout.addWidget(self.groupBox_login, 1, 0, 1, 2)
 
         self.label_request_title = QLabel(DialogModelRequestLogin)
         self.label_request_title.setObjectName(u"label_request_title")
 
         self.gridLayout.addWidget(self.label_request_title, 2, 0, 1, 1)
-
-        self.label_error = QLabel(DialogModelRequestLogin)
-        self.label_error.setObjectName(u"label_error")
-
-        self.gridLayout.addWidget(self.label_error, 6, 0, 1, 2)
 
         self.buttonBox = QDialogButtonBox(DialogModelRequestLogin)
         self.buttonBox.setObjectName(u"buttonBox")
@@ -112,6 +75,21 @@ class Ui_DialogModelRequestLogin(object):
         self.buttonBox.setStandardButtons(QDialogButtonBox.StandardButton.Cancel|QDialogButtonBox.StandardButton.Ok)
 
         self.gridLayout.addWidget(self.buttonBox, 7, 0, 1, 2)
+
+        self.pushButton_request = QPushButton(DialogModelRequestLogin)
+        self.pushButton_request.setObjectName(u"pushButton_request")
+
+        self.gridLayout.addWidget(self.pushButton_request, 2, 1, 1, 1)
+
+        self.label_error = QLabel(DialogModelRequestLogin)
+        self.label_error.setObjectName(u"label_error")
+
+        self.gridLayout.addWidget(self.label_error, 6, 0, 1, 2)
+
+        self.label_no_models = QLabel(DialogModelRequestLogin)
+        self.label_no_models.setObjectName(u"label_no_models")
+
+        self.gridLayout.addWidget(self.label_no_models, 0, 0, 1, 2)
 
         QWidget.setTabOrder(self.lineEdit_email, self.lineEdit_token)
         QWidget.setTabOrder(self.lineEdit_token, self.pushButton_request)
@@ -125,17 +103,13 @@ class Ui_DialogModelRequestLogin(object):
 
     def retranslateUi(self, DialogModelRequestLogin):
         DialogModelRequestLogin.setWindowTitle(QCoreApplication.translate("DialogModelRequestLogin", u"Ai models access - Login", None))
-        self.groupBox_node_info.setTitle(QCoreApplication.translate("DialogModelRequestLogin", u"Node info", None))
-        self.label_4.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Node ID:", None))
-        self.label_node_id.setText("")
-        self.label_5.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Organization ID:", None))
-        self.label_org_id.setText("")
-        self.pushButton_request.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Request access", None))
         self.groupBox_login.setTitle(QCoreApplication.translate("DialogModelRequestLogin", u"Login", None))
         self.label_2.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Email:", None))
         self.label_3.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Token:", None))
         self.label.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Insert your credentials to download the AI models:", None))
         self.label_request_title.setText(QCoreApplication.translate("DialogModelRequestLogin", u"If you don't have credentials please request them:", None))
+        self.pushButton_request.setText(QCoreApplication.translate("DialogModelRequestLogin", u"Request access", None))
         self.label_error.setText("")
+        self.label_no_models.setText(QCoreApplication.translate("DialogModelRequestLogin", u"WADAS Ai models not found. Please proceed with download to get started.", None))
     # retranslateUi
 

@@ -46,7 +46,7 @@ class AiModelsDownloader(QObject):
     run_progress = Signal(int)
     error_happened = Signal(str)
 
-    def __init__(self, node_id, models):
+    def __init__(self, node_id: str, models):
         super(AiModelsDownloader, self).__init__()
         self.node_id = node_id
         self.stop_flag = False

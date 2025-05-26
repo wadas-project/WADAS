@@ -713,10 +713,9 @@ class MainWindow(QMainWindow):
         """Method to initialize classification model."""
         if not AiModel.check_model(AiModel.detection_model_version, AiModel.classification_model_version):
             logger.warning("AI module not found. Downloading...")
-            ai_download_dialog = AiModelDownloadDialog(True)
-            if ai_download_dialog.exec():
-                return (ai_download_dialog.download_success and
-                        AiModel.check_model(AiModel.detection_model_version, AiModel.classification_model_version))
+
+            if DialogModelRequestLogin(False).exec():
+                return AiModel.check_model(AiModel.detection_model_version, AiModel.classification_model_version)
             else:
                 logger.error("Ai models files download cancelled by user. Aborting.")
                 return False

@@ -16,7 +16,6 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-01-01
 # Description: Module containing Ai Model Downloader Dialog class and methods.
-import json
 import os
 from pathlib import Path
 
@@ -39,13 +38,11 @@ module_dir_path = os.path.dirname(os.path.abspath(__file__))
 AI_DET_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "detection").resolve()
 AI_CLASS_MODELS_DIR_PATH = (Path(module_dir_path).parent.parent / "model" / "classification").resolve()
 MODEL_REQUEST_CFG = (Path(module_dir_path).parent.parent / "model" / "request").resolve()
-NODE_ID_CFG = "" #TODO: fix node_id path
-AVAILABLE_MODELS_CFG_LOCAL = (Path(module_dir_path).parent.parent / "model" / "wadas_models.yaml").resolve()
 
 class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     """Class to implement AI model download dialog."""
 
-    def __init__(self, node_id):
+    def __init__(self, node_id: str):
         super().__init__()
         self.ui = Ui_AiModelDownloadDialog()
         self.setWindowTitle("Download AI Models")
@@ -201,12 +198,27 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
             self.initialize_models_list()
         self.adjustSize()
 
+    def get_default_models(self):
+        """Method to get default models for download"""
+
+        default_detection_models = []
+        default_classification_models = []
+
+        for model in self.models:
+            if model.get("is_default"):
+                if model.get("type") == "detection":
+                    default_detection_models.append(model)
+                elif model.get("type") == "classification":
+                    default_classification_models.append(model)
+
+        return default_detection_models, default_classification_models
+
     def download_models(self):
         """Method to trigger the model download"""
 
         if not self.ui.checkBox_select_versions.isChecked():
             # Fetch default versions if no custom selection is checked
-            self.det_models, self.class_models = self.get_default_models()
+            self.detection_models, self.classification_models = self.get_default_models()
 
         self.ui.progressBar.setVisible(True)
         self.ui.progressBar.setEnabled(True)
@@ -216,7 +228,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.thread = QThread()
 
         # Move downloader to a dedicated thread
-        self.downloader = AiModelsDownloader(self.node_id, self.det_models, self.class_models)
+        self.downloader = AiModelsDownloader(self.node_id, self.detection_models + self.classification_models)
         self.downloader.moveToThread(self.thread)
 
         # Connect signals
