@@ -60,7 +60,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.ui.progressBar.setRange(0, 100)
         self.ui.progressBar.setValue(0)
         self.ui.progressBar.setEnabled(False)
-        self.ui.pushButton_download.setEnabled(False)
         self.ui.groupBox_available_models.setVisible(False)
         self.ui.progressBar.setVisible(False)
 
@@ -236,6 +235,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.downloader.run_finished.connect(self.on_download_complete)
         self.downloader.run_progress.connect(self.update_progress_bar)
         self.downloader.error_happened.connect(self.handle_error)
+        self.downloader.download_success.connect(self.on_download_succeeded)
         self.thread.finished.connect(self.thread.deleteLater)
         self.thread.finished.connect(self.downloader.deleteLater)
 
@@ -253,10 +253,13 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.ui.pushButton_download.setEnabled(True)
         self.ui.progressBar.setEnabled(False)
 
-    def on_download_complete(self):
+    def on_download_succeeded(self):
         """Handle successful download"""
-
         QMessageBox.information(self, "Success", "All model files have been successfully downloaded.")
+
+    def on_download_complete(self):
+        """Handle end of download"""
+
         if self.thread:
             self.thread.quit()
             self.thread.wait()

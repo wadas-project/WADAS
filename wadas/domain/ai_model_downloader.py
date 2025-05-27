@@ -28,13 +28,6 @@ logger = logging.getLogger(__name__)
 MODULE_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIRECTORY = (Path(MODULE_DIR_PATH).parent.parent / "model").resolve()
 MODEL_REQUEST_CFG = (MODEL_DIRECTORY / "request").resolve()
-AVAILABLE_MODELS_CFG_LOCAL = (MODEL_DIRECTORY / "wadas_models.yaml").resolve()
-MODEL_FILES = [
-    "detection_model.xml",
-    "detection_model.bin",
-    "classification_model.xml",
-    "classification_model.bin",
-]
 REPO_ID = "wadas-it/wadas"
 WADAS_SERVER_URL = "https://api-dev.wadas.it:8443/"
 
@@ -45,12 +38,14 @@ class AiModelsDownloader(QObject):
     run_finished = Signal()
     run_progress = Signal(int)
     error_happened = Signal(str)
+    download_success = Signal()
 
     def __init__(self, node_id: str, models):
         super(AiModelsDownloader, self).__init__()
         self.node_id = node_id
         self.stop_flag = False
         self.models = models
+        self.success = True
         self.wadas_model_server = WADASModelServer(WADAS_SERVER_URL)
 
     def run(self):
@@ -62,22 +57,28 @@ class AiModelsDownloader(QObject):
                 if self.stop_flag:
                     break
 
-                local_file_path = Path(MODEL_DIRECTORY, model["path"])
+                model_path = model["path"].lstrip("/")
+                local_file_path = MODEL_DIRECTORY / model_path
                 # Make sure destination dir exists
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
 
                 # Download the file
                 try:
                     self.wadas_model_server.download_model(
-                        user_id=self.node_id, model_name=model["name"], model_path=local_file_path
+                        user_id=self.node_id,
+                        model_name=model["name"],
+                        model_path=str(local_file_path),
                     )
 
                     if self.models:
                         self.run_progress.emit((i + 1) * 100 // len(self.models))
                 except Exception as e:
                     self.error_happened.emit(f"Error downloading {model}: {e}")
+                    self.success = False
                     continue
 
+            if self.success:
+                self.download_success.emit()
             self.run_finished.emit()
 
         except Exception as e:
