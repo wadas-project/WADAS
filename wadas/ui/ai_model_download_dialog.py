@@ -65,8 +65,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         self.classification_models = None
         self.detection_models = None
-        self.local_det_models = None
-        self.local_class_models = None
 
         # Slots
         self.ui.pushButton_download.clicked.connect(self.download_models)
@@ -75,7 +73,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         self.adjustSize()
 
-    def get_available_models_from_server(self):
+    def get_available_models(self):
         """Returns the names of available models from a YAML config file downloaded
         from WADAS server."""
 
@@ -84,20 +82,20 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         except Exception as e:
             WADASErrorMessage("Error while requesting available models from server", str(e)).exec()
 
-    def get_available_models(self):
-        """Initialize local var with available models."""
+    def initialize_models_list(self):
+        """Method to handle AI models list initialization"""
 
-        self.get_available_models_from_server()  # This should populate self.models (a list of dicts)
+        self.get_available_models()  # This should populate self.models (a list of dicts)
 
         # Ensure local directories exist
         AI_DET_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
         AI_CLASS_MODELS_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
         # Get names of locally available models
-        self.local_det_models = [
+        local_det_models = [
             d.name.replace("_openvino_model", "") for d in AI_DET_MODELS_DIR_PATH.iterdir() if d.is_dir()
         ]
-        self.local_class_models = [
+        local_class_models = [
             d.name.replace("_openvino_model", "") for d in AI_CLASS_MODELS_DIR_PATH.iterdir() if d.is_dir()
         ]
 
@@ -105,13 +103,8 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.detection_models = [m for m in self.models if m["type"] == "detection"]
         self.classification_models = [m for m in self.models if m["type"] == "classification"]
 
-        return self.detection_models and self.classification_models
-
-    def initialize_models_list(self):
-        """Method to handle AI models list initialization"""
-
         # Check if available models were successfully loaded
-        if not self.get_available_models():
+        if not (self.detection_models or self.classification_models):
             WADASErrorMessage(
                 "Error while downloading WADAS models",
                 "An error occurred while fetching available models list. Please retry."
@@ -137,7 +130,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
             for model in self.detection_models:
                 model_name = model["name"]
-                is_local = model_name in self.local_det_models
+                is_local = model_name in local_det_models
                 is_default = model.get("is_default", False)
 
                 checkbox = QCheckBox(model_name, self)
@@ -167,7 +160,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
             for model in self.classification_models:
                 model_name = model["name"]
-                is_local = model_name in self.local_class_models
+                is_local = model_name in local_class_models
                 is_default = model.get("is_default", False)
 
                 checkbox = QCheckBox(model_name, self)
@@ -210,18 +203,12 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         default_detection_models = []
         default_classification_models = []
 
-        if not self.get_available_models():
-            WADASErrorMessage(
-                "Error while downloading WADAS models",
-                "An error occurred while fetching available models list. Please retry."
-            ).exec()
-        else:
-            for model in self.models:
-                if model.get("is_default"):
-                    if model.get("type") == "detection":
-                        default_detection_models.append(model)
-                    elif model.get("type") == "classification":
-                        default_classification_models.append(model)
+        for model in self.models:
+            if model.get("is_default"):
+                if model.get("type") == "detection":
+                    default_detection_models.append(model)
+                elif model.get("type") == "classification":
+                    default_classification_models.append(model)
 
         return default_detection_models, default_classification_models
 
@@ -231,8 +218,6 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         if not self.ui.checkBox_select_versions.isChecked():
             # Fetch default versions if no custom selection is checked
             self.detection_models, self.classification_models = self.get_default_models()
-            if not self.detection_models and self.classification_models:
-                return
 
         self.ui.progressBar.setVisible(True)
         self.ui.progressBar.setEnabled(True)
