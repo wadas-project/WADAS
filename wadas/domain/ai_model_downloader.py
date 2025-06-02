@@ -19,6 +19,7 @@
 
 import logging
 import os
+import zipfile
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
@@ -58,22 +59,33 @@ class AiModelsDownloader(QObject):
                     break
 
                 model_path = model["path"].lstrip("/")
-                local_file_path = MODEL_DIRECTORY / model_path
+                local_model_dir = MODEL_DIRECTORY / model_path
+                local_zipfile_path = f"{local_model_dir}.zip"
                 # Make sure destination dir exists
-                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+                os.makedirs(os.path.dirname(local_model_dir), exist_ok=True)
 
                 # Download the file
                 try:
-                    self.wadas_model_server.download_model(
+                    download_status = self.wadas_model_server.download_model(
                         user_id=self.node_id,
                         model_name=model["name"],
-                        model_path=str(local_file_path),
+                        model_path=str(local_zipfile_path),
                     )
+
+                    if not download_status:
+                        self.error_happened.emit(
+                            f"Error downloading {model['name']}: Bad download status returned."
+                        )
+                        self.success = False
+                        continue
+
+                    with zipfile.ZipFile(local_zipfile_path, "r") as zip_ref:
+                        zip_ref.extractall(local_model_dir)
 
                     if self.models:
                         self.run_progress.emit((i + 1) * 100 // len(self.models))
                 except Exception as e:
-                    self.error_happened.emit(f"Error downloading {model}: {e}")
+                    self.error_happened.emit(f"Error downloading {model['name']}: {e}")
                     self.success = False
                     continue
 
