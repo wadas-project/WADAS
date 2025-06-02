@@ -19,7 +19,7 @@
 import json
 import os
 from pathlib import Path
-
+import logging
 import keyring
 import validators
 from PySide6.QtGui import QIcon
@@ -32,6 +32,7 @@ from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_model_request_login import Ui_DialogModelRequestLogin
 from wadas_runtime import WADASModelServer
 
+logger = logging.getLogger(__name__)
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 MODELS_FOLDER = Path(module_dir_path).parent.parent / "model"
 MODEL_REQUEST_CFG = MODELS_FOLDER / "request"
@@ -149,6 +150,7 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
         # Get node ID
         try:
             node_id  = str(self.wadas_model_server.register_node(org_code=org_code))
+            logger.debug("Node ID: %s", node_id)
         except Exception as e:
             WADASErrorMessage("User registration error", str(e)).exec()
             return
