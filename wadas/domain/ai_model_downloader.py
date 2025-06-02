@@ -40,6 +40,7 @@ class AiModelsDownloader(QObject):
     run_progress = Signal(int)
     error_happened = Signal(str)
     download_success = Signal()
+    update_status = Signal(str)
 
     def __init__(self, node_id: str, models):
         super(AiModelsDownloader, self).__init__()
@@ -51,9 +52,11 @@ class AiModelsDownloader(QObject):
 
     def run(self):
         """AI Model(s) Download running in a dedicated thread"""
+
+        total_phases = len(self.models) * 2
         try:
             os.makedirs(MODEL_DIRECTORY, exist_ok=True)
-
+            self.update_status.emit("Initiating models download...")
             for i, model in enumerate(self.models):
                 if self.stop_flag:
                     break
@@ -63,8 +66,8 @@ class AiModelsDownloader(QObject):
                 local_zipfile_path = f"{local_model_dir}.zip"
                 # Make sure destination dir exists
                 os.makedirs(os.path.dirname(local_model_dir), exist_ok=True)
-
-                # Download the file
+                self.update_status.emit(f"Packaging and downloading {model['name']} model...")
+                # Download the model zip file
                 try:
                     download_status = self.wadas_model_server.download_model(
                         user_id=self.node_id,
@@ -78,15 +81,21 @@ class AiModelsDownloader(QObject):
                         )
                         self.success = False
                         continue
+                    self.run_progress.emit((i + 1) * 100 // total_phases)
 
+                    # Unzip model files
+                    self.update_status.emit(f"Unpackaging model {model['name']} ...")
                     with zipfile.ZipFile(local_zipfile_path, "r") as zip_ref:
                         zip_ref.extractall(local_model_dir)
-
-                    if self.models:
-                        self.run_progress.emit((i + 1) * 100 // len(self.models))
+                    if os.path.isfile(local_zipfile_path):
+                        self.update_status.emit(f"Removing archive for {model['name']} model...")
+                        os.remove(local_zipfile_path)
+                    self.run_progress.emit((i + 2) * 100 // total_phases)
                 except Exception as e:
                     self.error_happened.emit(f"Error downloading {model['name']}: {e}")
                     self.success = False
+                    if os.path.isdir(local_model_dir):
+                        os.remove(local_model_dir)
                     continue
 
             if self.success:

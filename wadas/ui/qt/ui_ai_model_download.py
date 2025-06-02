@@ -29,23 +29,17 @@ class Ui_AiModelDownloadDialog(object):
         self.pushButton_cancel = QPushButton(AiModelDownloadDialog)
         self.pushButton_cancel.setObjectName(u"pushButton_cancel")
 
-        self.gridLayout_2.addWidget(self.pushButton_cancel, 4, 0, 1, 1)
-
-        self.progressBar = QProgressBar(AiModelDownloadDialog)
-        self.progressBar.setObjectName(u"progressBar")
-        self.progressBar.setValue(24)
-
-        self.gridLayout_2.addWidget(self.progressBar, 3, 0, 1, 2)
-
-        self.pushButton_download = QPushButton(AiModelDownloadDialog)
-        self.pushButton_download.setObjectName(u"pushButton_download")
-
-        self.gridLayout_2.addWidget(self.pushButton_download, 4, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.pushButton_cancel, 6, 0, 1, 1)
 
         self.groupBox_available_models = QGroupBox(AiModelDownloadDialog)
         self.groupBox_available_models.setObjectName(u"groupBox_available_models")
 
         self.gridLayout_2.addWidget(self.groupBox_available_models, 2, 0, 1, 2)
+
+        self.pushButton_download = QPushButton(AiModelDownloadDialog)
+        self.pushButton_download.setObjectName(u"pushButton_download")
+
+        self.gridLayout_2.addWidget(self.pushButton_download, 6, 1, 1, 1)
 
         self.label = QLabel(AiModelDownloadDialog)
         self.label.setObjectName(u"label")
@@ -57,6 +51,17 @@ class Ui_AiModelDownloadDialog(object):
 
         self.gridLayout_2.addWidget(self.checkBox_select_versions, 1, 0, 1, 2)
 
+        self.label_download_status = QLabel(AiModelDownloadDialog)
+        self.label_download_status.setObjectName(u"label_download_status")
+
+        self.gridLayout_2.addWidget(self.label_download_status, 4, 0, 1, 2)
+
+        self.progressBar = QProgressBar(AiModelDownloadDialog)
+        self.progressBar.setObjectName(u"progressBar")
+        self.progressBar.setValue(24)
+
+        self.gridLayout_2.addWidget(self.progressBar, 5, 0, 1, 2)
+
 
         self.retranslateUi(AiModelDownloadDialog)
 
@@ -66,9 +71,10 @@ class Ui_AiModelDownloadDialog(object):
     def retranslateUi(self, AiModelDownloadDialog):
         AiModelDownloadDialog.setWindowTitle(QCoreApplication.translate("AiModelDownloadDialog", u"Download AI Models", None))
         self.pushButton_cancel.setText(QCoreApplication.translate("AiModelDownloadDialog", u"Cancel", None))
-        self.pushButton_download.setText(QCoreApplication.translate("AiModelDownloadDialog", u"Download Models", None))
         self.groupBox_available_models.setTitle(QCoreApplication.translate("AiModelDownloadDialog", u"Available models:", None))
+        self.pushButton_download.setText(QCoreApplication.translate("AiModelDownloadDialog", u"Download Models", None))
         self.label.setText(QCoreApplication.translate("AiModelDownloadDialog", u"Click Download Models to proceed with defaults WADAS model selection.", None))
         self.checkBox_select_versions.setText(QCoreApplication.translate("AiModelDownloadDialog", u"Select model(s) version manually (optional)", None))
+        self.label_download_status.setText("")
     # retranslateUi
 

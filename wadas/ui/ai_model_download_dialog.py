@@ -225,14 +225,60 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         return default_detection_models, default_classification_models
 
+    def get_selected_models_by_type(self):
+        """
+        Returns a tuple of two lists:
+        (selected_classification_models, selected_detection_models)
+        """
+        classification_models = []
+        detection_models = []
+
+        layout = self.ui.groupBox_available_models.layout()
+        if layout is None:
+            return classification_models, detection_models
+
+        for i in range(layout.count()):
+            scroll_area = layout.itemAt(i).widget()
+            if isinstance(scroll_area, QScrollArea):
+                group_box = scroll_area.widget()
+                if isinstance(group_box, QGroupBox):
+                    group_title = group_box.title().lower()
+                    inner_layout = group_box.layout()
+                    if inner_layout is None:
+                        continue
+
+                    for j in range(inner_layout.count()):
+                        checkbox = inner_layout.itemAt(j).widget()
+                        if isinstance(checkbox, QCheckBox) and checkbox.isChecked():
+                            model_name = checkbox.text().replace(" (default)", "")
+                            if "classification" in group_title:
+                                classification_models.append(model_name)
+                            elif "detection" in group_title:
+                                detection_models.append(model_name)
+
+        return detection_models, classification_models
+
     def download_models(self):
         """Method to trigger the model download"""
 
         if not self.ui.checkBox_select_versions.isChecked():
             # Fetch default versions if no custom selection is checked
             self.detection_models, self.classification_models = self.get_default_models()
-            if not self.detection_models and self.classification_models:
-                return
+
+            # Remove items in download list already present locally
+            filtered_detection_models = [model for model in self.detection_models if model not in self.local_det_models]
+            filtered_classification_models = [model for model in self.classification_models if
+                                              model not in self.local_class_models]
+        else:
+            selected_detection_models, selected_classification_models = self.get_selected_models_by_type()
+
+            filtered_detection_models = [model for model in self.detection_models if
+                                         (model['name'] not in self.local_det_models) and
+                                         (model['name'] in selected_detection_models)]
+            filtered_classification_models = [model for model in self.classification_models if
+                                              (model['name'] not in self.local_class_models and
+                                               model['name'] in selected_classification_models)]
+
 
         self.ui.progressBar.setVisible(True)
         self.ui.progressBar.setEnabled(True)
@@ -242,19 +288,25 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         self.thread = QThread()
 
         # Move downloader to a dedicated thread
-        self.downloader = AiModelsDownloader(self.node_id, self.detection_models + self.classification_models)
+        self.downloader = AiModelsDownloader(self.node_id, filtered_detection_models + filtered_classification_models)
         self.downloader.moveToThread(self.thread)
 
         # Connect signals
         self.thread.started.connect(self.downloader.run)
         self.downloader.run_finished.connect(self.on_download_complete)
         self.downloader.run_progress.connect(self.update_progress_bar)
+        self.downloader.update_status.connect(self.update_status_lable)
         self.downloader.error_happened.connect(self.handle_error)
         self.downloader.download_success.connect(self.on_download_succeeded)
         self.thread.finished.connect(self.thread.deleteLater)
         self.thread.finished.connect(self.downloader.deleteLater)
 
         self.thread.start()
+
+    def update_status_lable(self, status):
+        """Update download status lable in UI."""
+
+        self.ui.label_download_status.setText(status)
 
     def update_progress_bar(self, percentage):
         """Update the progress bar safely from any thread."""
