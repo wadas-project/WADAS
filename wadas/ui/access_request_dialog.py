@@ -23,8 +23,9 @@ import requests
 from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 import json
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QTextEdit
 
 from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.ui.error_message_dialog import WADASErrorMessage
@@ -41,6 +42,8 @@ MODEL_REQUEST_CFG = MODELS_DIR / "request"
 #  "rationale": "some rationale",
 #  "request_id": 101
 #}
+TERMS_URL = f"{WADAS_SERVER_URL}api/v1/terms/download"
+TERMS_PATH = MODELS_DIR / "TERMS_AND_CONDITIONS"
 
 class Request():
     """Class to model Ai model access request."""
@@ -63,6 +66,34 @@ class Request():
         }
         with open(MODEL_REQUEST_CFG, 'w') as f:
             json.dump(data, f, indent=4)
+
+class TermsAndConditionsDialog(QDialog):
+    """Class to represent TERMS_AND_CONDITIONS_OF_USE file in a QDialog"""
+    def __init__(self, terms_accepted=False):
+        super().__init__()
+        # Acceptance status
+        self.terms_accepted = terms_accepted
+        # Don't show again Terms and Conditions (if accepted)
+        self.dont_show = False
+
+        # UI
+        self.setWindowTitle("WADAS Terms and Conditions of use")
+        self.setGeometry(150, 150, 500, 400)
+        self.setWindowIcon(QIcon(os.path.join(module_dir_path, "..", "img", "mainwindow_icon.jpg")))
+
+        layout = QVBoxLayout()
+
+        self.text_edit = QTextEdit(self)
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        layout.addWidget(self.text_edit)
+
+        # Load Terms and Conditions file
+        with open(TERMS_PATH, encoding="utf-8") as terms_n_conditions_file:
+            license_text = terms_n_conditions_file.read()
+            self.text_edit.setPlainText(license_text)
+
+        self.setLayout(layout)
 
 class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     """Class to instantiate UI dialog to configure Ai model parameters."""
@@ -270,14 +301,11 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
     def show_terms_of_use(self):
         """Method to show WADAS Ai models terms of use"""
 
-        terms_url = f"{WADAS_SERVER_URL}api/v1/terms/download"
-        destination_path = MODELS_DIR / "TERMS_AND_CONDITIONS"
-
         try:
-            response = requests.get(terms_url, stream=True, timeout=10)
+            response = requests.get(TERMS_URL, stream=True, timeout=10)
 
             if response.status_code == 200:
-                with open(destination_path, "wb") as f:
+                with open(TERMS_PATH, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
@@ -288,6 +316,9 @@ class AccessRequestDialog(QDialog, Ui_DialogModelAccessRequest):
                 WADASErrorMessage("Download error", f"Code: {response.status_code}").exec()
         except requests.exceptions.RequestException as e:
             WADASErrorMessage("Error while downloading terms and conditions", str(e)).exec()
+            return
+
+        TermsAndConditionsDialog().exec()
 
     def accept_and_close(self):
         """When Ok is clicked, perform changes"""

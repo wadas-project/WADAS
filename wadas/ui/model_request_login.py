@@ -16,12 +16,12 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2024-08-14
 # Description: Ai models access request module.
-import json
+import logging
 import os
 from pathlib import Path
-import logging
 import keyring
 import validators
+
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
@@ -116,7 +116,7 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
     def accept_and_close(self):
         """Method to trigger login phase and move to models selection"""
         credentials = keyring.get_credential(f"WADAS_Ai_model_request", "")
-        new_credential = credentials.username != self.ui.lineEdit_email.text()
+        new_credential = credentials.username != self.ui.lineEdit_email.text() if credentials else True
 
         # Ask user if is ok to proceed as old credentials, node and organization id will be overwritten
         if new_credential and self.show_confirmation_dialog() == QMessageBox.No:
@@ -135,15 +135,15 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
             try:
                 org_code = self.wadas_model_server.login(username=self.ui.lineEdit_email.text().strip(),
                                                          password=self.ui.lineEdit_token.text())
+
+                keyring.set_password(
+                    f"WADAS_org_code",
+                    self.ui.lineEdit_email.text().strip(),
+                    org_code,
+                )
             except Exception as e:
                 WADASErrorMessage("User login error", str(e)).exec()
                 return
-
-            keyring.set_password(
-                f"WADAS_org_code",
-                self.ui.lineEdit_email.text().strip(),
-                org_code,
-            )
         else:
             org_code = org_code_key.password
 
