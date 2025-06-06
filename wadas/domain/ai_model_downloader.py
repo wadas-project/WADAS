@@ -65,7 +65,7 @@ class AiModelsDownloader(QObject):
                 local_model_dir = MODEL_DIRECTORY / model_path
                 local_zipfile_path = f"{local_model_dir}.zip"
                 # Make sure destination dir exists
-                os.makedirs(os.path.dirname(local_model_dir), exist_ok=True)
+                local_model_dir.mkdir(exist_ok=True)
                 self.update_status.emit(f"Packaging and downloading {model['name']} model...")
                 # Download the model zip file
                 try:
@@ -73,6 +73,7 @@ class AiModelsDownloader(QObject):
                         user_id=self.node_id,
                         model_name=model["name"],
                         model_path=str(local_zipfile_path),
+                        timeout=120,
                     )
 
                     if not download_status:
@@ -94,8 +95,8 @@ class AiModelsDownloader(QObject):
                 except Exception as e:
                     self.error_happened.emit(f"Error downloading {model['name']}: {e}")
                     self.success = False
-                    if os.path.isdir(local_model_dir):
-                        os.remove(local_model_dir)
+                    if local_model_dir.is_dir():
+                        local_model_dir.rmdir()
                     continue
 
             if self.success:

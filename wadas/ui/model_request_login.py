@@ -137,7 +137,7 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
                                                          password=self.ui.lineEdit_token.text())
 
                 keyring.set_password(
-                    f"WADAS_org_code",
+                    "WADAS_org_code",
                     self.ui.lineEdit_email.text().strip(),
                     org_code,
                 )
