@@ -24,12 +24,15 @@ import os
 import sys
 from collections import deque
 from datetime import timedelta
+from importlib.metadata import version, PackageNotFoundError
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+import requests
 import uuid
 
 import cv2
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
 import keyring
 
 from PySide6 import QtCore, QtGui
@@ -43,6 +46,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.domain.database import DataBase
 from wadas._version import __version__
 from wadas.domain.actuator import Actuator
@@ -61,7 +65,6 @@ from wadas.domain.tunnel import Tunnel
 from wadas.domain.tunnel_mode import TunnelMode
 from wadas.domain.utils import initialize_asyncio_logger
 from wadas.ui.about_dialog import AboutDialog
-from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
 from wadas.ui.configure_actuators_dialog import DialogConfigureActuators
 from wadas.ui.configure_ai_model_dialog import ConfigureAiModel
 from wadas.ui.configure_camera_actuator_associations_dialog import (
@@ -158,6 +161,7 @@ class MainWindow(QMainWindow):
         logger.info("Welcome to WADAS!")
 
         self.show_terms_n_conditions()
+        self.check_wadas_runtime_library_version()
 
     def _connect_actions(self):
         """List all actions to connect to MainWindow"""
@@ -1074,3 +1078,47 @@ Are you sure you want to exit?""",
             logger.warning("No last saved file found or file no longer exists.")
             self.ui.actionRecent_configuration.setEnabled(False)  # Disable if file does not exist
             self.settings.remove("last_saved_config_path")
+
+    def check_wadas_runtime_library_version(self):
+        """Ensure that wadas-runtime library is installed and meets minimum version requirements."""
+
+        try:
+            installed_version = Version(version("wadas-runtime"))
+        except PackageNotFoundError:
+            WADASErrorMessage(
+                "wadas-runtime library missing on the system",
+                "Please install the 'wadas-runtime' library and restart WADAS!"
+            ).exec()
+            self.close()
+            sys.exit()
+
+        try:
+            response = requests.get(f"{WADAS_SERVER_URL}api/v1/runtime_libs/latest", timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            min_version = Version(data.get("min"))
+            last_version = Version(data.get("last"))
+        except (requests.RequestException, ValueError, InvalidVersion, TypeError) as e:
+            QMessageBox.information(
+                self,
+                "wadas-runtime library version check failed",
+                f"Unable to retrieve the latest version info of wadas-runtime library from the server.\n"
+                f"Please check your internet connection and try again."
+            )
+            return
+
+        if installed_version < min_version:
+            WADASErrorMessage(
+                "Incompatible wadas-runtime version",
+                f"The installed version of wadas-runtime library ({installed_version}) is too old.\n"
+                f"Please update to at latest version {last_version}."
+            ).exec()
+            self.close()
+            sys.exit()
+        elif installed_version < last_version:
+            QMessageBox.information(
+                self,
+                "Update available",
+                f"A newer version of wadas-runtime library is available ({last_version}).\n"
+                "Please update the library to get latest functionalities and security updates!"
+            )
