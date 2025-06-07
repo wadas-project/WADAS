@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QGroupBox,
     QScrollArea,
-    QVBoxLayout, QMessageBox,
+    QVBoxLayout, QMessageBox, QWidget,
 )
 
 from wadas.domain.ai_model_downloader import AiModelsDownloader, WADAS_SERVER_URL
@@ -132,68 +132,54 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
 
         # Build the detection models group
         if self.detection_models:
-            groupBox_detection = QGroupBox("Detection models", self)
-            vertical_layout_detection = QVBoxLayout(groupBox_detection)
+            groupbox_detection = self.create_model_groupbox(
+                "Detection models", self.detection_models)
+            layout.addWidget(groupbox_detection)
 
-            for model in self.detection_models:
-                model_name = model["name"]
-                is_local = model_name in self.local_det_models
-                is_default = model.get("is_default", False)
-
-                checkbox = QCheckBox(model_name, self)
-
-                if is_local:
-                    checkbox.setChecked(True)
-                    checkbox.setEnabled(False)
-                elif is_default:
-                    checkbox.setChecked(True)
-
-                if is_default:
-                    checkbox.setStyleSheet("font-weight: bold;")
-                    checkbox.setText(f"{model_name} (default)")
-
-                vertical_layout_detection.addWidget(checkbox)
-
-            groupBox_detection.setMinimumHeight(150)
-            scroll_area_detection = QScrollArea(self)
-            scroll_area_detection.setWidgetResizable(True)
-            scroll_area_detection.setWidget(groupBox_detection)
-            layout.addWidget(scroll_area_detection)
-
-        # Build the classification models group
+        # Add classification models group
         if self.classification_models:
-            groupBox_classification = QGroupBox("Classification models", self)
-            vertical_layout_classification = QVBoxLayout(groupBox_classification)
-
-            for model in self.classification_models:
-                model_name = model["name"]
-                is_local = model_name in self.local_class_models
-                is_default = model.get("is_default", False)
-
-                checkbox = QCheckBox(model_name, self)
-
-                if is_local:
-                    checkbox.setChecked(True)
-                    checkbox.setEnabled(False)
-                elif is_default:
-                    checkbox.setChecked(True)
-
-                if is_default:
-                    checkbox.setStyleSheet("font-weight: bold;")
-                    checkbox.setText(f"{model_name} (default)")
-
-                vertical_layout_classification.addWidget(checkbox)
-
-            groupBox_classification.setMinimumHeight(150)
-            scroll_area_classification = QScrollArea(self)
-            scroll_area_classification.setWidgetResizable(True)
-            scroll_area_classification.setWidget(groupBox_classification)
-            layout.addWidget(scroll_area_classification)
+            groupbox_classification = self.create_model_groupbox(
+                "Classification models", self.classification_models)
+            layout.addWidget(groupbox_classification)
 
         # Enable and show relevant UI elements
         self.ui.groupBox_available_models.setVisible(True)
         self.ui.progressBar.setVisible(True)
         self.ui.pushButton_download.setEnabled(True)
+
+    def create_model_groupbox(self, title, models):
+        groupbox = QGroupBox(title, self)
+        groupbox_layout = QVBoxLayout(groupbox)
+
+        scroll_area = QScrollArea(self)
+        scroll_area.setWidgetResizable(True)
+        checkbox_container = QWidget()
+        checkbox_layout = QVBoxLayout(checkbox_container)
+        for model in models:
+            model_name = model["name"]
+            is_local = model_name in self.local_det_models
+            is_default = model.get("is_default", False)
+
+            checkbox = QCheckBox(model_name, checkbox_container)
+
+            if is_local:
+                checkbox.setChecked(True)
+                checkbox.setEnabled(False)
+            elif is_default:
+                checkbox.setChecked(True)
+
+            if is_default:
+                checkbox.setStyleSheet("font-weight: bold;")
+                checkbox.setText(f"{model_name} (default)")
+
+            checkbox_layout.addWidget(checkbox)
+        groupbox.setMinimumHeight(150)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(checkbox_container)
+        groupbox_layout.addWidget(scroll_area)
+
+        return groupbox
+
 
     def on_select_model_version_checkbox_clicked(self):
         """Method to enable select model button basing on checkbox status"""
@@ -238,23 +224,35 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
             return classification_models, detection_models
 
         for i in range(layout.count()):
-            scroll_area = layout.itemAt(i).widget()
-            if isinstance(scroll_area, QScrollArea):
-                group_box = scroll_area.widget()
-                if isinstance(group_box, QGroupBox):
-                    group_title = group_box.title().lower()
-                    inner_layout = group_box.layout()
-                    if inner_layout is None:
-                        continue
+            groupbox = layout.itemAt(i).widget()
+            if not isinstance(groupbox, QGroupBox):
+                continue
 
-                    for j in range(inner_layout.count()):
-                        checkbox = inner_layout.itemAt(j).widget()
-                        if isinstance(checkbox, QCheckBox) and checkbox.isChecked():
-                            model_name = checkbox.text().replace(" (default)", "")
-                            if "classification" in group_title:
-                                classification_models.append(model_name)
-                            elif "detection" in group_title:
-                                detection_models.append(model_name)
+            group_title = groupbox.title().lower()
+            groupbox_layout = groupbox.layout()
+            if groupbox_layout is None or groupbox_layout.count() == 0:
+                continue
+
+            scroll_area = groupbox_layout.itemAt(0).widget()
+            if not isinstance(scroll_area, QScrollArea):
+                continue
+
+            checkbox_container = scroll_area.widget()
+            if checkbox_container is None:
+                continue
+
+            checkbox_layout = checkbox_container.layout()
+            if checkbox_layout is None:
+                continue
+
+            for j in range(checkbox_layout.count()):
+                checkbox = checkbox_layout.itemAt(j).widget()
+                if isinstance(checkbox, QCheckBox) and checkbox.isChecked():
+                    model_name = checkbox.text().replace(" (default)", "")
+                    if "classification" in group_title:
+                        classification_models.append(model_name)
+                    elif "detection" in group_title:
+                        detection_models.append(model_name)
 
         return detection_models, classification_models
 
@@ -266,9 +264,9 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
             self.detection_models, self.classification_models = self.get_default_models()
 
             # Remove items in download list already present locally
-            filtered_detection_models = [model for model in self.detection_models if model not in self.local_det_models]
+            filtered_detection_models = [model for model in self.detection_models if model['name'] not in self.local_det_models]
             filtered_classification_models = [model for model in self.classification_models if
-                                              model not in self.local_class_models]
+                                              model['name'] not in self.local_class_models]
         else:
             selected_detection_models, selected_classification_models = self.get_selected_models_by_type()
 
