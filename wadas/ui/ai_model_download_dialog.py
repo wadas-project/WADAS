@@ -25,8 +25,10 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QGroupBox,
+    QMessageBox,
     QScrollArea,
-    QVBoxLayout, QMessageBox, QWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
 from wadas.domain.ai_model_downloader import AiModelsDownloader, WADAS_SERVER_URL
@@ -228,23 +230,20 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
             if not isinstance(groupbox, QGroupBox):
                 continue
 
-            group_title = groupbox.title().lower()
-            groupbox_layout = groupbox.layout()
-            if groupbox_layout is None or groupbox_layout.count() == 0:
+            if (groupbox_layout := groupbox.layout()) is None or not groupbox_layout.count():
                 continue
 
             scroll_area = groupbox_layout.itemAt(0).widget()
             if not isinstance(scroll_area, QScrollArea):
                 continue
 
-            checkbox_container = scroll_area.widget()
-            if checkbox_container is None:
+            if (checkbox_container := scroll_area.widget()) is None:
                 continue
 
-            checkbox_layout = checkbox_container.layout()
-            if checkbox_layout is None:
+            if (checkbox_layout := checkbox_container.layout()) is None:
                 continue
 
+            group_title = groupbox.title().lower()
             for j in range(checkbox_layout.count()):
                 checkbox = checkbox_layout.itemAt(j).widget()
                 if isinstance(checkbox, QCheckBox) and checkbox.isChecked():

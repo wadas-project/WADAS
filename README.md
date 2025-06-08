@@ -15,7 +15,7 @@ See the project [Wiki](https://github.com/stefanodellosa-personal/WADAS/wiki) an
 
 ### AI models
 WADAS uses pre-compiled models available by submitting an access request through WADAS application. They are freely distributed as soon as Terms and Conditions of use are accepted.<br/>
-The reason why we ask users to apply for access is to verify that WADAS is used in accordance with therms and conditions. <br/>Data provided will not be shared with 3rd parties and used in accordance with General Data Protection Regulation (GDPR) — Regulation (EU) 2016/679.
+The reason why we ask users to apply for access is to verify that WADAS is used in accordance with terms and conditions. <br/>Data provided will not be shared with 3rd parties and used in accordance with General Data Protection Regulation (GDPR) — Regulation (EU) 2016/679.
 
 ### Contact us
 You can get in touch with us by leveragin the dedicated website form at https://www.wadas.it/en/contact-us/

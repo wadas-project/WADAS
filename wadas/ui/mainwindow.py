@@ -24,15 +24,15 @@ import os
 import sys
 from collections import deque
 from datetime import timedelta
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-
-import requests
 import uuid
 
+import requests
+
 import cv2
-from packaging.version import Version, InvalidVersion
+from packaging.version import InvalidVersion, Version
 import keyring
 
 from PySide6 import QtCore, QtGui
@@ -46,16 +46,16 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
-from wadas.domain.database import DataBase
 from wadas._version import __version__
 from wadas.domain.actuator import Actuator
 from wadas.domain.ai_model import AiModel
+from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.domain.animal_detection_mode import AnimalDetectionAndClassificationMode
 from wadas.domain.bear_detection_mode import BearDetectionMode
-from wadas.domain.custom_classification_mode import CustomClassificationMode
 from wadas.domain.camera import cameras, Camera
 from wadas.domain.configuration import load_configuration_from_file, save_configuration_to_file
+from wadas.domain.custom_classification_mode import CustomClassificationMode
+from wadas.domain.database import DataBase
 from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.ftps_server import initialize_fpts_logger
 from wadas.domain.notifier import Notifier
@@ -1102,8 +1102,8 @@ Are you sure you want to exit?""",
             QMessageBox.information(
                 self,
                 "wadas-runtime library version check failed",
-                f"Unable to retrieve the latest version info of wadas-runtime library from the server.\n"
-                f"Please check your internet connection and try again."
+                "Unable to retrieve the latest version info of wadas-runtime library from the server.\n"
+                     "Please check your internet connection and try again."
             )
             return
 
