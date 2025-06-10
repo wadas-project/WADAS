@@ -1,0 +1,1 @@
+export const baseUrl = 'https://' + window.location.hostname + ':443/';

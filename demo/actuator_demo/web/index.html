@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <title>WADAS</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .image-container {
+            width: 90%;
+            max-width: 600px;
+        }
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .warning-box {
+            width: 90%;
+            max-width: 600px;
+            background-color: #000;
+            text-align: center;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 32px;
+            border: 2px solid #808080;
+            letter-spacing: 2px;
+        }
+
+        .text-active {
+            color: #d84b20;
+        }
+
+        .text-inactive {
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="image-container">
+        <img src="roadsign.png">
+    </div>
+    <div id="div-sign" class="warning-box text-inactive">
+        ATTENZIONE ANIMALI IN CARREGGIATA
+    </div>
+</body>
+<script>
+    var count = 0;
+    var flag = false;
+    jQuery(window).on("load", function () {
+        var id = "EB3HB4EL990Q9PX7";
+        var server_url = "https://localhost:8443/api/v1/actuators/";
+
+        (function worker() {
+
+          console.log(count);
+          if (count == 12){
+            $("#div-sign").removeClass("text-active").addClass("text-inactive");
+            count = 0;
+            flag = False;
+          }
+
+          $.ajax({
+            type: "GET",
+            url: server_url.concat(id),
+            success: function(data) {
+              if(data.hasOwnProperty("display") && data.display == true){
+                count = 0;
+                flag = true;
+                $("#div-sign").removeClass("text-inactive").addClass("text-active");
+              }
+            },
+            complete: function() {
+              // repeat each 5secs
+              setTimeout(worker, 5000);
+            }
+          });
+          count += flag
+        })();
+    });
+</script>
+</html>

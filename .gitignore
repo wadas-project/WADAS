@@ -1,0 +1,91 @@
+# Python
+*.pyc
+__pycache__/
+venv/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# C++
+*.o
+*.out
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Compiled files
+*.class
+*.jar
+
+# IDE and editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*.bak
+*.tmp
+*.tmp.*
+*.log
+*.cache
+*.sublime-workspace
+
+# Model
+*.pt
+*.onnx
+*.bin
+*.xml
+
+# DB
+*.db
+*.sqlite
+
+# Dependency directories
+node_modules/
+bower_components/
+
+# Images directories
+classification_output/
+detection_output/
+url_imgs/
+test_model_media/
+debug/
+wadas_motion_detection/
+demo_output/
+log/
+video_frames/
+# Images
+#*.png
+#*.jpg
+#*.jpeg
+*.gif
+#*.ico
+*.svg
+
+
+cache
+
+## SSL Certificates
+*.pem
+
+## Config files
+*.yaml
+
+# Tests execution extra files to support local setups which have issues with PySide
+test/exectests.py
+
+# Config
+UI_settings.ini
+model/
+prometheus-3.3.0.linux-amd64/
+prometheus-3.4.0.linux-amd64/
+linux-npu-driver/
+*.debprometheus-*.tar.gz
+prometheus-*/prometheus
+prometheus-*/promtool
+grafana-enterprise_*.deb

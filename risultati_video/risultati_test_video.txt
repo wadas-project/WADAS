@@ -1,0 +1,1261 @@
+Detection_device: cpu,
+ detection_threshold: 0.3,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 85.110221 secondi
+Uso medio della CPU durante l'inferenza: 46.27%
+Memoria usata: 2.23 GB
+Consumo stimato: 0.404705 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 81.165281 secondi
+Uso medio della CPU durante l'inferenza: 45.83%
+Memoria usata: 2.37 GB
+Consumo stimato: 0.382302 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 87.572904 secondi
+Uso medio della CPU durante l'inferenza: 44.68%
+Memoria usata: 3.48 GB
+Consumo stimato: 0.402186 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 5
+Tempo di inferenza: 405.984822 secondi
+Uso medio della CPU durante l'inferenza: 45.91%
+Memoria usata: 9.31 GB
+Consumo stimato: 1.915763 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 5
+Tempo di inferenza: 0.845286 secondi
+Uso medio della CPU durante l'inferenza: 14.11%
+Memoria usata: 0.23 GB
+Consumo stimato: 0.001226 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 0.858271 secondi
+Uso medio della CPU durante l'inferenza: 34.88%
+Memoria usata: 0.23 GB
+Consumo stimato: 0.003077 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 0.884008 secondi
+Uso medio della CPU durante l'inferenza: 30.39%
+Memoria usata: 0.23 GB
+Consumo stimato: 0.002761 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 32.439183 secondi
+Uso medio della CPU durante l'inferenza: 31.21%
+Memoria usata: 0.33 GB
+Consumo stimato: 0.104047 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 33.791450 secondi
+Uso medio della CPU durante l'inferenza: 30.26%
+Memoria usata: 0.33 GB
+Consumo stimato: 0.105092 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 32.729254 secondi
+Uso medio della CPU durante l'inferenza: 30.93%
+Memoria usata: 0.33 GB
+Consumo stimato: 0.104060 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 28.966084 secondi
+Uso medio della CPU durante l'inferenza: 34.88%
+Memoria usata: 0.34 GB
+Consumo stimato: 0.103851 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: cpu,
+ detection_threshold: 0.5,
+ detection_model_version: MDV6-yolov10n,
+ classification_device: cpu,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 174.522922 secondi
+Uso medio della CPU durante l'inferenza: 42.67%
+Memoria usata: 2.07 GB
+Consumo stimato: 0.765349 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 48.121640 secondi
+Uso medio della CPU durante l'inferenza: 16.06%
+Memoria usata: 0.41 GB
+Consumo stimato: 0.079442 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 49.032282 secondi
+Uso medio della CPU durante l'inferenza: 16.28%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.082058 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 49.017604 secondi
+Uso medio della CPU durante l'inferenza: 16.38%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.082506 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 60.777655 secondi
+Uso medio della CPU durante l'inferenza: 15.90%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.099340 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 61.548099 secondi
+Uso medio della CPU durante l'inferenza: 15.89%
+Memoria usata: 0.40 GB
+Consumo stimato: 0.100493 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 43.716988 secondi
+Uso medio della CPU durante l'inferenza: 16.81%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.075536 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 44.594273 secondi
+Uso medio della CPU durante l'inferenza: 16.55%
+Memoria usata: 0.32 GB
+Consumo stimato: 0.075863 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 49.542155 secondi
+Uso medio della CPU durante l'inferenza: 16.07%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.081845 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 50.580339 secondi
+Uso medio della CPU durante l'inferenza: 15.96%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.082977 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 58.437837 secondi
+Uso medio della CPU durante l'inferenza: 16.11%
+Memoria usata: 0.32 GB
+Consumo stimato: 0.096777 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 172.276431 secondi
+Uso medio della CPU durante l'inferenza: 20.99%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.371634 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 161.914076 secondi
+Uso medio della CPU durante l'inferenza: 21.61%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.359552 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 151.036860 secondi
+Uso medio della CPU durante l'inferenza: 22.07%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.342544 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 157.261817 secondi
+Uso medio della CPU durante l'inferenza: 21.94%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.354691 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 154.840446 secondi
+Uso medio della CPU durante l'inferenza: 21.83%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.347333 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 152.978705 secondi
+Uso medio della CPU durante l'inferenza: 21.75%
+Memoria usata: 0.28 GB
+Consumo stimato: 0.341961 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 151.477792 secondi
+Uso medio della CPU durante l'inferenza: 21.97%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.342004 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 149.858165 secondi
+Uso medio della CPU durante l'inferenza: 22.15%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.341204 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 193.413329 secondi
+Uso medio della CPU durante l'inferenza: 17.77%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.353178 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 249.292202 secondi
+Uso medio della CPU durante l'inferenza: 12.77%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.327122 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 153.977812 secondi
+Uso medio della CPU durante l'inferenza: 21.87%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.346172 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 154.659854 secondi
+Uso medio della CPU durante l'inferenza: 21.37%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.339612 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 155.573156 secondi
+Uso medio della CPU durante l'inferenza: 21.52%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.344128 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 72.774991 secondi
+Uso medio della CPU durante l'inferenza: 10.60%
+Memoria usata: 0.61 GB
+Consumo stimato: 0.079264 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 99.211654 secondi
+Uso medio della CPU durante l'inferenza: 37.19%
+Memoria usata: 2.11 GB
+Consumo stimato: 0.379174 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 44.581988 secondi
+Uso medio della CPU durante l'inferenza: 16.51%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.075637 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 42.318286 secondi
+Uso medio della CPU durante l'inferenza: 16.68%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.072527 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 42.142293 secondi
+Uso medio della CPU durante l'inferenza: 16.56%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.071706 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 38.311848 secondi
+Uso medio della CPU durante l'inferenza: 15.84%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.062371 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 36.267727 secondi
+Uso medio della CPU durante l'inferenza: 16.18%
+Memoria usata: 0.32 GB
+Consumo stimato: 0.060319 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 44.561299 secondi
+Uso medio della CPU durante l'inferenza: 15.84%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.072562 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 62.382551 secondi
+Uso medio della CPU durante l'inferenza: 14.60%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.093625 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 77.239788 secondi
+Uso medio della CPU durante l'inferenza: 14.13%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.112134 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 49.370990 secondi
+Uso medio della CPU durante l'inferenza: 15.24%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.077331 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 56.575247 secondi
+Uso medio della CPU durante l'inferenza: 14.87%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.086440 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 60.504461 secondi
+Uso medio della CPU durante l'inferenza: 14.71%
+Memoria usata: 0.29 GB
+Consumo stimato: 0.091490 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 55.257822 secondi
+Uso medio della CPU durante l'inferenza: 14.84%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.084287 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 55.781301 secondi
+Uso medio della CPU durante l'inferenza: 14.92%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.085530 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 53.532536 secondi
+Uso medio della CPU durante l'inferenza: 14.94%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.082205 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 37.294610 secondi
+Uso medio della CPU durante l'inferenza: 16.11%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.061756 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 49.320723 secondi
+Uso medio della CPU durante l'inferenza: 15.19%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.076976 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 71.818338 secondi
+Uso medio della CPU durante l'inferenza: 14.42%
+Memoria usata: 0.31 GB
+Consumo stimato: 0.106472 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: CPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 670.760733 secondi
+Uso medio della CPU durante l'inferenza: 47.55%
+Memoria usata: 3.29 GB
+Consumo stimato: 3.277899 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: CPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 639.696261 secondi
+Uso medio della CPU durante l'inferenza: 48.71%
+Memoria usata: 3.28 GB
+Consumo stimato: 3.202679 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: CPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 638.880959 secondi
+Uso medio della CPU durante l'inferenza: 48.66%
+Memoria usata: 3.29 GB
+Consumo stimato: 3.195034 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: CPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 655.153046 secondi
+Uso medio della CPU durante l'inferenza: 48.32%
+Memoria usata: 3.29 GB
+Consumo stimato: 3.253742 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: CPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 731.925399 secondi
+Uso medio della CPU durante l'inferenza: 46.79%
+Memoria usata: 3.29 GB
+Consumo stimato: 3.520024 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: CPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 2137.798994 secondi
+Uso medio della CPU durante l'inferenza: 47.96%
+Memoria usata: 3.38 GB
+Consumo stimato: 10.538737 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 346.211591 secondi
+Uso medio della CPU durante l'inferenza: 15.24%
+Memoria usata: 0.38 GB
+Consumo stimato: 0.542348 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 356.824696 secondi
+Uso medio della CPU durante l'inferenza: 15.08%
+Memoria usata: 0.27 GB
+Consumo stimato: 0.553056 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 1270.831109 secondi
+Uso medio della CPU durante l'inferenza: 32.81%
+Memoria usata: 2.50 GB
+Consumo stimato: 4.285911 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.1,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.1,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 2063.103456 secondi
+Uso medio della CPU durante l'inferenza: 36.14%
+Memoria usata: 2.58 GB
+Consumo stimato: 7.663199 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.6,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.6,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 1348.211475 secondi
+Uso medio della CPU durante l'inferenza: 31.86%
+Memoria usata: 2.45 GB
+Consumo stimato: 4.414238 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.9,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.9,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 840.086255 secondi
+Uso medio della CPU durante l'inferenza: 22.12%
+Memoria usata: 2.37 GB
+Consumo stimato: 1.910117 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV6b-yolov9c,
+ classification_device: CPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 534.985913 secondi
+Uso medio della CPU durante l'inferenza: 40.62%
+Memoria usata: 2.35 GB
+Consumo stimato: 2.233469 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV6b-yolov9c,
+ classification_device: CPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 525.285262 secondi
+Uso medio della CPU durante l'inferenza: 41.15%
+Memoria usata: 2.35 GB
+Consumo stimato: 2.221855 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.9,
+ detection_model_version: MDV6b-yolov9c,
+ classification_device: CPU,
+ classification_threshold: 0.9,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 142.257328 secondi
+Uso medio della CPU durante l'inferenza: 24.03%
+Memoria usata: 2.27 GB
+Consumo stimato: 0.351272 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.9,
+ detection_model_version: MDV6b-yolov9c,
+ classification_device: CPU,
+ classification_threshold: 0.9,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 15
+Tempo di inferenza: 1653.397584 secondi
+Uso medio della CPU durante l'inferenza: 18.75%
+Memoria usata: 2.28 GB
+Consumo stimato: 3.186784 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 684.684383 secondi
+Uso medio della CPU durante l'inferenza: 1.97%
+Memoria usata: 0.09 GB
+Consumo stimato: 0.138760 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 720.240225 secondi
+Uso medio della CPU durante l'inferenza: 1.11%
+Memoria usata: 0.09 GB
+Consumo stimato: 0.082250 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 547.498673 secondi
+Uso medio della CPU durante l'inferenza: 1.93%
+Memoria usata: 0.09 GB
+Consumo stimato: 0.108514 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 389.693471 secondi
+Uso medio della CPU durante l'inferenza: 14.93%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.598047 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.3,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.3,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 371.566952 secondi
+Uso medio della CPU durante l'inferenza: 15.12%
+Memoria usata: 0.30 GB
+Consumo stimato: 0.577408 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 99.354282 secondi
+Uso medio della CPU durante l'inferenza: 21.52%
+Memoria usata: 0.26 GB
+Consumo stimato: 0.219752 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 261.199186 secondi
+Uso medio della CPU durante l'inferenza: 22.16%
+Memoria usata: 0.28 GB
+Consumo stimato: 0.594905 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 108.996757 secondi
+Uso medio della CPU durante l'inferenza: 13.58%
+Memoria usata: 0.60 GB
+Consumo stimato: 0.152116 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 99.695219 secondi
+Uso medio della CPU durante l'inferenza: 14.30%
+Memoria usata: 0.60 GB
+Consumo stimato: 0.146523 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 99.333538 secondi
+Uso medio della CPU durante l'inferenza: 14.36%
+Memoria usata: 0.60 GB
+Consumo stimato: 0.146650 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 99.422368 secondi
+Uso medio della CPU durante l'inferenza: 14.43%
+Memoria usata: 0.60 GB
+Consumo stimato: 0.147461 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 110.714340 secondi
+Uso medio della CPU durante l'inferenza: 13.65%
+Memoria usata: 0.60 GB
+Consumo stimato: 0.155304 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: False,
+  video_FPS: 1
+Tempo di inferenza: 99.963997 secondi
+Uso medio della CPU durante l'inferenza: 14.42%
+Memoria usata: 0.60 GB
+Consumo stimato: 0.148151 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: GPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 160.259770 secondi
+Uso medio della CPU durante l'inferenza: 4.03%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.066455 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 159.807917 secondi
+Uso medio della CPU durante l'inferenza: 4.02%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.065961 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 166.646707 secondi
+Uso medio della CPU durante l'inferenza: 3.86%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.066150 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: NPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 160.076828 secondi
+Uso medio della CPU durante l'inferenza: 4.04%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.066433 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 174.170054 secondi
+Uso medio della CPU durante l'inferenza: 3.70%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.066158 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 372.570649 secondi
+Uso medio della CPU durante l'inferenza: 1.76%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.067479 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 972.300834 secondi
+Uso medio della CPU durante l'inferenza: 0.87%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.087020 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 1045.377271 secondi
+Uso medio della CPU durante l'inferenza: 0.82%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.087914 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 110.528378 secondi
+Uso medio della CPU durante l'inferenza: 1.66%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.018868 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 877.678907 secondi
+Uso medio della CPU durante l'inferenza: 0.30%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.027013 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 889.635460 secondi
+Uso medio della CPU durante l'inferenza: 0.32%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.028888 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 63.509759 secondi
+Uso medio della CPU durante l'inferenza: 2.25%
+Memoria usata: 0.09 GB
+Consumo stimato: 0.014687 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 41.229570 secondi
+Uso medio della CPU durante l'inferenza: 2.06%
+Memoria usata: 0.08 GB
+Consumo stimato: 0.008740 Wh
+---------------------------..--------------------------------------..----------------------------
+Detection_device: GPU,
+ detection_threshold: 0.5,
+ detection_model_version: MDV5-yolov5,
+ classification_device: CPU,
+ classification_threshold: 0.5,
+ classification_model_version: DFv1.2,
+ distributed_inference: True,
+  video_FPS: 1
+Tempo di inferenza: 105.183924 secondi
+Uso medio della CPU durante l'inferenza: 1.35%
+Memoria usata: 0.07 GB
+Consumo stimato: 0.014610 Wh
+---------------------------..--------------------------------------..----------------------------
