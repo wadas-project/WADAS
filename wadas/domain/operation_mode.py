@@ -66,6 +66,7 @@ class OperationMode(QObject):
     run_finished = Signal()
     run_progress = Signal(int)
     play_video = Signal(str)
+    error_occurred = Signal(str)
 
     flag_stop_update_actuators_thread = False
 
@@ -86,9 +87,14 @@ class OperationMode(QObject):
 
         if self.ai_model is None:
             logger.info("initializing model...")
-            self.ai_model = AiModel()
+            try:
+                self.ai_model = AiModel()
+            except Exception as e:
+                self.error_occurred.emit(str(e))
+                return False
         else:
             logger.debug("Model already initialized, skipping initialization.")
+        return True
 
     def _initialize_cameras(self):
         """Method to initialize and run the FTP Server
@@ -287,10 +293,12 @@ class OperationMode(QObject):
     def _initialize_processes(self):
         """Method to initialize the processes needed for the detection"""
 
-        self.init_model()
-        self.check_for_termination_requests()
-        self._initialize_cameras()
-        self.start_actuator_server()
+        if self.init_model():
+            self.check_for_termination_requests()
+            self._initialize_cameras()
+            self.start_actuator_server()
+        else:
+            self.execution_completed()
 
     def send_notification(self, detection_event: DetectionEvent, message):
         """Method to send notification(s) trough Notifier class (and subclasses)"""

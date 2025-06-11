@@ -201,6 +201,7 @@ class MainWindow(QMainWindow):
         OperationMode.cur_operation_mode.run_finished.connect(self.on_run_completion)
         OperationMode.cur_operation_mode.play_video.connect(self.play_video)
         OperationMode.cur_operation_mode.play_video.connect(self.update_info_widget)
+        OperationMode.cur_operation_mode.error_occurred.connect(self.show_error)
 
         # Connect Signal to update actuator list in widget.
         OperationMode.cur_operation_mode.update_actuator_status.connect(self.update_en_actuator_list)
@@ -263,6 +264,11 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             logger.error("Failed to set image: %s", e)
+
+    def show_error(self, error: str):
+        """Method to show error messages generated during processing"""
+
+        WADASErrorMessage("Error", error).exec()
 
     def get_video_frames(self, video_path):
         """Extract frames from a video file as QPixmaps and return them with the video's FPS."""
