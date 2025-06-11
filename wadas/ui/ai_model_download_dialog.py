@@ -258,6 +258,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
     def download_models(self):
         """Method to trigger the model download"""
 
+        self.ui.checkBox_select_versions.setEnabled(False)
         if not self.ui.checkBox_select_versions.isChecked():
             # Fetch default versions if no custom selection is checked
             self.detection_models, self.classification_models = self.get_default_models()
@@ -316,6 +317,7 @@ class AiModelDownloadDialog(QDialog, Ui_AiModelDownloadDialog):
         WADASErrorMessage("Error", f"An error occurred: {error_message}").exec()
         self.ui.pushButton_download.setEnabled(True)
         self.ui.progressBar.setEnabled(False)
+        self.ui.checkBox_select_versions.setEnabled(True)
 
     def on_download_succeeded(self):
         """Handle successful download"""
