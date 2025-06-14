@@ -189,6 +189,7 @@ class TestModelMode(OperationMode):
         if not self.tunnel_mode:
             if not self.init_model():
                 self.execution_completed()
+                return
 
         self.check_for_termination_requests()
         self.run_progress.emit(10)
