@@ -569,6 +569,14 @@ class MainWindow(QMainWindow):
             if cur_notifier and cur_notifier.enabled) or "None"
         self.ui.label_notification_method.setText(notifier_lable_text)
 
+        tunnel_exist = bool(Tunnel.tunnels)
+        self.ui.label_enabled_tunnels.setVisible(tunnel_exist)
+        self.ui.listWidget_en_tunnels.setVisible(tunnel_exist)
+        if tunnel_exist:
+            self.ui.listWidget_en_tunnels.clear()
+            for tunnel in Tunnel.tunnels:
+                self.ui.listWidget_en_tunnels.addItem(tunnel.id)
+
     def test_model_mode_input_dialog(self):
         """Method to run dialog for insertion of a URL to fetch image from."""
 

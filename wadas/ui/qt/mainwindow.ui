@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1150</width>
-    <height>810</height>
+    <width>1142</width>
+    <height>791</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -129,6 +129,21 @@
          <string/>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_enabled_tunnels">
+        <property name="font">
+         <font>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Enabled tunnel(s):</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="listWidget_en_tunnels"/>
       </item>
       <item>
        <widget class="QLabel" name="label">
@@ -290,7 +305,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1150</width>
+     <width>1142</width>
      <height>33</height>
     </rect>
    </property>
