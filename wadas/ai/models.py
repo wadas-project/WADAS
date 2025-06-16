@@ -211,7 +211,7 @@ class OVMegaDetectorV6(pw_detection.MegaDetectorV6, WadasAiModel, ABC):
         self.device = "cpu"  # torch device, keep to CPU when using with OpenVINO
         self.model_name = model_name
         self.predictor.setup_model(
-            Path("detection", f"{self.model_name}_openvino_model"), verbose=False
+            self, Path("detection", f"{self.model_name}_openvino_model"), verbose=False
         )
 
         self.predictor.args.imgsz = self.IMAGE_SIZE

@@ -8,6 +8,7 @@ from PIL import Image
 from ultralytics import solutions
 
 from wadas.ai.ov_predictor import __model_folder__, load_ov_model
+from wadas.domain.ai_model import AiModel
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class ObjectCounter(solutions.ObjectCounter):
         model: str,
         region: list[tuple[int, int]] | TrackingRegion,
         classes: list[int] = None,
-        device: str = "auto",
+        device: str = AiModel.detection_device if AiModel.detection_device != "auto" else "cpu",
         batch_size: int = 1,
         iou_threshold: float = 0.5,
         confidence_threshold: float = 0.3,
