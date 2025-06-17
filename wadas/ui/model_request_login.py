@@ -148,12 +148,17 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
             org_code = org_code_key.password
 
         # Get node ID
-        try:
-            node_id  = str(self.wadas_model_server.register_node(org_code=org_code))
-            logger.debug("Node ID: %s", node_id)
-        except Exception as e:
-            WADASErrorMessage("User registration error", str(e)).exec()
-            return
+        node_id_key = keyring.get_credential("WADAS_node_id", "")
+        if not node_id_key or not node_id_key.password or new_credential:
+            try:
+                node_id = str(self.wadas_model_server.register_node(org_code=org_code))
+                logger.debug("Node ID: %s", node_id)
+                keyring.set_password("WADAS_node_id", self.ui.lineEdit_email.text().strip(), node_id)
+            except Exception as e:
+                WADASErrorMessage("User registration error", str(e)).exec()
+                return
+        else:
+            node_id = node_id_key.password
 
         self.accept()
         download_dialog = AiModelDownloadDialog(node_id)

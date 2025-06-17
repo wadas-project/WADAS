@@ -887,13 +887,22 @@ class MainWindow(QMainWindow):
 
     def configure_telegram(self):
         """Method to trigger Telegram configuration dialog"""
+        org_code_key = keyring.get_credential("WADAS_org_code", "")
+        node_id_key = keyring.get_credential("WADAS_node_id", "")
 
-        configure_telegram_dlg = DialogConfigureTelegram()
-        if configure_telegram_dlg.exec():
-            logger.info("Telegram notification configured.")
-            self.setWindowModified(True)
-            self.update_toolbar_status()
-            self.update_info_widget()
+        if not org_code_key or not node_id_key:
+            QMessageBox.warning(
+                self,
+                "You need to register your WADAS client",
+                "To use Telegram notifications feature you need to register your WADAS client using the Ai button -> Download Ai Models."
+            )
+        else:
+            configure_telegram_dlg = DialogConfigureTelegram(org_code_key.password, node_id_key.password)
+            if configure_telegram_dlg.exec():
+                logger.info("Telegram notification configured.")
+                self.setWindowModified(True)
+                self.update_toolbar_status()
+                self.update_info_widget()
 
     def configure_database(self):
         """Method to trigger DB configuration dialog"""

@@ -68,17 +68,23 @@ class AddReceiverWorker(QThread):
 class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
     """Class to insert Telegram configuration data to enable WADAS for Telegram notifications."""
 
-    def __init__(self):
+    def __init__(self, org_code, node_id):
         super(DialogConfigureTelegram, self).__init__()
         self.ui = Ui_DialogConfigureTelegram()
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon(os.path.join(module_dir_path, "..", "img", "mainwindow_icon.jpg")))
-        self.ui.pushButton_test_message.setEnabled(False)
+        self.ui.pushButton_test_message.setEnabled(True)
         self.ui.pushButton_remove_receiver.setEnabled(False)
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
         self.ui.label_errorMessage.setStyleSheet("color: red")
 
+        if not Notifier.notifiers[Notifier.NotifierTypes.TELEGRAM.value]:
+            Notifier.notifiers[Notifier.NotifierTypes.TELEGRAM.value] = TelegramNotifier(enabled=False,
+                                                                                         allow_images=False)
         self.telegram_notifier = Notifier.notifiers[Notifier.NotifierTypes.TELEGRAM.value]
+        self.telegram_notifier.set_org_code(org_code)
+        self.telegram_notifier.set_node_id(node_id)
+
         self.ui_receiver_idx = 0
         self.removed_cameras = []
         self.removed_rows = set()
@@ -105,7 +111,6 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
         self.ui.pushButton_test_message.clicked.connect(self.send_telegram_message)
         self.ui.pushButton_add_receiver.clicked.connect(self.add_receiver)
         self.ui.pushButton_remove_receiver.clicked.connect(self.remove_receiver)
-        self.ui.lineEdit_org_code.textChanged.connect(self.validate_org_code)
         self.ui.tabWidget.currentChanged.connect(self.check_existing_receivers)
 
         self.initialize_form()
@@ -131,7 +136,6 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
 
         if self.telegram_notifier:
             self.ui.checkBox_enable_telegram_notifications.setChecked(self.telegram_notifier.enabled)
-            self.ui.lineEdit_org_code.setText(self.telegram_notifier.org_code)
             self.ui.checkBox_enable_images.setChecked(self.telegram_notifier.allow_images)
 
         else:
@@ -224,32 +228,33 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
 
         self.check_existing_receivers(1)
 
-    def validate_org_code(self):
-        """Method to validate form data."""
-
-        # if org_code is not changed
-        if self.telegram_notifier and self.telegram_notifier.org_code == self.ui.lineEdit_org_code.text():
-            self.ui.label_errorMessage.setText("")
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
-            self.ui.pushButton_test_message.setEnabled(True)
-            return
-
-        if self.ui.lineEdit_org_code.text():
-            if is_valid_uuid4(self.ui.lineEdit_org_code.text()):
-                self.ui.label_errorMessage.setText("")
-                self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
-                self.ui.pushButton_test_message.setEnabled(True)
-
-                # if the org_code is valid, TelegramNotifier is instantiated
-                self.telegram_notifier = TelegramNotifier(self.ui.lineEdit_org_code.text())
-            else:
-                self.ui.label_errorMessage.setText("Insert a valid organization code")
-        else:
-            if not self.ui.lineEdit_org_code.text():
-                self.ui.label_errorMessage.setText("Organization code cannot be empty.")
-
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
-            self.ui.pushButton_test_message.setEnabled(False)
+    #
+    # def validate_org_code(self):
+    #     """Method to validate form data."""
+    #
+    #     # if org_code is not changed
+    #     if self.telegram_notifier and self.telegram_notifier.org_code == self.ui.lineEdit_org_code.text():
+    #         self.ui.label_errorMessage.setText("")
+    #         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
+    #         self.ui.pushButton_test_message.setEnabled(True)
+    #         return
+    #
+    #     if self.ui.lineEdit_org_code.text():
+    #         if is_valid_uuid4(self.ui.lineEdit_org_code.text()):
+    #             self.ui.label_errorMessage.setText("")
+    #             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
+    #             self.ui.pushButton_test_message.setEnabled(True)
+    #
+    #             # if the org_code is valid, TelegramNotifier is instantiated
+    #             self.telegram_notifier = TelegramNotifier(self.ui.lineEdit_org_code.text())
+    #         else:
+    #             self.ui.label_errorMessage.setText("Insert a valid organization code")
+    #     else:
+    #         if not self.ui.lineEdit_org_code.text():
+    #             self.ui.label_errorMessage.setText("Organization code cannot be empty.")
+    #
+    #         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+    #         self.ui.pushButton_test_message.setEnabled(False)
 
     def update_receiver_name(self):
         """Method to keep tracks of the names chosen for the recipients."""
@@ -258,7 +263,6 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
             receiver_name_ln = self.findChild(QLineEdit, f"lineEdit_name_{i}")
 
             if receiver_id_ln:
-
                 t: TelegramRecipient = self.telegram_notifier.get_recipient_by_id(receiver_id_ln.text())
                 t.name = receiver_name_ln.text() if receiver_name_ln.text() else None
 

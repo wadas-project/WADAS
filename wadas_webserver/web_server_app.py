@@ -27,7 +27,7 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from jose import JWTError, jwt
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse, Response
+from starlette.responses import FileResponse, Response, StreamingResponse
 
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
@@ -209,6 +209,49 @@ async def download_image(
         raise HTTPException(status_code=404, detail="Image not found")
 
     return FileResponse(image_path, media_type=media_type, filename=f"{event_id}{ext}")
+
+
+@app.get("/api/v1/detections/test_video")
+async def test_stream_video(request: Request):
+    """Method used to download the image (detection or classification)
+    associated to the detection event
+    """
+    # verify_token(x_access_token)
+    video_path = Path(ServerConfig.WADAS_ROOT_DIR) / "video_test" / "video.mp4"
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    file_size = video_path.stat().st_size
+    range_header = request.headers.get("range")
+
+    def iterfile(start=0):
+        with open(video_path, "rb") as f:
+            f.seek(start)
+            while chunk := f.read(1024 * 1024):  # 1MB chunk
+                yield chunk
+
+    if range_header:
+        range_val = range_header.replace("bytes=", "")
+        start, end = range_val.split("-")
+        start = int(start)
+        end = int(end) if end else file_size - 1
+        content_length = end - start + 1
+
+        return StreamingResponse(
+            iterfile(start),
+            status_code=206,
+            media_type="video/mp4",
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(content_length),
+            },
+        )
+    else:
+        return StreamingResponse(
+            iterfile(), media_type="video/mp4", headers={"Content-Length": str(file_size)}
+        )
 
 
 @app.get("/api/v1/detections/export")
