@@ -228,34 +228,6 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
 
         self.check_existing_receivers(1)
 
-    #
-    # def validate_org_code(self):
-    #     """Method to validate form data."""
-    #
-    #     # if org_code is not changed
-    #     if self.telegram_notifier and self.telegram_notifier.org_code == self.ui.lineEdit_org_code.text():
-    #         self.ui.label_errorMessage.setText("")
-    #         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
-    #         self.ui.pushButton_test_message.setEnabled(True)
-    #         return
-    #
-    #     if self.ui.lineEdit_org_code.text():
-    #         if is_valid_uuid4(self.ui.lineEdit_org_code.text()):
-    #             self.ui.label_errorMessage.setText("")
-    #             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
-    #             self.ui.pushButton_test_message.setEnabled(True)
-    #
-    #             # if the org_code is valid, TelegramNotifier is instantiated
-    #             self.telegram_notifier = TelegramNotifier(self.ui.lineEdit_org_code.text())
-    #         else:
-    #             self.ui.label_errorMessage.setText("Insert a valid organization code")
-    #     else:
-    #         if not self.ui.lineEdit_org_code.text():
-    #             self.ui.label_errorMessage.setText("Organization code cannot be empty.")
-    #
-    #         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
-    #         self.ui.pushButton_test_message.setEnabled(False)
-
     def update_receiver_name(self):
         """Method to keep tracks of the names chosen for the recipients."""
         for i in range(0, self.ui_receiver_idx):
