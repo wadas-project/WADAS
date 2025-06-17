@@ -66,6 +66,8 @@ class OperationMode(QObject):
     run_finished = Signal()
     run_progress = Signal(int)
     play_video = Signal(str)
+    error_occurred = Signal(str)
+    update_tunnel_counter = Signal()
 
     flag_stop_update_actuators_thread = False
 

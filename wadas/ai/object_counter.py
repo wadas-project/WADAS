@@ -47,7 +47,7 @@ class ObjectCounter(solutions.ObjectCounter):
         model: str,
         region: list[tuple[int, int]] | TrackingRegion,
         classes: list[int] = None,
-        device: str = "auto",
+        device: str = "CPU",
         batch_size: int = 1,
         iou_threshold: float = 0.5,
         confidence_threshold: float = 0.3,
@@ -61,7 +61,7 @@ class ObjectCounter(solutions.ObjectCounter):
                                             region of interest. It is possible to define a line
                                             a polygon or an enum with predefined directions
             classes (list[int]): List of class indices to be counted.
-            device (str, optional): Device to run the model on. Defaults to "auto".
+            device (str, optional): Device to run the model on. Defaults to "CPU".
             batch_size (int, optional): Number of images to process in a batch. Defaults to 1.
             **kwargs: Additional keyword arguments.
         """
@@ -121,6 +121,14 @@ class ObjectCounter(solutions.ObjectCounter):
 
         return frames
 
+    def init_region(self, frames):
+        """Method to initialize region"""
+
+        # If region is not initialized, set it to the first frame size
+        if not self.region_initialized:
+            if isinstance(self.region, TrackingRegion):
+                self.region = self.region.to_region(frames[0].shape[1], frames[0].shape[0])
+
     def process_video_demo(self, video_path, save_detection_image: bool):
         """Method to process video in tunnel mode updating animals counter with frames feedback
         to UI for Test Model Mode."""
@@ -128,11 +136,7 @@ class ObjectCounter(solutions.ObjectCounter):
         logger.info("Running tunnel mode detection on video %s ...", video_path)
 
         frames = self.get_video_frames(video_path)
-
-        # If region is not initialized, set it to the first frame size
-        if not self.region_initialized:
-            if isinstance(self.region, TrackingRegion):
-                self.region = self.region.to_region(frames[0].shape[1], frames[0].shape[0])
+        self.init_region(frames)
 
         for i, frame in enumerate(frames, 1):
             results = self(frame)
@@ -152,3 +156,88 @@ class ObjectCounter(solutions.ObjectCounter):
         # It will track the objects and count them at the end of the video
         # Result is in the form of a dictionary of classwise counts
         return results.classwise_count
+
+    def process_tunnel_mode_video(self, video_path, output_dir):
+        """
+        Processes a video in tunnel mode:
+        - If at least one detection from target classes occurs, saves ALL frames (annotated)
+         to an MP4
+         video.
+        - Returns the in/out object counts and the path to the output video (or None if no
+         detection).
+
+        Args:
+            video_path (str): Path to the input video.
+            output_dir (str): Path to the output video.
+        Returns:
+            dict: {
+                'in_count': int,
+                'out_count': int,
+                'video_path': str | None
+            }
+        """
+
+        logger.info("Running tunnel mode detection on video %s ...", video_path)
+
+        # Load all frames from the video
+        frames = self.get_video_frames(video_path)
+        if not frames:
+            logger.error("No frames loaded. Exiting processing.")
+            return {"in_count": 0, "out_count": 0, "video_path": None}
+
+        # Initialize region of interest if needed
+        self.init_region(frames)
+
+        # Get FPS and frame size
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_size = (frames[0].shape[1], frames[0].shape[0])
+        cap.release()
+
+        annotated_frames = []
+        detection_found = False
+
+        # Target class names we want to detect (e.g. only animals)
+        target_class_names = set("animal")
+
+        for frame in frames:
+            results = self(frame)  # Run detection & tracking
+
+            # Check if any detection belongs to the target class names
+            if results and hasattr(results, "detections"):
+                for det in results.detections:
+                    if hasattr(det, "class_id"):
+                        class_name = self.CLASS_NAMES.get(det.class_id)
+                        if class_name in target_class_names:
+                            detection_found = True
+                            break  # one detection is enough
+
+            annotated_frames.append(frame)
+
+        # Save video only if at least one relevant detection was found
+        if detection_found:
+            # Build output path dynamically based on input filename
+            input_basename = os.path.basename(video_path)
+            filename_wo_ext = os.path.splitext(input_basename)[0]
+            output_path = os.path.join(output_dir, f"{filename_wo_ext}.mp4")
+
+            logger.info("Relevant detections found. Saving annotated video to %s", output_path)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            out = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
+
+            for annotated_frame in annotated_frames:
+                out.write(annotated_frame)
+
+            out.release()
+            video_result_path = output_path
+        else:
+            logger.info("No relevant detections found. Video will not be saved.")
+            video_result_path = None
+
+        return {
+            "in_count": self.in_count,
+            "out_count": self.out_count,
+            "video_path": video_result_path,
+        }

@@ -575,7 +575,7 @@ class MainWindow(QMainWindow):
         if tunnel_exist:
             self.ui.listWidget_en_tunnels.clear()
             for tunnel in Tunnel.tunnels:
-                self.ui.listWidget_en_tunnels.addItem(tunnel.id)
+                self.ui.listWidget_en_tunnels.addItem(f"{tunnel.id} ({tunnel.counter})")
 
     def test_model_mode_input_dialog(self):
         """Method to run dialog for insertion of a URL to fetch image from."""
@@ -714,6 +714,7 @@ class MainWindow(QMainWindow):
         """Method to configure tunnel list"""
 
         if (DialogConfigureTunnels()).exec():
+            self.update_info_widget()
             logger.info("Tunnel configured.")
 
     def check_models(self):
