@@ -160,15 +160,14 @@ class ObjectCounter(solutions.ObjectCounter):
     def process_tunnel_mode_video(self, video_path, output_dir):
         """
         Processes a video in tunnel mode:
-        - If at least one detection from target classes occurs, saves ALL frames (annotated)
-         to an MP4
-         video.
-        - Returns the in/out object counts and the path to the output video (or None if no
-         detection).
+        - If at least one detection of 'animal' occurs, saves all annotated frames to an MP4 video.
+        - Returns the total in/out object counts and the output video path
+        (or None if no detection).
 
         Args:
             video_path (str): Path to the input video.
-            output_dir (str): Path to the output video.
+            output_dir (str): Directory where to save the output video.
+
         Returns:
             dict: {
                 'in_count': int,
@@ -176,7 +175,6 @@ class ObjectCounter(solutions.ObjectCounter):
                 'video_path': str | None
             }
         """
-
         logger.info("Running tunnel mode detection on video %s ...", video_path)
 
         # Load all frames from the video
@@ -185,10 +183,10 @@ class ObjectCounter(solutions.ObjectCounter):
             logger.error("No frames loaded. Exiting processing.")
             return {"in_count": 0, "out_count": 0, "video_path": None}
 
-        # Initialize region of interest if needed
+        # Initialize region of interest
         self.init_region(frames)
 
-        # Get FPS and frame size
+        # Get video FPS and frame size
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_size = (frames[0].shape[1], frames[0].shape[0])
@@ -197,32 +195,26 @@ class ObjectCounter(solutions.ObjectCounter):
         annotated_frames = []
         detection_found = False
 
-        # Target class names we want to detect (e.g. only animals)
-        target_class_names = set("animal")
-
         for frame in frames:
-            results = self(frame)  # Run detection & tracking
+            results = self(frame)  # Run detection and tracking
 
-            # Check if any detection belongs to the target class names
-            if results and hasattr(results, "detections"):
-                for det in results.detections:
-                    if hasattr(det, "class_id"):
-                        class_name = self.CLASS_NAMES.get(det.class_id)
-                        if class_name in target_class_names:
-                            detection_found = True
-                            break  # one detection is enough
+            # Get animal class counts (IN and OUT)
+            animal_counts = results.classwise_count.get("animal", {})
+            total_animals = animal_counts.get("IN", 0) + animal_counts.get("OUT", 0)
+
+            if total_animals > 0:
+                detection_found = True
 
             annotated_frames.append(frame)
 
-        # Save video only if at least one relevant detection was found
+        # Save video if animal(s) detected
         if detection_found:
-            # Build output path dynamically based on input filename
             input_basename = os.path.basename(video_path)
             filename_wo_ext = os.path.splitext(input_basename)[0]
             output_path = os.path.join(output_dir, f"{filename_wo_ext}.mp4")
 
-            logger.info("Relevant detections found. Saving annotated video to %s", output_path)
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            logger.info("Animals detected. Saving annotated video to %s", output_path)
 
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             out = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
@@ -233,9 +225,10 @@ class ObjectCounter(solutions.ObjectCounter):
             out.release()
             video_result_path = output_path
         else:
-            logger.info("No relevant detections found. Video will not be saved.")
+            logger.info("No animal detections found. Skipping video save.")
             video_result_path = None
 
+        # Return in/out counts and video path
         return {
             "in_count": self.in_count,
             "out_count": self.out_count,
