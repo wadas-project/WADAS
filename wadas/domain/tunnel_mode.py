@@ -22,11 +22,17 @@ import os
 from pathlib import Path
 from queue import Empty
 
+import numpy as np
+from domain.detection_event import DetectionEvent
+from domain.utils import get_timestamp
+from supervision.detection.core import Detections
+
 from wadas.ai.object_counter import ObjectCounter
 from wadas.ai.openvino_model import __model_folder__
 from wadas.domain.camera import media_queue
 from wadas.domain.operation_mode import OperationMode
 from wadas.domain.tunnel import Tunnel
+from wadas.domain.utils import is_video
 
 logger = logging.getLogger(__name__)
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -38,6 +44,41 @@ class TunnelMode(OperationMode):
         self.type = OperationMode.OperationModeTypes.TunnelMode
         self.process_queue = True
         self.model_path = Path(__model_folder__) / "detection" / "MDV6b-yolov9c_openvino_model"
+
+    def convert_objectcounter_to_megadetector(self, results, img_path):
+        """
+        Converts ObjectCounter results (SolutionResults) to MegaDetector-style dictionary.
+
+        Args:
+            results: SolutionResults from ObjectCounter
+            img_path (str): Path to the processed image (used for 'img_id')
+            class_names (dict): Mapping from class_id to class name
+
+        Returns:
+            dict: MegaDetector-style output with 'detections' and 'img_id'
+        """
+
+        # Extract detection data
+        if not hasattr(results, "detections") or results.detections is None:
+            return {"detections": Detections.empty(), "img_id": img_path, "labels": []}
+
+        dets = results.detections
+
+        # Compose labels like "animal 0.93"
+        labels = [f"animal {conf:.2f}" for conf in dets.confidence]
+
+        # Return dictionary with structure compatible to MegaDetector
+        return {
+            "detections": Detections(
+                xyxy=np.array(dets.xyxy, dtype=np.float32),
+                confidence=np.array(dets.confidence, dtype=np.float32),
+                class_id=np.array(dets.class_id, dtype=int),
+                tracker_id=None,
+                data={},
+            ),
+            "img_id": img_path,
+            "labels": labels,
+        }
 
     def run(self):
         """Method to run Tunnel Mode."""
@@ -56,7 +97,7 @@ class TunnelMode(OperationMode):
                 cur_media = None
 
             # Video processing
-            if cur_media and OperationMode.is_video(cur_media["media_path"]):
+            if cur_media and is_video(cur_media["media_path"]):
                 logger.debug("Processing video from motion detection notification...")
 
                 self.check_for_termination_requests()
@@ -92,16 +133,34 @@ class TunnelMode(OperationMode):
                 self.check_for_termination_requests()
                 if results and (output_video_path := results["video_path"]):
                     logger.info("Animal detected in video %s", video_path)
-                    self.update_image.emit(output_video_path)
+                    self.play_video.emit(output_video_path)
                     self.update_info.emit()
+
+                    message = f"Detected animal in proximity of the tunnel: {cur_tunnel.id}!"
                     if in_count := results["in_count"]:
-                        cur_tunnel.counter -= in_count
-                        logger.info("Detected animal leaving the tunnel.")
+                        cur_tunnel.counter += in_count
+                        message = f"Detected animal entering the tunnel: {cur_tunnel.id}!"
                         self.update_tunnel_counter.emit()
                     elif out_count := results["out_count"]:
-                        cur_tunnel.counter += out_count
-                        logger.info("Detected animal entering the tunnel.")
+                        cur_tunnel.counter -= out_count
+                        message = f"Detected animal leaving the tunnel: {cur_tunnel.id}!"
+                        logger.info(message)
                         self.update_tunnel_counter.emit()
+                    logger.info(message)
 
-                # TODO: implement notification
+                    detection_event = DetectionEvent(
+                        cur_media["camera_id"],
+                        get_timestamp(),
+                        video_path,
+                        output_video_path,
+                        self.convert_objectcounter_to_megadetector(
+                            results,
+                            output_video_path,
+                        ),
+                        False,
+                    )
+
+                    # Send notification
+                    self.send_notification(detection_event, message)
+
                 self.check_for_termination_requests()
