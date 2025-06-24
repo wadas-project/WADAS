@@ -23,6 +23,7 @@ from pathlib import Path
 from queue import Empty
 
 import numpy as np
+from domain.ai_model import AiModel
 from domain.detection_event import DetectionEvent
 from domain.utils import get_timestamp
 from supervision.detection.core import Detections
@@ -83,6 +84,18 @@ class TunnelMode(OperationMode):
     def run(self):
         """Method to run Tunnel Mode."""
         logger.info("Starting Tunnel Mode...")
+        logger.info(
+            "Selected model version for Tunnel Mode inference: %s",
+            AiModel.tunnel_mode_detection_model_version,
+        )
+        logger.info(
+            "Selected device for Tunnel Mode inference: %s", AiModel.tunnel_mode_detection_device
+        )
+        logger.debug(
+            "Selected threshold for Tunnel Mode inference confidence: %s",
+            AiModel.tunnel_mode_detection_threshold,
+        )
+
         self._initialize_cameras()
         self.check_for_termination_requests()
 
@@ -126,6 +139,8 @@ class TunnelMode(OperationMode):
                     region=tunnel_entrance_direction,
                     model=self.model_path,
                     classes=[0],
+                    device=AiModel.tunnel_mode_detection_device.upper(),
+                    confidence_threshold=AiModel.tunnel_mode_detection_threshold,
                 )
                 output_dir = Path(module_dir_path) / ".." / ".." / "detection_output"
                 results = obj_counter.process_tunnel_mode_video(video_path, output_dir)
