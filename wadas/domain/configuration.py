@@ -240,6 +240,18 @@ def load_configuration_from_file(file_path):
             classification_device if classification_device in available_ai_devices else "auto"
         )
         AiModel.video_fps = wadas_config["ai_model"]["ai_video_fps"]
+        AiModel.tunnel_mode_detection_model_version = wadas_config["ai_model"][
+            "ai_tunnel_mode_detection_model_version"
+        ]
+        AiModel.tunnel_mode_detection_threshold = wadas_config["ai_model"][
+            "ai_tunnel_mode_detect_threshold"
+        ]
+        tunnel_mode_detection_device = wadas_config["ai_model"]["ai_tunnel_mode_detection_device"]
+        AiModel.tunnel_mode_detection_device = (
+            tunnel_mode_detection_device
+            if tunnel_mode_detection_device in available_ai_devices
+            else "auto"
+        )
 
         # Operation Mode
         if operation_mode := wadas_config["operation_mode"]:
@@ -335,6 +347,9 @@ def save_configuration_to_file(file_, project_uuid):
             "ai_detection_device": AiModel.detection_device,
             "ai_classification_device": AiModel.classification_device,
             "ai_video_fps": AiModel.video_fps,
+            "ai_tunnel_mode_detection_model_version": AiModel.tunnel_mode_detection_model_version,
+            "ai_tunnel_mode_detection_device": AiModel.tunnel_mode_detection_device,
+            "ai_tunnel_mode_detect_threshold": AiModel.tunnel_mode_detection_threshold,
         },
         "operation_mode": operation_mode,
         "ftps_server": FTPsServer.ftps_server.serialize() if FTPsServer.ftps_server else "",
