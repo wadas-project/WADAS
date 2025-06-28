@@ -893,8 +893,8 @@ class MainWindow(QMainWindow):
         if not org_code_key or not node_id_key:
             QMessageBox.warning(
                 self,
-                "You need to register your WADAS client",
-                "To use Telegram notifications feature you need to register your WADAS client using the Ai button -> Download Ai Models."
+                "Log in or register the node",
+                "You need either to register yourself or log in (if you have credentials) to register the node."
             )
         else:
             configure_telegram_dlg = DialogConfigureTelegram(org_code_key.password, node_id_key.password)

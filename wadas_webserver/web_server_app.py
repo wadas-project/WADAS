@@ -235,7 +235,7 @@ async def test_stream_video(request: Request):
         range_val = range_header.replace("bytes=", "")
         start, end = range_val.split("-")
         start = int(start)
-        end = int(end) if end else file_size - 1
+        end = int(end or file_size - 1)
         content_length = end - start + 1
 
         return StreamingResponse(
