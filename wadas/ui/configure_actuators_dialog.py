@@ -22,6 +22,7 @@ from validators import ipv4
 from wadas.domain.actuator import Actuator
 from wadas.domain.camera import cameras
 from wadas.domain.database import DataBase
+from wadas.domain.deterrent_actuator import DeterrentActuator
 from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer, initialize_fastapi_logger
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.roadsign_actuator import RoadSignActuator
@@ -114,6 +115,8 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
                 actuator_type_cb.setCurrentText(Actuator.ActuatorTypes.ROADSIGN.value)
             elif Actuator.actuators[key].type == Actuator.ActuatorTypes.FEEDER:
                 actuator_type_cb.setCurrentText(Actuator.ActuatorTypes.FEEDER.value)
+            elif Actuator.actuators[key].type == Actuator.ActuatorTypes.DETERRENT:
+                actuator_type_cb.setCurrentText(Actuator.ActuatorTypes.DETERRENT.value)
             actuator_enablement: QCheckBox
             actuator_enablement = self.findChild(QCheckBox, f"checkBox_actuator_enablement_{i}")
             actuator_enablement.setChecked(Actuator.actuators[key].enabled)
@@ -344,6 +347,12 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
                             # If db is enabled,add actuator into db
                             if self.db_enabled:
                                 DataBase.insert_into_db(actuator)
+                        elif cur_actuator_type == Actuator.ActuatorTypes.DETERRENT.value:
+                            actuator = DeterrentActuator(cur_actuator_id, cur_actuator_enablement)
+                            Actuator.actuators[actuator.id] = actuator
+                            # If db is enabled,add actuator into db
+                            if self.db_enabled:
+                                DataBase.insert_into_db(actuator)
             # If an actuator changes the id we have to remove previous orphaned ids from dictionary
             for key in list(Actuator.actuators):
                 if key not in actuators_id:
@@ -370,6 +379,12 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
                             DataBase.insert_into_db(actuator)
                     elif cur_actuator_type == Actuator.ActuatorTypes.FEEDER.value:
                         actuator = FeederActuator(cur_actuator_id, cur_actuator_enablement)
+                        Actuator.actuators[actuator.id] = actuator
+                        # If db is enabled,add actuator into db
+                        if self.db_enabled:
+                            DataBase.insert_into_db(actuator)
+                    elif cur_actuator_type == Actuator.ActuatorTypes.DETERRENT.value:
+                        actuator = DeterrentActuator(cur_actuator_id, cur_actuator_enablement)
                         Actuator.actuators[actuator.id] = actuator
                         # If db is enabled,add actuator into db
                         if self.db_enabled:
