@@ -33,7 +33,6 @@ class DeterrentActuator(Actuator):
 
     class Commands(Enum):
         ON = json.dumps({"on": True})
-        OFF = json.dumps({"off": True})
 
     def __init__(self, id, enabled):
         super().__init__(id, enabled)
