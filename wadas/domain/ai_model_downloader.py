@@ -30,7 +30,7 @@ MODULE_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIRECTORY = (Path(MODULE_DIR_PATH).parent.parent / "model").resolve()
 MODEL_REQUEST_CFG = (MODEL_DIRECTORY / "request").resolve()
 REPO_ID = "wadas-it/wadas"
-WADAS_SERVER_URL = "https://api-dev.wadas.it:8443/"
+WADAS_SERVER_URL = "https://api.wadas.it:8443/"
 
 
 class AiModelsDownloader(QObject):
