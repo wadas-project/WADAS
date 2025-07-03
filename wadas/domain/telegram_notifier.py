@@ -102,9 +102,12 @@ class TelegramNotifier(Notifier):
         else:
             raise Exception("Unable to delete the recipient")
 
-    def send_notification(self, detection_event: DetectionEvent):
+    def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method for Telegram notifier."""
-        message = f"WADAS: Animal detected from camera {detection_event.camera_id}!"
+
+        telegram_message = (
+            f"WADAS: Animal detected from camera {detection_event.camera_id}!\n\n{message}"
+        )
         # Select image to attach to the notification: classification (if enabled) or detection image
         img_path = (
             (
@@ -116,7 +119,7 @@ class TelegramNotifier(Notifier):
             else None
         )
         try:
-            status, data = self.send_telegram_message(message, img_path=img_path)
+            status, data = self.send_telegram_message(telegram_message, img_path=img_path)
             if status == 200:
                 if data["status"] == "ok":
                     logger.info("Telegram notification sent!")

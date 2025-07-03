@@ -22,6 +22,7 @@ from queue import Empty
 
 from wadas.domain.camera import media_queue
 from wadas.domain.operation_mode import OperationMode
+from wadas.domain.utils import is_image, is_video
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +58,7 @@ class AnimalDetectionAndClassificationMode(OperationMode):
 
             # Media processing
             if cur_media and (
-                OperationMode.is_image(cur_media["media_path"])
-                or OperationMode.is_video(cur_media["media_path"])
+                is_image(cur_media["media_path"]) or is_video(cur_media["media_path"])
             ):
                 logger.debug("Processing media from motion detection notification...")
 

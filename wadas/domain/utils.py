@@ -81,6 +81,20 @@ def image_to_base64(image_path):
     return base64_string
 
 
+def is_video(media_path):
+    """Method to validate if given file is a valid and supported video format"""
+
+    video_formats = r"\.(avi|mov|mp4|mkv|wmv)$"
+    return bool(re.search(video_formats, str(media_path), re.IGNORECASE))
+
+
+def is_image(media_path):
+    """Method to validate if given file is a valid and supported image format"""
+
+    image_formats = r"\.(png|jpg|jpeg)$"
+    return bool(re.search(image_formats, str(media_path), re.IGNORECASE))
+
+
 def is_valid_uuid4(val):
     try:
         uuid.UUID(str(val), version=4)

@@ -53,7 +53,7 @@ class Notifier:
                     configured_notifier = True
                     if Notifier.notifiers[notifier].enabled:
                         enabled_notifier = True
-                        Notifier.notifiers[notifier].send_notification(detection_event)
+                        Notifier.notifiers[notifier].send_notification(detection_event, message)
         if not configured_notifier:
             logger.warning("No notification protocol configured. Skipping notification.")
         elif not enabled_notifier:

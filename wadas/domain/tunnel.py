@@ -45,6 +45,7 @@ class Tunnel:
         self.camera_entrance_2 = camera_entrance_2
         self.entrance_2_direction = entrance_2_direction
         self.enabled = enabled
+        self.counter = 0
 
     @classmethod
     def tunnel_exists(cls, tunnel):

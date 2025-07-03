@@ -29,6 +29,7 @@ import keyring
 
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
+from wadas.domain.utils import is_image
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class EmailNotifier(Notifier):
         self.smtp_port = smtp_port
         self.recipients_email = recipients_email
 
-    def send_email(self, detection_event):
+    def send_email(self, detection_event, message=""):
         """Method to build email and send it."""
 
         credentials = keyring.get_credential("WADAS_email", self.sender_email)
@@ -58,24 +59,11 @@ class EmailNotifier(Notifier):
             logger.debug("Email not configured. Skipping email notification.")
             return False
 
-        message = MIMEMultipart()
+        email_message = MIMEMultipart()
         # Set email required fields.
-        message["Subject"] = "WADAS detection alert"
-        message["From"] = self.sender_email
-        message["To"] = ", ".join(self.recipients_email)
-
-        # HTML content with an image embedded
-        html = f"""\
-        <html>
-            <body>
-                <p>Hi,<br>
-                Animal detected from camera {detection_event.camera_id}:
-                <img src="cid:image1"></p><br>
-            </body>
-        </html>
-        """
-        # Attach the HTML part
-        message.attach(MIMEText(html, "html"))
+        email_message["Subject"] = "WADAS detection alert"
+        email_message["From"] = self.sender_email
+        email_message["To"] = ", ".join(self.recipients_email)
 
         # Select image to attach to the notification: classification (if enabled) or detection image
         img_path = (
@@ -83,14 +71,44 @@ class EmailNotifier(Notifier):
             if detection_event.classification
             else detection_event.detection_img_path
         )
-        # Open the image file in binary mode
-        with open(img_path, "rb") as img:
-            # Attach the image file
-            msg_img = MIMEImage(img.read(), name=os.path.basename(img_path))
-            # Define the Content-ID header to use in the HTML body
-            msg_img.add_header("Content-ID", "<image1>")
-            # Attach the image to the message
-            message.attach(msg_img)
+
+        # Attach image, skip video
+        if is_image(img_path):
+            # HTML content with an image embedded
+            html = f"""\
+            <html>
+                <body>
+                    <p>Hi,<br>
+                    Animal detected from camera {detection_event.camera_id}:
+                    <img src="cid:image1"><br>
+                    {message}</p><br>
+                </body>
+            </html>
+            """
+            # Attach the HTML part
+            email_message.attach(MIMEText(html, "html"))
+
+            # Open the image file in binary mode
+            with open(img_path, "rb") as img:
+                # Attach the image file
+                msg_img = MIMEImage(img.read(), name=os.path.basename(img_path))
+                # Define the Content-ID header to use in the HTML body
+                msg_img.add_header("Content-ID", "<image1>")
+                # Attach the image to the message
+                email_message.attach(msg_img)
+        else:
+            # HTML content (text only)
+            html = f"""\
+                       <html>
+                           <body>
+                               <p>Hi,<br>
+                               Animal detected from camera {detection_event.camera_id}!<br>
+                               {message}</p><br>
+                           </body>
+                       </html>
+                       """
+            # Attach the HTML part
+            email_message.attach(MIMEText(html, "html"))
 
         # Connect to email's SMTP server using SSL.
         context = ssl.create_default_context()
@@ -103,14 +121,14 @@ class EmailNotifier(Notifier):
             smtp_server.login(self.sender_email, credentials.password)
             # Send the email to all recipients.
             for recipient in self.recipients_email:
-                smtp_server.sendmail(self.sender_email, recipient, message.as_string())
+                smtp_server.sendmail(self.sender_email, recipient, email_message.as_string())
                 logger.debug("Email notification sent to recipient %s .", recipient)
             smtp_server.quit()
         logger.info("Email notification for %s sent!", img_path)
 
-    def send_notification(self, detection_event: DetectionEvent):
+    def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method specific for Email notifier."""
-        self.send_email(detection_event)
+        self.send_email(detection_event, message)
 
     def is_configured(self):
         """Method that returns configuration status as bool value."""

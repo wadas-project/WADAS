@@ -52,15 +52,17 @@ class WhatsAppNotifier(Notifier):
             and credentials.password
         )
 
-    def send_notification(self, detection_event: DetectionEvent):
+    def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method for WhatsApp notifier."""
 
         self.send_whatsapp_message(detection_event)
 
-    def send_whatsapp_message(self, detection_event):
+    def send_whatsapp_message(self, detection_event, message=""):
         """Method to send WhatsApp message notification."""
 
-        message = f"WADAS: Animal detected from camera {detection_event.camera_id}!"
+        whatsapp_message = (
+            f"WADAS: Animal detected from camera {detection_event.camera_id}!\n\n{message}"
+        )
         url = f"https://graph.facebook.com/v17.0/{self.sender_id}/messages"
 
         credentials = keyring.get_credential("WADAS_WhatsApp", self.sender_id)
@@ -85,7 +87,7 @@ class WhatsAppNotifier(Notifier):
             failed_txt_n_image = False
 
             if media_id:
-                caption = message
+                caption = whatsapp_message
                 image_data = {
                     "messaging_product": "whatsapp",
                     "to": recipient_number,
@@ -103,7 +105,7 @@ class WhatsAppNotifier(Notifier):
                     "messaging_product": "whatsapp",
                     "to": recipient_number,
                     "type": "text",
-                    "text": {"body": message},
+                    "text": {"body": whatsapp_message},
                 }
 
                 message_response = requests.post(url, headers=headers, json=data)

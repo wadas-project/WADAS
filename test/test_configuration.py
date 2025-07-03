@@ -41,6 +41,9 @@ def init():
     AiModel.detection_device = "auto"
     AiModel.classification_device = "auto"
     AiModel.video_fps = 1
+    AiModel.tunnel_mode_detection_model_version = "MDV6b-yolov9c"
+    AiModel.tunnel_mode_detection_threshold = 0
+    AiModel.tunnel_mode_detection_device = "auto"
     OperationMode.cur_operation_mode = None
     Tunnel.tunnels = None
 
@@ -59,6 +62,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {}
@@ -96,6 +102,9 @@ def test_load_incompatible_older_version_config(mock_file, init):
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
     assert AiModel.language == ""
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -115,6 +124,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -151,6 +163,9 @@ def test_load_empty_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.language == ""
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -171,6 +186,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -199,6 +217,9 @@ ai_model:
   ai_detect_threshold: 0
   ai_detection_device: auto
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {}
@@ -234,6 +255,9 @@ def test_load_wrong_format_config(mock_file, init):
     assert AiModel.classification_device == "auto"
     assert AiModel.language == ""
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -258,6 +282,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -303,6 +330,9 @@ def test_load_actuator_server_config(mock_file, init):
     assert AiModel.video_fps == 1
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -331,6 +361,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -371,6 +404,9 @@ ai_model:
   ai_detection_model_version: MDV5-yolov5
   ai_classification_device: auto
   ai_classification_model_version: DFv1.2
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -417,6 +453,9 @@ def test_load_actuators_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -453,6 +492,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -481,6 +523,9 @@ ai_model:
   ai_detection_model_version: MDV5-yolov5
   ai_classification_device: auto
   ai_classification_model_version: DFv1.2
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -518,6 +563,9 @@ def test_load_ai_model_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -533,6 +581,9 @@ def test_save_ai_model_config(mock_file, init):
     AiModel.classification_device = "GPU"
     AiModel.detection_device = "CPU"
     AiModel.video_fps = 1
+    AiModel.tunnel_mode_detection_device = "NPU"
+    AiModel.tunnel_mode_detection_model_version = "MDV6b-yolov9c"
+    AiModel.tunnel_mode_detection_threshold = 0.6
     save_configuration_to_file("", "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede")
     assert (
         mock_file.dump()
@@ -546,6 +597,9 @@ ai_model:
   ai_detection_device: CPU
   ai_detection_model_version: MDV5-yolov5
   ai_language: it
+  ai_tunnel_mode_detect_threshold: 0.6
+  ai_tunnel_mode_detection_device: NPU
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -574,6 +628,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params:
@@ -620,6 +677,9 @@ def test_load_camera_detection_params_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -646,6 +706,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params:
   detection_per_second: 12
@@ -678,6 +741,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras:
 - actuators: []
@@ -827,6 +893,9 @@ def test_load_cameras_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -846,6 +915,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras:
 - actuators: []
@@ -911,6 +983,9 @@ def test_load_cameras_config_with_ftp_and_folder_and_no_credentials(mock_file, i
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -930,6 +1005,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras:
 - actuators: []
@@ -995,6 +1073,9 @@ def test_load_cameras_config_with_ftp_and_no_folder_and_no_credentials(mock_file
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1014,6 +1095,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras:
 - actuators: []
@@ -1079,6 +1163,9 @@ def test_load_cameras_config_with_ftp_and_folder_and_same_credentials(mock_file,
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1098,6 +1185,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras:
 - actuators: []
@@ -1163,6 +1253,9 @@ def test_load_cameras_config_with_ftp_and_folder_and_different_credentials(mock_
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1215,6 +1308,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras:
@@ -1281,6 +1377,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1337,6 +1436,9 @@ def test_load_ftps_server_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1356,6 +1458,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1417,6 +1522,9 @@ def test_load_ftps_server_config_with_existing_server(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1447,6 +1555,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -1485,6 +1596,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1541,6 +1655,9 @@ def test_load_notification_config_with_no_credentials(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1560,6 +1677,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1616,6 +1736,9 @@ def test_load_notification_config_with_same_credentials(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1635,6 +1758,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1691,6 +1817,9 @@ def test_load_notification_config_with_different_credentials(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
@@ -1710,6 +1839,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1767,6 +1899,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -1807,6 +1942,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -1843,6 +1981,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1881,6 +2022,9 @@ def test_load_test_model_mode_config(mock_file, init):
     assert AiModel.detection_device == "auto"
     assert AiModel.classification_device == "auto"
     assert AiModel.video_fps == 1
+    assert AiModel.tunnel_mode_detection_device == "auto"
+    assert AiModel.tunnel_mode_detection_model_version == "MDV6b-yolov9c"
+    assert AiModel.tunnel_mode_detection_threshold == 0
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type == OperationMode.OperationModeTypes.TestModelMode
     assert Tunnel.tunnels is None
@@ -1902,6 +2046,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -1931,6 +2078,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -1978,6 +2128,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -2007,6 +2160,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -2056,6 +2212,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -2085,6 +2244,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -2137,6 +2299,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
@@ -2167,6 +2332,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 cameras: []
 camera_detection_params: {{}}
@@ -2237,6 +2405,9 @@ ai_model:
   ai_detection_device: auto
   ai_detection_model_version: MDV5-yolov5
   ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
   ai_video_fps: 1
 camera_detection_params: {{}}
 cameras: []
