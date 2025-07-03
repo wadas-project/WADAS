@@ -4,13 +4,13 @@ from pathlib import Path
 
 import torch
 import wadas_runtime as wadas
+import yaml
 from ultralytics.models.yolo.detect import DetectionPredictor
 from ultralytics.nn.autobackend import (
     AutoBackend,
     check_class_names,
     default_class_names,
 )
-from ultralytics.utils import yaml_load
 from ultralytics.utils.torch_utils import select_device
 
 from wadas.ai.openvino_model import __model_folder__
@@ -79,7 +79,8 @@ class OVBackend(AutoBackend):
         ov_compiled_model = load_ov_model(w, ov_device, inference_mode)
         input_name = ov_compiled_model.input().get_any_name()
 
-        metadata = yaml_load(w.parent / "metadata.yaml")
+        with open(w.parent / "metadata.yaml", "r") as f:
+            metadata = yaml.safe_load(f)
         if metadata and isinstance(metadata, dict):
             for k, v in metadata.items():
                 if k in {"stride", "batch"}:
