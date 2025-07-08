@@ -28,7 +28,8 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
 from wadas.ai.models import txt_animalclasses
 from wadas.domain.ai_model import AiModel
-from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
+
+from wadas.ui.model_request_login import DialogModelRequestLogin
 from wadas.ui.qt.ui_configure_ai_model import Ui_DialogConfigureAi
 from wadas.ui.error_message_dialog import WADASErrorMessage
 
@@ -164,7 +165,7 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
     def on_download_models_clicked(self):
         """Method to trigger the download of Ai Models"""
 
-        ai_model_download_dlg = AiModelDownloadDialog()
+        ai_model_download_dlg = DialogModelRequestLogin()
         if ai_model_download_dlg.exec():
             self.populate_ai_models_version_dropdown()
 

@@ -31,6 +31,7 @@ from wadas.domain.actuator import Actuator
 from wadas.domain.ai_model import AiModel
 from wadas.domain.camera import Camera, cameras
 from wadas.domain.database import DataBase
+from wadas.domain.deterrent_actuator import DeterrentActuator
 from wadas.domain.email_notifier import EmailNotifier
 from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.feeder_actuator import FeederActuator
@@ -169,6 +170,9 @@ def load_configuration_from_file(file_path):
                     Actuator.actuators[actuator.id] = actuator
                 case Actuator.ActuatorTypes.FEEDER.value:
                     actuator = FeederActuator.deserialize(data)
+                    Actuator.actuators[actuator.id] = actuator
+                case Actuator.ActuatorTypes.DETERRENT.value:
+                    actuator = DeterrentActuator.deserialize(data)
                     Actuator.actuators[actuator.id] = actuator
 
         # Camera(s)

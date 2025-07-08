@@ -13,5 +13,5 @@ class WADASErrorMessage(QMessageBox):
         super(WADASErrorMessage, self).__init__()
         self.setWindowTitle(title)
         self.setText(message)
-        self.setIcon(QMessageBox.Critical)  # Imposta l'icona come errore critico
+        self.setIcon(QMessageBox.Critical)  # Set icon as critical error
         self.setWindowIcon(QIcon(os.path.join(module_dir_path, "..", "img", "mainwindow_icon.jpg")))

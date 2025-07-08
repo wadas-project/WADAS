@@ -40,6 +40,9 @@ build/
 *.onnx
 *.bin
 *.xml
+model/request
+model/TERMS_AND_CONDITIONS
+organization
 
 # DB
 *.db

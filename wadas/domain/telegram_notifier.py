@@ -22,6 +22,7 @@ import os
 
 import requests
 
+from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
 from wadas.domain.telegram_recipient import TelegramRecipient
@@ -35,17 +36,24 @@ module_dir_path = os.path.dirname(os.path.abspath(__file__))
 class TelegramNotifier(Notifier):
     """Telegram Notifier Class"""
 
-    BASE_URL = "https://api.wadas.it:8443/api/v1/telegram"
+    BASE_URL = f"{WADAS_SERVER_URL}api/v1/telegram"
     REGISTRATION_URL = BASE_URL + "/users"
     NOTIFICATION_URL = BASE_URL + "/notifications"
 
-    def __init__(self, org_code, recipients=None, enabled=True, allow_images=True):
+    def __init__(self, recipients=None, enabled=True, allow_images=True):
         super().__init__(enabled)
 
         self.type = Notifier.NotifierTypes.TELEGRAM
-        self.org_code = org_code
         self.recipients = recipients or []
         self.allow_images = allow_images
+        self.org_code = None
+        self.node_id = None
+
+    def set_org_code(self, org_code):
+        self.org_code = org_code
+
+    def set_node_id(self, node_id):
+        self.node_id = node_id
 
     def is_configured(self):
         """Method that returns configuration status as bool value."""
@@ -58,7 +66,7 @@ class TelegramNotifier(Notifier):
     def fetch_registered_recipient(self):
         """Update the list of the recipients fetching from remote."""
         if (
-            res := requests.get(f"{self.REGISTRATION_URL}?org_code={self.org_code}", verify=False)
+            res := requests.get(f"{self.REGISTRATION_URL}?node_id={self.node_id}")
         ).status_code == 200:
             self.recipients = [
                 (
@@ -74,8 +82,8 @@ class TelegramNotifier(Notifier):
     def register_new_recipient(self):
         """Method to enable Telegram notification to a new user."""
         if self.org_code:
-            data = {"org_code": self.org_code}
-            res = requests.post(self.REGISTRATION_URL, json=data, verify=False)
+            data = {"org_code": self.org_code, "node_id": self.node_id}
+            res = requests.post(self.REGISTRATION_URL, json=data)
             if res.status_code == 200:
                 recipient_id = res.json()["user_id"]
                 telegram_recipient = TelegramRecipient(recipient_id)
@@ -94,8 +102,7 @@ class TelegramNotifier(Notifier):
     def remove_registered_recipient(self, recipient):
         """Method to remove a registered recipient from remote."""
         res = requests.delete(
-            f"{self.REGISTRATION_URL}?org_code={self.org_code}&user_id={recipient.recipient_id}",
-            verify=False,
+            f"{self.REGISTRATION_URL}?node_id={self.node_id}&user_id={recipient.recipient_id}"
         )
         if res.status_code == 204:
             self.recipients.remove(recipient)
@@ -146,7 +153,7 @@ class TelegramNotifier(Notifier):
         """Method to send Telegram message notification."""
 
         data = {
-            "org_code": self.org_code,
+            "node_id": int(self.node_id),
             "user_ids": [recipient.recipient_id for recipient in self.recipients],
             "message": message,
         }
@@ -154,13 +161,12 @@ class TelegramNotifier(Notifier):
         if img_path:
             data["image_b64"] = image_to_base64(img_path)
 
-        res = requests.post(self.NOTIFICATION_URL, json=data, verify=False)
+        res = requests.post(self.NOTIFICATION_URL, json=data)
         return res.status_code, res.json() if res.status_code == 200 else res.text
 
     def serialize(self):
         """Method to serialize Telegram notifier object into file."""
         return {
-            "org_code": self.org_code,
             "recipients": [recipient.serialize() for recipient in self.recipients],
             "enabled": self.enabled,
             "allow_images": self.allow_images,
