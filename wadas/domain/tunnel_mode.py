@@ -23,17 +23,16 @@ from pathlib import Path
 from queue import Empty
 
 import numpy as np
-from domain.ai_model import AiModel
-from domain.detection_event import DetectionEvent
-from domain.utils import get_timestamp
 from supervision.detection.core import Detections
 
 from wadas.ai.object_counter import ObjectCounter
 from wadas.ai.openvino_model import __model_folder__
+from wadas.domain.ai_model import AiModel
 from wadas.domain.camera import media_queue
+from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.operation_mode import OperationMode
 from wadas.domain.tunnel import Tunnel
-from wadas.domain.utils import is_video
+from wadas.domain.utils import get_timestamp, is_video
 
 logger = logging.getLogger(__name__)
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
