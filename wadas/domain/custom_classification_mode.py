@@ -25,6 +25,7 @@ from wadas.domain.ai_model import AiModel
 from wadas.domain.animal_detection_mode import AnimalDetectionAndClassificationMode
 from wadas.domain.camera import media_queue
 from wadas.domain.operation_mode import OperationMode
+from wadas.domain.utils import is_image, is_video
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +61,15 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
             # Get image from motion detection notification
             # Timeout is set to 1 second to avoid blocking the thread
             try:
-                cur_img = media_queue.get(timeout=1)
+                cur_media = media_queue.get(timeout=1)
             except Empty:
-                cur_img = None
+                cur_media = None
 
-            if cur_img:
+            if cur_media and (
+                is_image(cur_media["media_path"]) or is_video(cur_media["media_path"])
+            ):
                 logger.debug("Processing image from motion detection notification...")
-                detection_event = self._detect(cur_img)
+                detection_event = self._detect(cur_media)
 
                 self.check_for_termination_requests()
                 if detection_event and self.enable_classification:

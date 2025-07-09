@@ -48,6 +48,9 @@ class AiModel:
     distributed_inference = False
     detection_model_version = "MDV5-yolov5"
     classification_model_version = "DFv1.2"
+    tunnel_mode_detection_device = "cpu"
+    tunnel_mode_detection_threshold = 0.5
+    tunnel_mode_detection_model_version = "MDV6b-yolov9c"
 
     def __init__(self):
         # Initializing the MegaDetectorV5 model for image detection

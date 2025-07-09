@@ -76,8 +76,8 @@ class Ui_DialogSelectMode(object):
         self.radioButton_tunnel_mode = QRadioButton(self.verticalLayoutWidget)
         self.buttonGroup.addButton(self.radioButton_tunnel_mode)
         self.radioButton_tunnel_mode.setObjectName(u"radioButton_tunnel_mode")
-        self.radioButton_tunnel_mode.setEnabled(False)
-        self.radioButton_tunnel_mode.setCheckable(False)
+        self.radioButton_tunnel_mode.setEnabled(True)
+        self.radioButton_tunnel_mode.setCheckable(True)
         self.radioButton_tunnel_mode.setAutoExclusive(True)
 
         self.gridLayout.addWidget(self.radioButton_tunnel_mode, 3, 0, 1, 1)

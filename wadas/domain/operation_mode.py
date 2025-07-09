@@ -18,7 +18,6 @@
 # Description: Module containing class to handle WADAS operation modes.
 
 import logging
-import re
 import threading
 import time
 from abc import abstractmethod
@@ -38,7 +37,7 @@ from wadas.domain.fastapi_actuator_server import (
 )
 from wadas.domain.ftps_server import FTPsServer
 from wadas.domain.notifier import Notifier
-from wadas.domain.utils import get_precise_timestamp
+from wadas.domain.utils import get_precise_timestamp, is_image
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +66,7 @@ class OperationMode(QObject):
     run_progress = Signal(int)
     play_video = Signal(str)
     error_occurred = Signal(str)
+    update_tunnel_counter = Signal()
 
     flag_stop_update_actuators_thread = False
 
@@ -117,24 +117,10 @@ class OperationMode(QObject):
                     self.ftp_thread = FTPsServer.ftps_server.run()
         logger.info("Ready for video stream from Camera(s)...")
 
-    @staticmethod
-    def is_video(media_path):
-        """Method to validate if given file is a valid and supported video format"""
-
-        video_formats = r"\.(avi|mov|mp4|mkv|wmv)$"
-        return bool(re.search(video_formats, str(media_path), re.IGNORECASE))
-
-    @staticmethod
-    def is_image(media_path):
-        """Method to validate if given file is a valid and supported image format"""
-
-        image_formats = r"\.(png|jpg|jpeg)$"
-        return bool(re.search(image_formats, str(media_path), re.IGNORECASE))
-
     def _detect(self, cur_media, classify=False):
         """Method to run the animal detection process on a specific image"""
 
-        if OperationMode.is_image(cur_media["media_path"]):
+        if is_image(cur_media["media_path"]):
             results, detected_img_path = self.ai_model.process_image(cur_media["media_path"], True)
 
             if results and detected_img_path:
@@ -248,7 +234,7 @@ class OperationMode(QObject):
                 # Classification is enabled
                 if detection_event.classification_img_path:
                     # Trigger image update in WADAS mainwindow with classification result
-                    if self.is_image(detection_event.classification_img_path):
+                    if is_image(detection_event.classification_img_path):
                         self.update_image.emit(detection_event.classification_img_path)
                     else:
                         self.play_video.emit(detection_event.classification_img_path)
@@ -256,7 +242,7 @@ class OperationMode(QObject):
                     logger.info("No animal classified.")
             else:
                 # Trigger image update in WADAS mainwindow with detection result
-                if self.is_image(detection_event.detection_img_path):
+                if is_image(detection_event.detection_img_path):
                     self.update_image.emit(detection_event.detection_img_path)
                 else:
                     self.play_video.emit(detection_event.detection_img_path)
