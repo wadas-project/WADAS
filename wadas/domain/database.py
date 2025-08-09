@@ -42,6 +42,7 @@ from wadas.domain.db_model import Camera as ORMCamera
 from wadas.domain.db_model import ClassifiedAnimals as ORMClassifiedAnimals
 from wadas.domain.db_model import DBMetadata as ORMDBMetadata
 from wadas.domain.db_model import DetectionEvent as ORMDetectionEvent
+from wadas.domain.db_model import DeterrentActuator as ORMDeterrentActuator
 from wadas.domain.db_model import FeederActuator as ORMFeederActuator
 from wadas.domain.db_model import FTPCamera as ORMFTPCamera
 from wadas.domain.db_model import RoadSignActuator as ORMRoadSignActuator
@@ -49,6 +50,7 @@ from wadas.domain.db_model import USBCamera as ORMUSBCamera
 from wadas.domain.db_model import User as ORMUser
 from wadas.domain.db_model import camera_actuator_association
 from wadas.domain.detection_event import DetectionEvent
+from wadas.domain.deterrent_actuator import DeterrentActuator
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.ftp_camera import FTPCamera
 from wadas.domain.roadsign_actuator import RoadSignActuator
@@ -713,6 +715,12 @@ class DataBase(ABC):
                 enabled=domain_object.enabled,
                 creation_date=get_precise_timestamp(),
             )
+        elif isinstance(domain_object, DeterrentActuator):
+            return ORMDeterrentActuator(
+                actuator_id=domain_object.id,
+                enabled=domain_object.enabled,
+                creation_date=get_precise_timestamp(),
+            )
         elif isinstance(domain_object, ActuationEvent):
             command = json.loads(domain_object.command.value)
 
@@ -778,6 +786,8 @@ class DataBase(ABC):
                 return RoadSignActuator(id=orm_object.actuator_id, enabled=orm_object.enabled)
             elif isinstance(orm_object, ORMFeederActuator):
                 return FeederActuator(id=orm_object.actuator_id, enabled=orm_object.enabled)
+            elif isinstance(orm_object, ORMDeterrentActuator):
+                return DeterrentActuator(id=orm_object.actuator_id, enabled=orm_object.enabled)
             else:
                 raise ValueError(f"Unsupported ORM object type: {type(orm_object).__name__}")
         except AttributeError:

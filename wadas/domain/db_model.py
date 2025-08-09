@@ -150,6 +150,12 @@ class FeederActuator(Actuator):
     }
 
 
+class DeterrentActuator(Actuator):
+    __mapper_args__ = {
+        "polymorphic_identity": DomainActuator.ActuatorTypes.DETERRENT,
+    }
+
+
 class DetectionEvent(Base):
     __tablename__ = "detection_events"
 
