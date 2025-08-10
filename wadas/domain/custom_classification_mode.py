@@ -18,6 +18,7 @@
 # Description: Custom Classification module.
 
 import logging
+import os
 from queue import Empty
 
 from wadas.ai.models import txt_animalclasses
@@ -28,6 +29,7 @@ from wadas.domain.operation_mode import OperationMode
 from wadas.domain.utils import is_image, is_video
 
 logger = logging.getLogger(__name__)
+KEEP_DETECTION = False
 
 
 class CustomClassificationMode(AnimalDetectionAndClassificationMode):
@@ -48,6 +50,21 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
         else:
             logger.error("The specified animal species is not handled by WADAS")
             return False
+
+    def delete_media(self, media_file):
+        """Method to delete media file if classification does not match target species"""
+
+        if os.path.isfile(media_file):
+            try:
+                os.remove(media_file)
+
+                logger.info("%s media removed successfully.", media_file)
+            except FileNotFoundError:
+                logger.error("%s does not exist", media_file)
+            except PermissionError:
+                logger.error("No permission to delete %s", media_file)
+            except OSError:
+                logger.error("OS Error deleting file: %s", media_file)
 
     def run(self):
         """WADAS custom classification mode"""
@@ -96,6 +113,11 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
                                 self.custom_target_species,
                                 self.last_classified_animals_str,
                             )
+
+                            # To enforce privacy, delete image if no target animal is classified
+                            if not KEEP_DETECTION and os.path.isfile(cur_media["media_path"]):
+                                self.delete_media(cur_media["media_path"])
+                                self.delete_media(detection_event.detection_img_path)
 
                         # Show processing results in UI
                         self._show_processed_results(detection_event)
