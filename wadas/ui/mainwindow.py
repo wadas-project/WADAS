@@ -636,12 +636,19 @@ class MainWindow(QMainWindow):
         """Method to check whether a notification protocol has been set in WADAS.
         If not, ask the user whether to proceed without."""
 
+
         notification_cfg = False
         notification_enabled = False
         for notifier in Notifier.notifiers:
             if Notifier.notifiers[notifier]:
                 if Notifier.notifiers[notifier].is_configured():
                     notification_cfg = True
+                elif Notifier.notifiers[notifier] == Notifier.NotifierTypes.TELEGRAM.value:
+                    org_id = keyring.get_credential("WADAS_org_code", "")
+                    node_id = keyring.get_credential("WADAS_node_id", "")
+                    if not org_id or node_id:
+                        logger.error("Organizaion ID or Node ID missing, Telegram notifications will not be possible."
+                                     "\nPlease login or register your organization and retry.")
                 if Notifier.notifiers[notifier].enabled:
                     notification_enabled = True
         message = ""
@@ -906,7 +913,7 @@ class MainWindow(QMainWindow):
                 "You need either to register yourself or log in (if you have credentials) to register the node."
             )
         else:
-            configure_telegram_dlg = DialogConfigureTelegram(org_code_key.password, node_id_key.password)
+            configure_telegram_dlg = DialogConfigureTelegram()
             if configure_telegram_dlg.exec():
                 logger.info("Telegram notification configured.")
                 self.setWindowModified(True)
