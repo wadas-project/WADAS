@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from wadas.domain.telegram_notifier import TelegramNotifier
@@ -6,14 +8,16 @@ from wadas.domain.telegram_recipient import TelegramRecipient
 
 @pytest.fixture
 def telegram_notifier():
-    return TelegramNotifier(
-        [
-            TelegramRecipient("user_id1", name="first recipient"),
-            TelegramRecipient("user_id2", name="second recipient"),
-        ],
-        enabled=True,
-        allow_images=True,
-    )
+    with patch("wadas.domain.telegram_notifier.keyring.get_credential") as mock_cred:
+        mock_cred.return_value = type("Cred", (), {"password": "fake_org_code"})
+        return TelegramNotifier(
+            [
+                TelegramRecipient("user_id1", name="first recipient"),
+                TelegramRecipient("user_id2", name="second recipient"),
+            ],
+            enabled=True,
+            allow_images=True,
+        )
 
 
 def test_constructor(telegram_notifier):
