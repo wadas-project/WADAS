@@ -640,16 +640,15 @@ class MainWindow(QMainWindow):
         notification_cfg = False
         notification_enabled = False
         for notifier in Notifier.notifiers:
-            if Notifier.notifiers[notifier]:
-                if Notifier.notifiers[notifier].is_configured():
+            cur_notifier = Notifier.notifiers[notifier]
+            if cur_notifier:
+                if cur_notifier.is_configured():
                     notification_cfg = True
-                elif Notifier.notifiers[notifier] == Notifier.NotifierTypes.TELEGRAM.value:
-                    org_id = keyring.get_credential("WADAS_org_code", "")
-                    node_id = keyring.get_credential("WADAS_node_id", "")
-                    if not org_id or node_id:
+                elif cur_notifier.type == Notifier.NotifierTypes.TELEGRAM:
+                    if not cur_notifier.org_code or not cur_notifier.node_id:
                         logger.error("Organizaion ID or Node ID missing, Telegram notifications will not be possible."
-                                     "\nPlease login or register your organization and retry.")
-                if Notifier.notifiers[notifier].enabled:
+                                     " Please login or register your organization and retry.")
+                if cur_notifier.enabled:
                     notification_enabled = True
         message = ""
         if not notification_cfg:
@@ -878,6 +877,13 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.configure_whatsapp()
+
+        if not self.load_status["valid_telegram_keyring"]:
+            WADASErrorMessage(
+                self,
+                "Invalid Telegram configuration. ",
+                "Please register or login from Ai Model download dialog."
+            )
 
     def configure_ftp_cameras(self):
         """Method to trigger ftp cameras configuration dialog"""
