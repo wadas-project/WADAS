@@ -153,8 +153,7 @@ def load_configuration_from_file(file_path):
                 telegram_notifier = TelegramNotifier.deserialize(value)
                 Notifier.notifiers[key] = telegram_notifier
 
-                org_code = keyring.get_password("WADAS_org_code", "")
-                if not org_code:
+                if not keyring.get_password("WADAS_org_code", ""):
                     logger.error(
                         "Unable to find organization ID required for Telegram notifications"
                         " stored on the system."
@@ -164,8 +163,7 @@ def load_configuration_from_file(file_path):
                 else:
                     telegram_notifier.set_org_code()
 
-                node_id = keyring.get_password("WADAS_node_id", "")
-                if not node_id:
+                if not keyring.get_password("WADAS_node_id", ""):
                     logger.error(
                         "Unable to find node ID required for Telegram notifications"
                         " stored on the system."

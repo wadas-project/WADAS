@@ -51,12 +51,10 @@ class TelegramNotifier(Notifier):
         self.node_id = self.set_node_id()
 
     def set_org_code(self):
-        org_code_key = keyring.get_password("WADAS_org_code", "")
-        self.org_code = org_code_key if org_code_key else None
+        self.org_code = keyring.get_password("WADAS_org_code", "") or None
 
     def set_node_id(self):
-        node_id_key = keyring.get_password("WADAS_node_id", "")
-        self.node_id = node_id_key if node_id_key else None
+        self.node_id = keyring.get_password("WADAS_node_id", "") or None
 
     def is_configured(self):
         """Method that returns configuration status as bool value."""
