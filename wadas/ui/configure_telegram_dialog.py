@@ -68,7 +68,7 @@ class AddReceiverWorker(QThread):
 class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
     """Class to insert Telegram configuration data to enable WADAS for Telegram notifications."""
 
-    def __init__(self, org_code, node_id):
+    def __init__(self):
         super(DialogConfigureTelegram, self).__init__()
         self.ui = Ui_DialogConfigureTelegram()
         self.ui.setupUi(self)
@@ -80,8 +80,8 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
             Notifier.notifiers[Notifier.NotifierTypes.TELEGRAM.value] = TelegramNotifier(enabled=False,
                                                                                          allow_images=False)
         self.telegram_notifier = Notifier.notifiers[Notifier.NotifierTypes.TELEGRAM.value]
-        self.telegram_notifier.set_org_code(org_code)
-        self.telegram_notifier.set_node_id(node_id)
+        self.telegram_notifier.set_org_code()
+        self.telegram_notifier.set_node_id()
 
         self.ui.pushButton_test_message.setEnabled(len(self.telegram_notifier.recipients) > 0)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)

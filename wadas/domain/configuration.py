@@ -77,6 +77,7 @@ def load_configuration_from_file(file_path):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
         "uuid": "",
     }
 
@@ -151,6 +152,26 @@ def load_configuration_from_file(file_path):
             elif key in Notifier.notifiers and key == Notifier.NotifierTypes.TELEGRAM.value:
                 telegram_notifier = TelegramNotifier.deserialize(value)
                 Notifier.notifiers[key] = telegram_notifier
+
+                if not keyring.get_password("WADAS_org_code", ""):
+                    logger.error(
+                        "Unable to find organization ID required for Telegram notifications"
+                        " stored on the system."
+                        "Please login or register your organization from Ai model download dialog.",
+                    )
+                    load_status["valid_telegram_keyring"] = False
+                else:
+                    telegram_notifier.set_org_code()
+
+                if not keyring.get_password("WADAS_node_id", ""):
+                    logger.error(
+                        "Unable to find node ID required for Telegram notifications"
+                        " stored on the system."
+                        "Please login or register your organization from Ai model download dialog.",
+                    )
+                    load_status["valid_telegram_keyring"] = False
+                else:
+                    telegram_notifier.set_node_id()
 
         # FTP Server
         if FTPsServer.ftps_server and FTPsServer.ftps_server.server:

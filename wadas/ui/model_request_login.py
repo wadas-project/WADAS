@@ -26,6 +26,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
 from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
+from wadas.domain.notifier import Notifier
 from wadas.ui.access_request_dialog import AccessRequestDialog
 from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
 from wadas.ui.error_message_dialog import WADASErrorMessage
@@ -113,6 +114,15 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
 
         return msg_box.exec()
 
+    def get_telegram_notifier(self):
+        """Method that returns the Telegram notifier object, if exists."""
+
+        for notifier in Notifier.notifiers:
+            cur_notifier = Notifier.notifiers[notifier]
+            if cur_notifier and cur_notifier.type == Notifier.NotifierTypes.TELEGRAM:
+                return cur_notifier
+        return None
+
     def accept_and_close(self):
         """Method to trigger login phase and move to models selection"""
         credentials = keyring.get_credential(f"WADAS_Ai_model_request", "")
@@ -141,6 +151,9 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
                     self.ui.lineEdit_email.text().strip(),
                     org_code,
                 )
+
+                if telegram_notifier := self.get_telegram_notifier():
+                    telegram_notifier.set_org_code()
             except Exception as e:
                 WADASErrorMessage("User login error", str(e)).exec()
                 return
@@ -154,6 +167,9 @@ class DialogModelRequestLogin(QDialog, Ui_DialogModelRequestLogin):
                 node_id = str(self.wadas_model_server.register_node(org_code=org_code))
                 logger.debug("Node ID: %s", node_id)
                 keyring.set_password("WADAS_node_id", self.ui.lineEdit_email.text().strip(), node_id)
+
+                if telegram_notifier := self.get_telegram_notifier():
+                    telegram_notifier.set_node_id()
             except Exception as e:
                 WADASErrorMessage("User registration error", str(e)).exec()
                 return

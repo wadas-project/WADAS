@@ -20,6 +20,7 @@
 import logging
 import os
 
+import keyring
 import requests
 
 from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
@@ -46,14 +47,14 @@ class TelegramNotifier(Notifier):
         self.type = Notifier.NotifierTypes.TELEGRAM
         self.recipients = recipients or []
         self.allow_images = allow_images
-        self.org_code = None
-        self.node_id = None
+        self.org_code = self.set_org_code()
+        self.node_id = self.set_node_id()
 
-    def set_org_code(self, org_code):
-        self.org_code = org_code
+    def set_org_code(self):
+        self.org_code = keyring.get_password("WADAS_org_code", "") or None
 
-    def set_node_id(self, node_id):
-        self.node_id = node_id
+    def set_node_id(self):
+        self.node_id = keyring.get_password("WADAS_node_id", "") or None
 
     def is_configured(self):
         """Method that returns configuration status as bool value."""

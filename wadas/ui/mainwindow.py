@@ -636,13 +636,19 @@ class MainWindow(QMainWindow):
         """Method to check whether a notification protocol has been set in WADAS.
         If not, ask the user whether to proceed without."""
 
+
         notification_cfg = False
         notification_enabled = False
         for notifier in Notifier.notifiers:
-            if Notifier.notifiers[notifier]:
-                if Notifier.notifiers[notifier].is_configured():
+            cur_notifier = Notifier.notifiers[notifier]
+            if cur_notifier:
+                if cur_notifier.is_configured():
                     notification_cfg = True
-                if Notifier.notifiers[notifier].enabled:
+                elif cur_notifier.type == Notifier.NotifierTypes.TELEGRAM:
+                    if not cur_notifier.org_code or not cur_notifier.node_id:
+                        logger.error("Organizaion ID or Node ID missing, Telegram notifications will not be possible."
+                                     " Please login or register your organization and retry.")
+                if cur_notifier.enabled:
                     notification_enabled = True
         message = ""
         if not notification_cfg:
@@ -872,6 +878,13 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.Yes:
                 self.configure_whatsapp()
 
+        if not self.load_status["valid_telegram_keyring"]:
+            WADASErrorMessage(
+                self,
+                "Invalid Telegram configuration. ",
+                "Please register or login from Ai Model download dialog."
+            )
+
     def configure_ftp_cameras(self):
         """Method to trigger ftp cameras configuration dialog"""
 
@@ -906,7 +919,7 @@ class MainWindow(QMainWindow):
                 "You need either to register yourself or log in (if you have credentials) to register the node."
             )
         else:
-            configure_telegram_dlg = DialogConfigureTelegram(org_code_key.password, node_id_key.password)
+            configure_telegram_dlg = DialogConfigureTelegram()
             if configure_telegram_dlg.exec():
                 logger.info("Telegram notification configured.")
                 self.setWindowModified(True)

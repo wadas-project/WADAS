@@ -27,7 +27,7 @@ from wadas.domain.usb_camera import USBCamera
 
 @pytest.fixture
 def init():
-    Notifier.notifiers = {"Email": None, "WhatsApp": None}
+    Notifier.notifiers = {"Email": None, "WhatsApp": None, "Telegram": None}
     FTPsServer.ftps_server = None
     Actuator.actuators.clear()
     cameras.clear()
@@ -86,9 +86,10 @@ def test_load_incompatible_older_version_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
         "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -148,9 +149,10 @@ def test_load_empty_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
         "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -241,7 +243,8 @@ def test_load_wrong_format_config(mock_file, init):
     assert result["valid_ftp_keyring"] is True
     assert result["valid_email_keyring"] is True
     assert result["valid_whatsapp_keyring"] is True
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert result["valid_telegram_keyring"] is True
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -307,8 +310,9 @@ def test_load_actuator_server_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -429,8 +433,9 @@ def test_load_actuators_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     actuators = ["Actuator1", "Actuator2", "Actuator3", "Actuator4"]
     assert sorted(Actuator.actuators.keys()) == actuators
@@ -548,8 +553,9 @@ def test_load_ai_model_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -657,8 +663,9 @@ def test_load_camera_detection_params_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -810,12 +817,13 @@ def test_load_cameras_config(mock_file, init):
             "valid_ftp_keyring": True,
             "valid_email_keyring": True,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     is_dir_mock.assert_not_called()
     makedirs_mock.assert_not_called()
     get_credential_mock.assert_not_called()
     add_user_mock.assert_not_called()
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert [type(camera) for camera in cameras] == [FTPCamera, FTPCamera, USBCamera, USBCamera]
@@ -961,12 +969,13 @@ def test_load_cameras_config_with_ftp_and_folder_and_no_credentials(mock_file, i
             "valid_ftp_keyring": False,
             "valid_email_keyring": True,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     assert is_dir_mock.call_args == (("/Documents/ftp/Camera1",),)
     makedirs_mock.assert_not_called()
     get_credential_mock.assert_called_once_with("WADAS_FTP_camera_Camera1", "")
     add_user_mock.assert_not_called()
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is not None
     assert Actuator.actuators == {}
     assert type(cameras[0]) is FTPCamera
@@ -1051,12 +1060,13 @@ def test_load_cameras_config_with_ftp_and_no_folder_and_no_credentials(mock_file
             "valid_ftp_keyring": False,
             "valid_email_keyring": True,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     assert is_dir_mock.call_args == (("/Documents/ftp/Camera1",),)
     makedirs_mock.assert_called_once_with("/Documents/ftp/Camera1", exist_ok=True)
     get_credential_mock.assert_called_once_with("WADAS_FTP_camera_Camera1", "")
     add_user_mock.assert_not_called()
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is not None
     assert Actuator.actuators == {}
     assert type(cameras[0]) is FTPCamera
@@ -1141,12 +1151,13 @@ def test_load_cameras_config_with_ftp_and_folder_and_same_credentials(mock_file,
             "valid_ftp_keyring": True,
             "valid_email_keyring": True,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     assert is_dir_mock.call_args == (("/Documents/ftp/Camera1",),)
     makedirs_mock.assert_not_called()
     get_credential_mock.assert_called_once_with("WADAS_FTP_camera_Camera1", "")
     add_user_mock.assert_called_once_with("Camera1", "123", "/Documents/ftp/Camera1")
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is not None
     assert Actuator.actuators == {}
     assert type(cameras[0]) is FTPCamera
@@ -1231,12 +1242,13 @@ def test_load_cameras_config_with_ftp_and_folder_and_different_credentials(mock_
             "valid_ftp_keyring": False,
             "valid_email_keyring": True,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     assert is_dir_mock.call_args == (("/Documents/ftp/Camera1",),)
     makedirs_mock.assert_not_called()
     get_credential_mock.assert_called_once_with("WADAS_FTP_camera_Camera1", "")
     add_user_mock.assert_not_called()
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is not None
     assert Actuator.actuators == {}
     assert type(cameras[0]) is FTPCamera
@@ -1410,8 +1422,9 @@ def test_load_ftps_server_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is not None
     assert FTPsServer.ftps_server.ip == "1.2.3.4"
     assert FTPsServer.ftps_server.port == 567
@@ -1495,9 +1508,10 @@ def test_load_ftps_server_config_with_existing_server(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
     old_server.close_all.assert_called_once_with()
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is not None
     assert FTPsServer.ftps_server.ip == "1.2.3.4"
     assert FTPsServer.ftps_server.port == 567
@@ -1631,9 +1645,10 @@ def test_load_notification_config_with_no_credentials(mock_file, init):
             "valid_ftp_keyring": True,
             "valid_email_keyring": False,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     get_credential_mock.assert_called_once_with("WADAS_email", "development@wadas.org")
-    assert sorted(Notifier.notifiers.keys()) == ["Email", "WhatsApp"]
+    assert sorted(Notifier.notifiers.keys()) == ["Email", "Telegram", "WhatsApp"]
     notifier = Notifier.notifiers["Email"]
     assert notifier.enabled is False
     assert notifier.type == Notifier.NotifierTypes.EMAIL
@@ -1712,9 +1727,10 @@ def test_load_notification_config_with_same_credentials(mock_file, init):
             "valid_ftp_keyring": True,
             "valid_email_keyring": True,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     get_credential_mock.assert_called_once_with("WADAS_email", "development@wadas.org")
-    assert sorted(Notifier.notifiers.keys()) == ["Email", "WhatsApp"]
+    assert sorted(Notifier.notifiers.keys()) == ["Email", "Telegram", "WhatsApp"]
     notifier = Notifier.notifiers["Email"]
     assert notifier.enabled is False
     assert notifier.type == Notifier.NotifierTypes.EMAIL
@@ -1793,9 +1809,10 @@ def test_load_notification_config_with_different_credentials(mock_file, init):
             "valid_ftp_keyring": True,
             "valid_email_keyring": False,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     get_credential_mock.assert_called_once_with("WADAS_email", "development@wadas.org")
-    assert sorted(Notifier.notifiers.keys()) == ["Email", "WhatsApp"]
+    assert sorted(Notifier.notifiers.keys()) == ["Email", "Telegram", "WhatsApp"]
     notifier = Notifier.notifiers["Email"]
     assert notifier.enabled is False
     assert notifier.type == Notifier.NotifierTypes.EMAIL
@@ -1874,9 +1891,10 @@ def test_load_enabled_notification_config(mock_file, init):
             "valid_ftp_keyring": True,
             "valid_email_keyring": False,
             "valid_whatsapp_keyring": True,
+            "valid_telegram_keyring": True,
         }
     get_credential_mock.assert_called_once_with("WADAS_email", "development@wadas.org")
-    assert sorted(Notifier.notifiers.keys()) == ["Email", "WhatsApp"]
+    assert sorted(Notifier.notifiers.keys()) == ["Email", "Telegram", "WhatsApp"]
     notifier = Notifier.notifiers["Email"]
     assert notifier.enabled is True
 
@@ -2007,8 +2025,9 @@ def test_load_test_model_mode_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
-    assert Notifier.notifiers == {"Email": None, "WhatsApp": None}
+    assert Notifier.notifiers == {"Email": None, "WhatsApp": None, "Telegram": None}
     assert FTPsServer.ftps_server is None
     assert Actuator.actuators == {}
     assert cameras == []
@@ -2104,6 +2123,7 @@ def test_load_animal_detection_mode_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
     assert OperationMode.cur_operation_mode is None
     assert (
@@ -2186,6 +2206,7 @@ def test_load_animal_detection_and_classification_mode_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
     assert OperationMode.cur_operation_mode is None
     assert (
@@ -2271,6 +2292,7 @@ def test_load_custom_species_classification_mode_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
     assert OperationMode.cur_operation_mode is None
     assert (
@@ -2364,6 +2386,7 @@ def test_load_tunnel_config(mock_file, init):
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
     }
     tunnel = Tunnel.tunnels[0]
     assert tunnel.id == "Tunnel1"

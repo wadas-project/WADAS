@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from wadas.domain.telegram_notifier import TelegramNotifier
@@ -6,14 +8,16 @@ from wadas.domain.telegram_recipient import TelegramRecipient
 
 @pytest.fixture
 def telegram_notifier():
-    return TelegramNotifier(
-        [
-            TelegramRecipient("user_id1", name="first recipient"),
-            TelegramRecipient("user_id2", name="second recipient"),
-        ],
-        enabled=True,
-        allow_images=True,
-    )
+    with patch("wadas.domain.telegram_notifier.keyring.get_password") as mock_pw:
+        mock_pw.return_value = "fake_org_code"
+        return TelegramNotifier(
+            [
+                TelegramRecipient("user_id1", name="first recipient"),
+                TelegramRecipient("user_id2", name="second recipient"),
+            ],
+            enabled=True,
+            allow_images=True,
+        )
 
 
 def test_constructor(telegram_notifier):
@@ -43,7 +47,12 @@ def test_deserialize():
         "enabled": True,
         "allow_images": True,
     }
-    notifier = TelegramNotifier.deserialize(data)
+    from unittest.mock import patch
+
+    with patch("wadas.domain.telegram_notifier.keyring.get_password") as mock_pw:
+        mock_pw.return_value = "fake_org_code"
+        notifier = TelegramNotifier.deserialize(data)
+
     assert notifier.enabled == data["enabled"]
     assert len(notifier.recipients) == len(data["recipients"])
     assert notifier.recipients[0].recipient_id == data["recipients"][0]["recipient_id"]
