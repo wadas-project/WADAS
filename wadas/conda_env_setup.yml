@@ -12,7 +12,7 @@ dependencies:
   - onnx==1.16.2
   - opencv==4.10.0
   - openexr==3.2.1
-  - imath==3.1.11
+  - imath==3.1.10
   - glib==2.80.2
   - pip==24.2
   - pyftpdlib==1.5.10
