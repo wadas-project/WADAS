@@ -10,7 +10,9 @@ dependencies:
   - ipykernel==6.29.5
   - keyring==25.4.1
   - onnx==1.16.2
-  - opencv==4.10.0
+  - openexr==3.2.1
+  - imath==3.1.10
+  - glib==2.80.2
   - pip==24.2
   - pyftpdlib==1.5.10
   - python==3.10.15
@@ -34,3 +36,4 @@ dependencies:
       - openvino==2025.1.0
       - ray==2.43.0
       - wadas-runtime==0.2.6
+      - opencv-python==4.10.0.84

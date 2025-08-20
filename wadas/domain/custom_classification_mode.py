@@ -29,7 +29,7 @@ from wadas.domain.operation_mode import OperationMode
 from wadas.domain.utils import is_image, is_video
 
 logger = logging.getLogger(__name__)
-KEEP_DETECTION = False
+ENFORCE_PRIVACY = True
 
 
 class CustomClassificationMode(AnimalDetectionAndClassificationMode):
@@ -58,7 +58,7 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
             try:
                 os.remove(media_file)
 
-                logger.info("%s media removed successfully.", media_file)
+                logger.debug("%s media removed successfully.", media_file)
             except FileNotFoundError:
                 logger.error("%s does not exist", media_file)
             except PermissionError:
@@ -106,6 +106,9 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
 
                             # Actuation
                             self.actuate(detection_event)
+
+                            # Show processing results in UI
+                            self._show_processed_results(detection_event)
                         else:
                             logger.info(
                                 "Target animal '%s' not found, found '%s' instead. "
@@ -115,13 +118,25 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
                             )
 
                             # To enforce privacy, delete image if no target animal is classified
-                            if not KEEP_DETECTION and os.path.isfile(cur_media["media_path"]):
+                            if ENFORCE_PRIVACY and os.path.isfile(cur_media["media_path"]):
+                                logger.info(
+                                    "Removing detection events related images due to privacy"
+                                    " enforcement policy."
+                                )
                                 self.delete_media(cur_media["media_path"])
                                 self.delete_media(detection_event.detection_img_path)
-
-                        # Show processing results in UI
-                        self._show_processed_results(detection_event)
+                                self.delete_media(detection_event.classification_img_path)
+                            else:
+                                # Show processing results in UI
+                                self._show_processed_results(detection_event)
                     else:
                         logger.info("No animal classified.")
+                        if ENFORCE_PRIVACY and os.path.isfile(cur_media["media_path"]):
+                            logger.info(
+                                "Removing detection events related images due to privacy"
+                                " enforcement policy."
+                            )
+                            self.delete_media(cur_media["media_path"])
+                            self.delete_media(detection_event.detection_img_path)
 
         self.execution_completed()
