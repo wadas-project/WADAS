@@ -36,4 +36,4 @@ dependencies:
       - openvino==2025.1.0
       - ray==2.43.0
       - wadas-runtime==0.2.6
-      - opencv==4.10.0.84
+      - opencv-python==4.10.0.84
