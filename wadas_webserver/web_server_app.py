@@ -24,7 +24,7 @@ from typing import Annotated
 
 import bcrypt
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from jose import JWTError, jwt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
@@ -305,3 +305,18 @@ async def catch_all(full_path: str):
         raise HTTPException(status_code=404, detail="Frontend not found")
 
     return FileResponse(index_path)
+
+
+@app.get("/api/v1/logs")
+async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
+    user = verify_token(x_access_token)
+    if user.role != "Administrator":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    log_file_path = Path(ServerConfig.WADAS_ROOT_DIR) / "WADAS.log"
+    if not log_file_path.exists():
+        raise HTTPException(status_code=404, detail="Log file not found")
+
+    with open(log_file_path, "r") as f:
+        lines = f.readlines()[-200:]  # ultimi 200 log
+    return JSONResponse(content={"data": [line.strip() for line in lines]})

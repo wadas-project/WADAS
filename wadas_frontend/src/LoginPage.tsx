@@ -44,6 +44,7 @@ const LoginPage = () => {
                 // Store the received tokens
                 localStorage.setItem("accessToken", data.access_token);
                 localStorage.setItem("refreshToken", data.refresh_token);
+                localStorage.setItem("role", data.role || "Viewer");
                 navigate("/homepage");
             }
         } catch (err: any) {
