@@ -106,6 +106,7 @@ async def login(data: LoginRequest):
                 "access_token": acc_token,
                 "refresh_token": ref_token,
                 "token_type": "JWT",
+                "role": user.role,
             }
 
     raise HTTPException(
@@ -310,13 +311,13 @@ async def catch_all(full_path: str):
 @app.get("/api/v1/logs")
 async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
     user = verify_token(x_access_token)
-    if user.role != "Administrator":
+    if user.role != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    log_file_path = Path(ServerConfig.WADAS_ROOT_DIR) / "WADAS.log"
+    log_file_path = Path(ServerConfig.WADAS_ROOT_DIR) / "log" / "WADAS.log"
     if not log_file_path.exists():
         raise HTTPException(status_code=404, detail="Log file not found")
 
     with open(log_file_path, "r") as f:
-        lines = f.readlines()[-200:]  # ultimi 200 log
+        lines = f.readlines()[-200:]  # last 200 log rows
     return JSONResponse(content={"data": [line.strip() for line in lines]})
