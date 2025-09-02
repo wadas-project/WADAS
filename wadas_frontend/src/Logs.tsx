@@ -1,70 +1,52 @@
 import { useEffect, useState } from "react";
-import { Container, Card, Alert } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
-import CustomNavbar from "./components/CustomNavbar";
-import CustomSpinner from "./components/CustomSpinner";
-import { fetchLogs } from "./lib/api";
-import { tryWithRefreshing } from "./lib/utils";
 
-const Logs = () => {
+export default function Logs() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+
+  const fetchLogs = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch("/api/v1/logs", {
+        headers: { "x-access-token": token ?? "" },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const json = await res.json();
+
+      if (Array.isArray(json.data)) {
+        // ✅ aggiorna solo se i log sono cambiati
+        if (JSON.stringify(json.data) !== JSON.stringify(logs)) {
+          setLogs(json.data);
+        }
+      } else {
+        throw new Error("Formato logs non valido");
+      }
+    } catch (err: any) {
+      console.error("Fetch logs failed:", err);
+      setError("Impossibile recuperare i log.");
+    }
+  };
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const role = localStorage.getItem("role");
+    // prima fetch subito
+    fetchLogs();
 
-    // If not Admin role, redirect to login
-    if (!token || role !== "Admin") {
-      localStorage.clear();
-      navigate("/");
-      return;
-    }
-
-    const loadLogs = async () => {
-      try {
-        const result = await tryWithRefreshing(fetchLogs);
-        setLogs(result || []);
-        setLoading(false);
-      } catch (err: any) {
-          console.error("Error detail:", err);
-
-          const backendMessage = err.response?.data?.detail;
-          const friendlyMessage = backendMessage || err.message || "Unknown Error";
-
-          setError(friendlyMessage);
-          setLoading(false);
-        }
-    };
-
-    loadLogs();
-  }, [navigate]);
+    // poi ogni 1 secondo
+    const interval = setInterval(fetchLogs, 1000);
+    return () => clearInterval(interval);
+  }, [logs]); // attenzione alla dipendenza
 
   return (
-    <div className="padded-div">
-      <CustomNavbar />
-
-      <Container className="p-4">
-        <h1 className="mb-3">Server Logs</h1>
-
-        {loading ? (
-          <CustomSpinner />
-        ) : error ? (
-          <Alert variant="danger">Error: {error}</Alert>
-        ) : (
-          <Card className="bg-black text-green-400 font-mono max-h-[600px] overflow-y-auto">
-            <Card.Body style={{ whiteSpace: "pre-wrap" }}>
-              {logs.map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
-            </Card.Body>
-          </Card>
-        )}
-      </Container>
+    <div className="p-4">
+      <h1 className="text-xl font-bold mb-4">Logs</h1>
+      {error && <p className="text-red-500">{error}</p>}
+      <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded max-h-[70vh] overflow-y-auto">
+        {logs.join("\n")}
+      </pre>
     </div>
   );
-};
-
-export default Logs;
+}

@@ -294,20 +294,6 @@ frontend_path = Path(__file__).parent / "frontend"
 os.makedirs(frontend_path, exist_ok=True)
 
 
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    static_file = frontend_path / full_path
-    if static_file.exists() and static_file.is_file():
-        return FileResponse(static_file)
-
-    # serve index.html for every path to allow React to handle the routes
-    index_path = frontend_path / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-
-    return FileResponse(index_path)
-
-
 @app.get("/api/v1/logs")
 async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
     user = verify_token(x_access_token)
@@ -321,3 +307,17 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
     with open(log_file_path, "r") as f:
         lines = f.readlines()[-200:]  # last 200 log rows
     return JSONResponse(content={"data": [line.strip() for line in lines]})
+
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    static_file = frontend_path / full_path
+    if static_file.exists() and static_file.is_file():
+        return FileResponse(static_file)
+
+    # serve index.html for every path to allow React to handle the routes
+    index_path = frontend_path / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
+    return FileResponse(index_path)
