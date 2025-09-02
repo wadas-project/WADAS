@@ -231,8 +231,9 @@ export async function fetchExportActuationEvents(
     })
 }
 
-export async function fetchLogs(): Promise<{ data: string[] }> {
-    return await apiGET(baseUrl.concat("api/v1/logs"), (response) => {
-        return response.json();
+export async function fetchLogs(): Promise<string[]> {
+    return await apiGET(baseUrl.concat("api/v1/logs"), async (response) => {
+        const json = await response.json();
+        return json.data;
     });
 }
