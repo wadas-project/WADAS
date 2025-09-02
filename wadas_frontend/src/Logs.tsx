@@ -1,52 +1,66 @@
-import { useEffect, useState } from "react";
+import * as React from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchLogs } from "./lib/api";
 
-export default function Logs() {
+const Logs: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLPreElement | null>(null);
+  const logsEndRef = useRef<HTMLDivElement | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const fetchLogs = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch("/api/v1/logs", {
-        headers: { "x-access-token": token ?? "" },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.status}`);
-      }
-
-      const json = await res.json();
-
-      if (Array.isArray(json.data)) {
-        // ✅ aggiorna solo se i log sono cambiati
-        if (JSON.stringify(json.data) !== JSON.stringify(logs)) {
-          setLogs(json.data);
-        }
-      } else {
-        throw new Error("Formato logs non valido");
-      }
-    } catch (err: any) {
-      console.error("Fetch logs failed:", err);
-      setError("Impossibile recuperare i log.");
-    }
-  };
-
+  // Fetch logs every second
   useEffect(() => {
-    // prima fetch subito
-    fetchLogs();
+    const fetchLogsData = async () => {
+      try {
+        const response = await fetchLogs(); // response is { data: [...] }
+        const newLogs = Array.isArray(response.data) ? response.data : [];
 
-    // poi ogni 1 secondo
-    const interval = setInterval(fetchLogs, 1000);
+        // update logs
+        setLogs(newLogs);
+      } catch (err) {
+        console.error("Fetch logs failed:", err);
+      }
+    };
+
+    fetchLogsData(); // initial fetch
+    const interval = setInterval(fetchLogsData, 1000);
+
     return () => clearInterval(interval);
-  }, [logs]); // attenzione alla dipendenza
+  }, []);
+
+  // Handle auto-scroll
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (isAtBottom) {
+      logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs, isAtBottom]);
+
+  // Track user's scroll position
+  const handleScroll = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const atBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 10;
+    setIsAtBottom(atBottom);
+  };
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Logs</h1>
-      {error && <p className="text-red-500">{error}</p>}
-      <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded max-h-[70vh] overflow-y-auto">
+      <h1 className="text-xl sm:text-2xl font-semibold mb-4">WADAS App log</h1>
+      <pre
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="whitespace-pre-wrap break-words bg-gray-100 p-4 rounded max-h-[70vh] overflow-y-auto w-full text-sm sm:text-base"
+      >
         {logs.join("\n")}
+        <div ref={logsEndRef} />
       </pre>
     </div>
   );
-}
+};
+
+export default Logs;
