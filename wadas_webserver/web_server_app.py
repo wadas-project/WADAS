@@ -289,11 +289,6 @@ async def export_filtered_actuations(
     )
 
 
-# Static pages mounted under the site root
-frontend_path = Path(__file__).parent / "frontend"
-os.makedirs(frontend_path, exist_ok=True)
-
-
 @app.get("/api/v1/logs")
 async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
     user = verify_token(x_access_token)
@@ -307,6 +302,11 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
     with open(log_file_path, "r") as f:
         lines = f.readlines()[-200:]  # last 200 log rows
     return JSONResponse(content={"data": [line.strip() for line in lines]})
+
+
+# Static pages mounted under the site root
+frontend_path = Path(__file__).parent / "frontend"
+os.makedirs(frontend_path, exist_ok=True)
 
 
 @app.get("/{full_path:path}")
