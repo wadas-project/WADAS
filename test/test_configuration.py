@@ -10,6 +10,7 @@ from wadas.domain.actuator import Actuator
 from wadas.domain.ai_model import AiModel
 from wadas.domain.camera import Camera, cameras
 from wadas.domain.configuration import (
+    check_version_compatibility,
     load_configuration_from_file,
     save_configuration_to_file,
 )
@@ -82,7 +83,7 @@ def test_load_incompatible_older_version_config(mock_file, init):
         "errors_on_load": False,
         "errors_log": "",
         "config_version": Version("v0.1.0"),
-        "compatible_config": False,
+        "compatible_config": check_version_compatibility(Version("v0.1.0")),
         "valid_ftp_keyring": True,
         "valid_email_keyring": True,
         "valid_whatsapp_keyring": True,

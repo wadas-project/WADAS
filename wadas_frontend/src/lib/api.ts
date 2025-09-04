@@ -230,3 +230,11 @@ export async function fetchExportActuationEvents(
         return response.blob();
     })
 }
+
+export async function fetchLogs(): Promise<string[]> {
+    return await apiGET(baseUrl.concat("api/v1/logs"), (response) => {
+        return response.json();
+    });
+}
+
+

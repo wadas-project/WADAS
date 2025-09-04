@@ -84,3 +84,7 @@ test/exectests.py
 
 # Config
 UI_settings.ini
+
+# Web
+wadas_frontend/build
+wadas_webserver/frontend
