@@ -18,6 +18,7 @@
 # Description: Module containing class to handle WADAS operation modes.
 
 import logging
+import os
 import threading
 import time
 from abc import abstractmethod
@@ -69,6 +70,9 @@ class OperationMode(QObject):
     update_tunnel_counter = Signal()
 
     flag_stop_update_actuators_thread = False
+    enforce_privacy_remove_original_img = False
+    enforce_privacy_remove_detection_img = False
+    enforce_privacy_remove_classification_img = False
 
     def __init__(self):
         super(OperationMode, self).__init__()
@@ -308,6 +312,41 @@ class OperationMode(QObject):
                     # Insert actuation event into db, if enabled
                     if db := DataBase.get_enabled_db():
                         db.insert_into_db(actuation_event)
+
+    def delete_media(self, media_file):
+        """Method to delete media file handling possible exceptions."""
+
+        if os.path.isfile(media_file):
+            try:
+                os.remove(media_file)
+
+                logger.debug("%s media removed successfully.", media_file)
+            except FileNotFoundError:
+                logger.error("%s does not exist", media_file)
+            except PermissionError:
+                logger.error("No permission to delete %s", media_file)
+            except OSError:
+                logger.error("OS Error deleting file: %s", media_file)
+
+    def enforce_privacy(self, detection_event):
+        """Method to enforce privacy by deleting unneeded images."""
+
+        if OperationMode.enforce_privacy_remove_original_img and os.path.isfile(
+            detection_event.original_image
+        ):
+            logger.debug("Removing original image due to privacy enforcement policy.")
+            self.delete_media(detection_event.original_image)
+        if OperationMode.enforce_privacy_remove_detection_img and os.path.isfile(
+            detection_event.detection_img_path
+        ):
+            logger.debug("Removing detection image due to privacy enforcement policy.")
+            self.delete_media(detection_event.detection_img_path)
+        if (
+            self.enable_classification
+            and OperationMode.enforce_privacy_remove_classification_img
+            and detection_event.classification_img_path
+        ):
+            self.delete_media(detection_event.classification_img_path)
 
     def execution_completed(self):
         """Method to perform end of execution steps."""
