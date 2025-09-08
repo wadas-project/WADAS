@@ -6,14 +6,62 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>399</width>
-    <height>142</height>
+    <width>446</width>
+    <height>239</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Configure privacy</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Classification mode</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QCheckBox" name="checkBox_remove_original_image">
+        <property name="toolTip">
+         <string>If classification phase will not identify an animal, the original image received by wadas will be deleted.</string>
+        </property>
+        <property name="text">
+         <string>Remove original image if no animal is classified.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_remove_detection_image">
+        <property name="toolTip">
+         <string>If classification phase will not recognize a species (or classification results below treshold, the detection image will be deteded.</string>
+        </property>
+        <property name="text">
+         <string>Remove detection image if no animal is classified.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>Custom classification mode</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QCheckBox" name="checkBox_remove_classification_image">
+           <property name="toolTip">
+            <string>When in custom classification mode, the enablement of this option will triggere deletion of original and processed images if selected custom species is not classified.</string>
+           </property>
+           <property name="text">
+            <string>Remove classification image if selected species is not classified.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="font">
@@ -23,16 +71,6 @@
      </property>
      <property name="text">
       <string>Privacy enforcement options:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QCheckBox" name="checkBox_remove_detection_image">
-     <property name="toolTip">
-      <string>If classification phase will not recognize a species (or classification results below treshold, the detection image will be deteded.</string>
-     </property>
-     <property name="text">
-      <string>Remove detection image if no animal is classified.</string>
      </property>
     </widget>
    </item>
@@ -46,23 +84,10 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QCheckBox" name="checkBox_remove_original_image">
-     <property name="toolTip">
-      <string>If classification phase will not identify an animal, the original image received by wadas will be deleted.</string>
-     </property>
-     <property name="text">
-      <string>Remove original image if no animal is classified.</string>
-     </property>
-    </widget>
-   </item>
    <item row="3" column="0">
-    <widget class="QCheckBox" name="checkBox_remove_classification_image">
-     <property name="toolTip">
-      <string>When in custom classification mode a given species triggers actuation and notifiactions. With this option enabled, classification image will not be shown unless selected species is classified.</string>
-     </property>
+    <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Remove classification image if selected species is not classified.</string>
+      <string>NOTE: WADAS always automatically deletes images where no animal is detected.</string>
      </property>
     </widget>
    </item>

@@ -1166,4 +1166,12 @@ Are you sure you want to exit?""",
     def configure_privacy(self):
         """Method to open dialog for configuring privacy aspects."""
 
-        (DialogConfigurePrivacy()).exec()
+        if  (DialogConfigurePrivacy()).exec():
+            logger.info("Privacy configured.")
+
+            self.setWindowModified(True)
+            self.update_toolbar_status()
+            self.update_info_widget()
+            self.save_config_if_db_exists()
+        else:
+            logger.debug("Privacy configuration aborted.")

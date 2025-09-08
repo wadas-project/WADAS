@@ -336,8 +336,10 @@ class OperationMode(QObject):
         ):
             logger.debug("Removing original image due to privacy enforcement policy.")
             self.delete_media(detection_event.original_image)
-        if OperationMode.enforce_privacy_remove_detection_img and os.path.isfile(
-            detection_event.detection_img_path
+        if (
+            OperationMode.enforce_privacy_remove_detection_img
+            and os.path.isfile(detection_event.detection_img_path)
+            and self.enable_classification  # Detection img is deleted only in class mode.
         ):
             logger.debug("Removing detection image due to privacy enforcement policy.")
             self.delete_media(detection_event.detection_img_path)

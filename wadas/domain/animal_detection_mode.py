@@ -68,28 +68,28 @@ class AnimalDetectionAndClassificationMode(OperationMode):
                 if detection_event:
                     if self.enable_classification:
                         # Classification is enabled
-                        message = (
-                            (
+                        if detection_event.classification_img_path:
+                            message = (
                                 f"WADAS has classified '{self.last_classified_animals_str}' "
                                 f"animal from camera {cur_media['media_id']}!"
                             )
-                            if detection_event.classification_img_path
-                            else ""
-                        )
+                        else:
+                            message = (
+                                f"WADAS has detected but not classified any animal "
+                                f"from camera {cur_media['media_id']}"
+                            )
+                            self.enforce_privacy(detection_event)
                     else:
                         message = "WADAS has detected an animal from camera %s!" % id
 
-                    self.check_for_termination_requests()
                     # Notification
                     if message:
                         self.send_notification(detection_event, message)
 
-                    self.check_for_termination_requests()
                     # Actuation
                     if detection_event:
                         self.actuate(detection_event)
 
-                    self.check_for_termination_requests()
                     # Reproduce image or video in UI
                     self._show_processed_results(detection_event)
                 else:
