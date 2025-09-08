@@ -2657,3 +2657,100 @@ uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
 """
     )
+
+
+@patch(
+    "builtins.open",
+    new_callable=OpenStringMock,
+    read_data=f"""
+actuator_server:
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+cameras: []
+camera_detection_params: {{}}
+database: ''
+ftps_server: []
+notification: []
+operation_mode: ''
+privacy:
+  remove_classification_img: true
+  remove_detection_img: true
+  remove_original_image: true
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+""",
+)
+def test_load_privacy_config(mock_file, init):
+    Tunnel.tunnels = []
+    assert load_configuration_from_file("") == {
+        "errors_on_load": False,
+        "errors_log": "",
+        "config_version": Version(__version__),
+        "compatible_config": True,
+        "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
+        "valid_ftp_keyring": True,
+        "valid_email_keyring": True,
+        "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
+    }
+    assert OperationMode.enforce_privacy_remove_original_img
+    assert OperationMode.enforce_privacy_remove_detection_img
+    assert OperationMode.enforce_privacy_remove_classification_img
+
+
+@patch("builtins.open", new_callable=OpenStringMock, create=True)
+def test_save_privacy_config(mock_file, init):
+    OperationMode.cur_operation_mode_type = (
+        OperationMode.OperationModeTypes.CustomSpeciesClassificationMode
+    )
+    OperationMode.cur_custom_classification_species = "chamois"
+    Tunnel.tunnels = []
+    OperationMode.enforce_privacy_remove_original_img = True
+    OperationMode.enforce_privacy_remove_detection_img = True
+    OperationMode.enforce_privacy_remove_classification_img = True
+    save_configuration_to_file("", "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede")
+    assert (
+        mock_file.dump()
+        == f"""actuator_server: ''
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+camera_detection_params: {{}}
+cameras: []
+database: ''
+ftps_server: ''
+notification: ''
+operation_mode:
+  custom_target_species: chamois
+  type: Custom Species Classification Mode
+privacy:
+  remove_classification_img: true
+  remove_detection_img: true
+  remove_original_image: true
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+"""
+    )
