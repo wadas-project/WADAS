@@ -349,6 +349,7 @@ class OperationMode(QObject):
             and detection_event.classification_img_path
         ):
             self.delete_media(detection_event.classification_img_path)
+            logger.debug("Removing classification image due to privacy enforcement policy.")
 
     def execution_completed(self):
         """Method to perform end of execution steps."""

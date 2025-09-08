@@ -101,7 +101,11 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
                             )
 
                             # To enforce privacy, delete image if no target animal is classified
-                            if OperationMode.enforce_privacy_remove_classification_img:
+                            if (
+                                OperationMode.enforce_privacy_remove_classification_img
+                                or OperationMode.enforce_privacy_remove_original_img
+                                or OperationMode.enforce_privacy_remove_detection_img
+                            ):
                                 self.enforce_privacy(detection_event)
                             else:
                                 # Show processing results in UI
