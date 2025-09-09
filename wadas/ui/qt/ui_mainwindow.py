@@ -367,11 +367,13 @@ class Ui_MainWindow(object):
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.actionConfigure_database)
         self.toolBar.addSeparator()
+        self.toolBar.addAction(self.actionConfigure_privacy)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.actionConfigure_web_interface)
+        self.toolBar.addSeparator()
         self.toolBar.addAction(self.actionRun)
         self.toolBar.addAction(self.actionStop)
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.actionConfigure_web_interface)
-        self.toolBar.addAction(self.actionConfigure_privacy)
 
         self.retranslateUi(MainWindow)
 
