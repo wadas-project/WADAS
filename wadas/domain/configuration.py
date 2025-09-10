@@ -316,20 +316,14 @@ def load_configuration_from_file(file_path):
 
         # Privacy
         if privacy_cfg := wadas_config["privacy"]:
-            OperationMode.enforce_privacy_remove_original_img = (
-                privacy_cfg["remove_original_image"]
-                if privacy_cfg["remove_original_image"]
-                else False
+            OperationMode.enforce_privacy_remove_original_img = privacy_cfg.get(
+                "remove_original_image", False
             )
-            OperationMode.enforce_privacy_remove_detection_img = (
-                privacy_cfg["remove_detection_img"]
-                if privacy_cfg["remove_detection_img"]
-                else False
+            OperationMode.enforce_privacy_remove_detection_img = privacy_cfg.get(
+                "remove_detection_img", False
             )
-            OperationMode.enforce_privacy_remove_classification_img = (
-                privacy_cfg["remove_classification_img"]
-                if privacy_cfg["remove_classification_img"]
-                else False
+            OperationMode.enforce_privacy_remove_classification_img = privacy_cfg.get(
+                "remove_classification_img", False
             )
 
     except Exception as e:

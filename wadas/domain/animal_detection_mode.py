@@ -75,7 +75,7 @@ class AnimalDetectionAndClassificationMode(OperationMode):
                             )
                         else:
                             message = (
-                                f"WADAS has detected but not classified any animal "
+                                "WADAS has detected but not classified any animal "
                                 f"from camera {cur_media['media_id']}"
                             )
                             self.enforce_privacy(detection_event)
