@@ -362,10 +362,13 @@
    <addaction name="separator"/>
    <addaction name="actionConfigure_database"/>
    <addaction name="separator"/>
+   <addaction name="actionConfigure_privacy"/>
+   <addaction name="separator"/>
+   <addaction name="actionConfigure_web_interface"/>
+   <addaction name="separator"/>
    <addaction name="actionRun"/>
    <addaction name="actionStop"/>
    <addaction name="separator"/>
-   <addaction name="actionConfigure_web_interface"/>
   </widget>
   <action name="actionSelect_Mode">
    <property name="icon">
@@ -668,6 +671,21 @@
    </property>
    <property name="toolTip">
     <string>Configure Tunnels to be used in tunnel mode</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="actionConfigure_privacy">
+   <property name="icon">
+    <iconset>
+     <normaloff>../../icons/privacy.png</normaloff>../../icons/privacy.png</iconset>
+   </property>
+   <property name="text">
+    <string>Configure privacy</string>
+   </property>
+   <property name="toolTip">
+    <string>Configure privacy</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>

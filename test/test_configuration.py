@@ -46,6 +46,9 @@ def init():
     AiModel.tunnel_mode_detection_threshold = 0
     AiModel.tunnel_mode_detection_device = "auto"
     OperationMode.cur_operation_mode = None
+    OperationMode.enforce_privacy_remove_original_img = False
+    OperationMode.enforce_privacy_remove_detection_img = False
+    OperationMode.enforce_privacy_remove_classification_img = False
     Tunnel.tunnels = None
 
 
@@ -73,6 +76,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 version: v0.1.0
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
@@ -110,6 +117,9 @@ def test_load_incompatible_older_version_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -136,6 +146,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 version: {__version__}
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
@@ -172,6 +186,9 @@ def test_load_empty_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -199,6 +216,10 @@ database: ''
 ftps_server: ''
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -230,6 +251,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 """,
@@ -265,6 +290,9 @@ def test_load_wrong_format_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -296,6 +324,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -341,6 +373,9 @@ def test_load_actuator_server_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -376,6 +411,10 @@ database: ''
 ftps_server: ''
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -419,6 +458,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -465,6 +508,9 @@ def test_load_actuators_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -508,6 +554,10 @@ database: ''
 ftps_server: ''
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -539,6 +589,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -576,6 +630,9 @@ def test_load_ai_model_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -614,6 +671,10 @@ database: ''
 ftps_server: ''
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -649,6 +710,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -691,6 +756,9 @@ def test_load_camera_detection_params_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -728,6 +796,10 @@ database: ''
 ftps_server: ''
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -791,6 +863,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {}
@@ -908,6 +984,9 @@ def test_load_cameras_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -947,6 +1026,10 @@ ftps_server:
 database: ''
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -999,6 +1082,9 @@ def test_load_cameras_config_with_ftp_and_folder_and_no_credentials(mock_file, i
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1038,6 +1124,10 @@ ftps_server:
 database: ''
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1090,6 +1180,9 @@ def test_load_cameras_config_with_ftp_and_no_folder_and_no_credentials(mock_file
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1129,6 +1222,10 @@ ftps_server:
 database: ''
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1181,6 +1278,9 @@ def test_load_cameras_config_with_ftp_and_folder_and_same_credentials(mock_file,
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1220,6 +1320,10 @@ ftps_server:
 database: ''
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1272,6 +1376,9 @@ def test_load_cameras_config_with_ftp_and_folder_and_different_credentials(mock_
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -1363,6 +1470,10 @@ database: ''
 ftps_server: ''
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {}
@@ -1408,6 +1519,10 @@ ftps_server:
 database: ''
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1456,6 +1571,9 @@ def test_load_ftps_server_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1490,6 +1608,10 @@ ftps_server:
   ssl_key: /Documents/ssl/eshare_key.pem
 notification: []
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1543,6 +1665,9 @@ def test_load_ftps_server_config_with_existing_server(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -1590,6 +1715,10 @@ ftps_server:
   ssl_key: /Documents/ssl/eshare_key.pem
 notification: ''
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1629,6 +1758,10 @@ notification:
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1677,6 +1810,9 @@ def test_load_notification_config_with_no_credentials(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1711,6 +1847,10 @@ notification:
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1759,6 +1899,9 @@ def test_load_notification_config_with_same_credentials(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1793,6 +1936,10 @@ notification:
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1841,6 +1988,9 @@ def test_load_notification_config_with_different_credentials(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type is None
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch(
@@ -1875,6 +2025,10 @@ notification:
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
 operation_mode:
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1936,6 +2090,10 @@ notification:
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -1979,6 +2137,10 @@ notification:
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2011,6 +2173,10 @@ ftps_server: []
 notification: []
 operation_mode:
     type: Test Model Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2048,6 +2214,9 @@ def test_load_test_model_mode_config(mock_file, init):
     assert OperationMode.cur_operation_mode is None
     assert OperationMode.cur_operation_mode_type == OperationMode.OperationModeTypes.TestModelMode
     assert Tunnel.tunnels is None
+    assert not OperationMode.enforce_privacy_remove_original_img
+    assert not OperationMode.enforce_privacy_remove_detection_img
+    assert not OperationMode.enforce_privacy_remove_classification_img
 
 
 @patch("builtins.open", new_callable=OpenStringMock, create=True)
@@ -2077,6 +2246,10 @@ ftps_server: ''
 notification: ''
 operation_mode:
   type: Test Model Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2109,6 +2282,10 @@ ftps_server: []
 notification: []
 operation_mode:
     type: Animal Detection Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2160,6 +2337,10 @@ ftps_server: ''
 notification: ''
 operation_mode:
   type: Animal Detection Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2192,6 +2373,10 @@ ftps_server: []
 notification: []
 operation_mode:
     type: Animal Detection and Classification Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2245,6 +2430,10 @@ ftps_server: ''
 notification: ''
 operation_mode:
   type: Animal Detection and Classification Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2278,6 +2467,10 @@ notification: []
 operation_mode:
     type: Custom Species Classification Mode
     custom_target_species: chamois
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2334,6 +2527,10 @@ notification: ''
 operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
@@ -2365,6 +2562,10 @@ database: ''
 ftps_server: []
 notification: []
 operation_mode: ''
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels:
 - camera_entrance_1: camera_entrance1
   camera_entrance_2: camera_entrance2
@@ -2441,6 +2642,10 @@ notification: ''
 operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
+privacy:
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
 tunnels:
 - camera_entrance_1: camera_entrance1
   camera_entrance_2: camera_entrance2
@@ -2448,6 +2653,103 @@ tunnels:
   entrance_1_direction: down
   entrance_2_direction: up
   id: Tunnel1
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+"""
+    )
+
+
+@patch(
+    "builtins.open",
+    new_callable=OpenStringMock,
+    read_data=f"""
+actuator_server:
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+cameras: []
+camera_detection_params: {{}}
+database: ''
+ftps_server: []
+notification: []
+operation_mode: ''
+privacy:
+  remove_classification_img: true
+  remove_detection_img: true
+  remove_original_image: true
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+""",
+)
+def test_load_privacy_config(mock_file, init):
+    Tunnel.tunnels = []
+    assert load_configuration_from_file("") == {
+        "errors_on_load": False,
+        "errors_log": "",
+        "config_version": Version(__version__),
+        "compatible_config": True,
+        "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
+        "valid_ftp_keyring": True,
+        "valid_email_keyring": True,
+        "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
+    }
+    assert OperationMode.enforce_privacy_remove_original_img
+    assert OperationMode.enforce_privacy_remove_detection_img
+    assert OperationMode.enforce_privacy_remove_classification_img
+
+
+@patch("builtins.open", new_callable=OpenStringMock, create=True)
+def test_save_privacy_config(mock_file, init):
+    OperationMode.cur_operation_mode_type = (
+        OperationMode.OperationModeTypes.CustomSpeciesClassificationMode
+    )
+    OperationMode.cur_custom_classification_species = "chamois"
+    Tunnel.tunnels = []
+    OperationMode.enforce_privacy_remove_original_img = True
+    OperationMode.enforce_privacy_remove_detection_img = True
+    OperationMode.enforce_privacy_remove_classification_img = True
+    save_configuration_to_file("", "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede")
+    assert (
+        mock_file.dump()
+        == f"""actuator_server: ''
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+camera_detection_params: {{}}
+cameras: []
+database: ''
+ftps_server: ''
+notification: ''
+operation_mode:
+  custom_target_species: chamois
+  type: Custom Species Classification Mode
+privacy:
+  remove_classification_img: true
+  remove_detection_img: true
+  remove_original_image: true
+tunnels: []
 uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
 """

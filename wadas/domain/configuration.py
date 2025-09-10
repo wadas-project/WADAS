@@ -314,6 +314,18 @@ def load_configuration_from_file(file_path):
             tunnel = Tunnel.deserialize(data)
             Tunnel.tunnels.append(tunnel)
 
+        # Privacy
+        if privacy_cfg := wadas_config["privacy"]:
+            OperationMode.enforce_privacy_remove_original_img = privacy_cfg.get(
+                "remove_original_image", False
+            )
+            OperationMode.enforce_privacy_remove_detection_img = privacy_cfg.get(
+                "remove_detection_img", False
+            )
+            OperationMode.enforce_privacy_remove_classification_img = privacy_cfg.get(
+                "remove_classification_img", False
+            )
+
     except Exception as e:
         load_status["errors_on_load"] = True
         load_status["errors_log"] = e
@@ -388,6 +400,11 @@ def save_configuration_to_file(file_, project_uuid):
         ),
         "database": db.serialize() if (db := DataBase.get_instance()) else "",
         "tunnels": tunnels_to_dict,
+        "privacy": {
+            "remove_original_image": OperationMode.enforce_privacy_remove_original_img,
+            "remove_detection_img": OperationMode.enforce_privacy_remove_detection_img,
+            "remove_classification_img": OperationMode.enforce_privacy_remove_classification_img,
+        },
     }
 
     with open(file_, "w") as yaml_file:
