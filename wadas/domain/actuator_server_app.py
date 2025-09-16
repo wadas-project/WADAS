@@ -40,7 +40,9 @@ async def get_actuator_command(actuator_id: str):
 
     if actuator_id in Actuator.actuators:
         cmd = Actuator.actuators[actuator_id].get_command()
-        return JSONResponse(content=json.loads(cmd) if cmd else {"cmd": None}, status_code=200)
+        return JSONResponse(
+            content=json.loads(cmd) if cmd else {"id": None, "cmd": None}, status_code=200
+        )
 
     else:
         logger.error("No actuator found with ID: %s", actuator_id)
