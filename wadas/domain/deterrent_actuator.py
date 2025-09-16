@@ -17,9 +17,11 @@
 # Date: 2024-07-02
 # Description: Module containing Deterrent Actuator class and methods.
 
-
+import datetime
 import json
 import logging
+import uuid
+from dataclasses import dataclass, field
 from enum import Enum
 
 from wadas.domain.actuation_event import ActuationEvent
@@ -28,32 +30,46 @@ from wadas.domain.actuator import Actuator
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class Command:
+    cmd: str
+    payload: dict = field(default_factory=dict)
+    id: str = field(
+        default_factory=lambda: f"{int(datetime.utcnow().timestamp() * 1000)}-"
+        f"{uuid.uuid4().hex[:6]}"
+    )
+
+    def to_json(self) -> str:
+        return json.dumps({"id": self.id, "cmd": self.cmd, "payload": self.payload})
+
+
 class DeterrentActuator(Actuator):
     """Deterrent Actuator, specialization of Actuator."""
 
     class Commands(Enum):
-        ON = json.dumps({"on": True})
+        ON = "on"
+        SEND_LOG = "send_log"
+        TEST = "test"
 
     def __init__(self, id, enabled):
         super().__init__(id, enabled)
         self.type = Actuator.ActuatorTypes.DETERRENT
 
-    def send_command(self, cmd):
-        """Method to send the specific command to the Actuator superclass."""
+    def build_command(self, cmd: Commands, payload: dict = None) -> Command:
+        """Factory to create a Command object with unique ID and optional payload."""
+        return Command(cmd=cmd.value, payload=payload or {})
 
-        command_sent = False
-        if isinstance(cmd, DeterrentActuator.Commands):
-            super().send_command(cmd)
-            command_sent = True
-        else:
+    def send_command(self, cmd: Commands, payload: dict = None):
+        """Send command to actuator queue with unique ID."""
+        if not isinstance(cmd, DeterrentActuator.Commands):
             logger.error(
-                "Actuator %s with ID %s received an unknown command: %s.",
-                self.type,
-                self.id,
-                cmd,
+                "Actuator %s with ID %s received an unknown command: %s.", self.type, self.id, cmd
             )
             raise Exception("Unknown command.")
-        return command_sent
+
+        command_obj = self.build_command(cmd, payload)
+        super().send_command(command_obj)
+        return command_obj.id  # return ID so caller can track responses
 
     def actuate(self, actuation_event: ActuationEvent):
         """Method to trigger the Deterrent Actuator sending it the ON Command"""

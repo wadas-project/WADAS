@@ -20,7 +20,7 @@
 import json
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
@@ -45,3 +45,62 @@ async def get_actuator_command(actuator_id: str):
     else:
         logger.error("No actuator found with ID: %s", actuator_id)
         raise HTTPException(status_code=404, detail="Actuator does not exist")
+
+
+@app.post("/api/v1/actuators/{actuator_id}/response")
+async def respond_actuator_command(
+    actuator_id: str,
+    payload: dict = Body(  # noqa: B008
+        ...,
+        example={
+            "id": "1694789238123-a3f5c1",
+            "cmd": "send_log",
+            "response": True,
+            "payload": {"logs": ["..."]},
+        },
+    ),  # noqa: B008
+):
+    """
+    Endpoint used by a remote actuator device to send back the result of an executed command.
+
+    Expected payload format:
+    {
+        "id": "<command-id>",
+        "cmd": "<command-name>",
+        "response": true|false,
+        "payload": { ... }  # optional extra data
+    }
+    """
+
+    if actuator_id not in Actuator.actuators:
+        logger.error("No actuator found with ID: %s", actuator_id)
+        raise HTTPException(status_code=404, detail="Actuator does not exist")
+
+    actuator = Actuator.actuators[actuator_id]
+
+    cmd_id = payload.get("id")
+    cmd = payload.get("cmd")
+    response_ok = payload.get("response")
+    extra_payload = payload.get("payload", {})
+
+    if not cmd_id:
+        raise HTTPException(status_code=400, detail="Missing command 'id' in response")
+    if response_ok is None:
+        raise HTTPException(status_code=400, detail="Missing 'response' (True/False) in response")
+
+    # Store responses in a dictionary {command_id: {cmd, response, payload}}
+    if not hasattr(actuator, "responses"):
+        actuator.responses = {}
+
+    actuator.responses[cmd_id] = {"cmd": cmd, "response": response_ok, "payload": extra_payload}
+
+    logger.info(
+        "Actuator %s responded to command %s (%s) with %s, payload=%s",
+        actuator_id,
+        cmd,
+        cmd_id,
+        response_ok,
+        extra_payload,
+    )
+
+    return {"status": "received", "id": cmd_id}
