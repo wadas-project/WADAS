@@ -16,9 +16,10 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-01-04
 # Description: database module.
-
+import datetime
 import json
 import logging
+import shutil
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -398,6 +399,48 @@ class DataBase(ABC):
                 session.close()
         else:
             logger.error("Failed to insert object into db as session could not been created.")
+
+    def update_db_version(self, db_version):
+        """Method to update database version."""
+
+        try:
+            # Backup db
+            if self.db_type == DataBase.DBTypes.SQLITE:
+                # Backup file
+                backup_file = f"{self.db_path}.bak_{datetime.datetime.now():%Y%m%d%H%M%S}"
+                shutil.copy2(self.db_path, backup_file)
+                logger.info("SQLite backup created at %s", backup_file)
+
+            elif self.db_type in (DataBase.DBTypes.MYSQL, DataBase.DBTypes.MARIADB):
+                # Backup db
+                logger.info("Preparing migration for %s database", self.db_type.name)
+                # TODO: implement mysqldump or snapshot
+                pass
+
+            # Update db
+            if db_version <= "v0.9.7":
+                ok = DataBase.run_query("ALTER TABLE my_table ADD COLUMN new_col TEXT;")
+                if ok:
+                    DataBase.run_query(
+                        "ALTER TABLE my_table ADD COLUMN command_response BOOLEAN NULL;"
+                    )
+                    logger.info("Database updated from v0.9.7 to v0.9.8")
+                else:
+                    logger.error("Migration step failed for v0.9.7 → v0.9.8")
+                    return False
+            return True
+
+        except Exception:
+            logger.exception("Unable to update db to latest version.")
+            raise
+        finally:
+            if "e" in locals() and backup_file and self.db_type == DataBase.DBTypes.SQLITE:
+                logger.warning("Restoring DB from backup due to failure...")
+                try:
+                    self.restore_db(backup_file)
+                    logger.info("DB successfully restored from backup")
+                except Exception:
+                    logger.exception("Restore failed! Manual intervention required.")
 
     def update_detection_event(cls, detection_event: DetectionEvent):
         """Update fields of a detection_events record in db.

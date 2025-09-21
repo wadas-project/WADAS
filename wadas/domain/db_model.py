@@ -195,6 +195,7 @@ class ActuationEvent(Base):
     time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
     detection_event_id = Column(Integer, ForeignKey("detection_events.id"), nullable=False)
     command = Column(Text, nullable=True)
+    command_response = Column(Boolean, nullable=True)
 
     actuator = relationship("Actuator", back_populates="actuation_events")
     detection_event = relationship("DetectionEvent", back_populates="actuation_events")

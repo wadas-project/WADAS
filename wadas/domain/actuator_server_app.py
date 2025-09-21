@@ -43,7 +43,6 @@ async def get_actuator_command(actuator_id: str):
         return JSONResponse(
             content=json.loads(cmd) if cmd else {"id": None, "cmd": None}, status_code=200
         )
-
     else:
         logger.error("No actuator found with ID: %s", actuator_id)
         raise HTTPException(status_code=404, detail="Actuator does not exist")
@@ -55,10 +54,11 @@ async def respond_actuator_command(
     payload: dict = Body(  # noqa: B008
         ...,
         example={
-            "id": "1694789238123-a3f5c1",
+            "actuator_id": 5,
+            "time_stamp": "2025-09-15T10:32:00.123456Z",
             "cmd": "send_log",
             "response": True,
-            "payload": {"logs": ["..."]},
+            "payload": {"data": ["..."]},
         },
     ),  # noqa: B008
 ):
@@ -78,31 +78,31 @@ async def respond_actuator_command(
         logger.error("No actuator found with ID: %s", actuator_id)
         raise HTTPException(status_code=404, detail="Actuator does not exist")
 
-    actuator = Actuator.actuators[actuator_id]
-
-    cmd_id = payload.get("id")
+    resp_actuator_id = payload.get("actuator_id")
     cmd = payload.get("cmd")
+    ts = payload.get("time_stamp")
     response_ok = payload.get("response")
-    extra_payload = payload.get("payload", {})
+    response_payload = payload.get("payload", {})
 
-    if not cmd_id:
+    if not actuator_id:
         raise HTTPException(status_code=400, detail="Missing command 'id' in response")
+    if resp_actuator_id != actuator_id:
+        raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
     if response_ok is None:
         raise HTTPException(status_code=400, detail="Missing 'response' (True/False) in response")
-
-    # Store responses in a dictionary {command_id: {cmd, response, payload}}
-    if not hasattr(actuator, "responses"):
-        actuator.responses = {}
-
-    actuator.responses[cmd_id] = {"cmd": cmd, "response": response_ok, "payload": extra_payload}
 
     logger.info(
         "Actuator %s responded to command %s (%s) with %s, payload=%s",
         actuator_id,
         cmd,
-        cmd_id,
+        ts,
         response_ok,
-        extra_payload,
+        response_payload,
     )
 
-    return {"status": "received", "id": cmd_id}
+    return {
+        "status": "received",
+        "actuator_id": actuator_id,
+        "time_stamp": ts,
+        "response_payload": response_payload,
+    }
