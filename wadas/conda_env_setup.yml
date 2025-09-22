@@ -26,6 +26,9 @@ dependencies:
   - mariadb==1.1.11
   - python-jose==3.3.0
   - mariadb-connector-c=3.4.4
+  - openssl=3.3.2
+  - cryptography=42.0.8
+  - pyopenssl=24.1.0
   - pip:
       - cv2-enumerate-cameras==1.1.15
       - intel-npu-acceleration-library==1.4.0
