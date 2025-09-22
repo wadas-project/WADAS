@@ -20,6 +20,7 @@
 import datetime
 import logging
 from abc import abstractmethod
+from collections import deque
 from enum import Enum
 from queue import Empty, Queue
 
@@ -45,6 +46,12 @@ class Actuator:
         self.enabled = enabled
         self.stop_thread = False
         self.type = None
+        self.responses: deque[dict] = deque(maxlen=50)  # Actuator responses FIFO
+
+    def queue_response_command(self, response: dict):
+        """Method to insert an actuator response into a dedicated queue"""
+        self.responses.append(response)
+        self.last_update = datetime.datetime.now()
 
     def send_command(self, cmd: Enum):
         """Method to insert a command into the actuator queue"""

@@ -69,7 +69,9 @@ async def respond_actuator_command(
     {
         "id": "<command-id>",
         "cmd": "<command-name>",
+        "time_stamp": <datetime>
         "response": true|false,
+        "response_timestamp": <datetime>
         "payload": { ... }  # optional extra data
     }
     """
@@ -79,30 +81,39 @@ async def respond_actuator_command(
         raise HTTPException(status_code=404, detail="Actuator does not exist")
 
     resp_actuator_id = payload.get("actuator_id")
-    cmd = payload.get("cmd")
-    ts = payload.get("time_stamp")
     response_ok = payload.get("response")
-    response_payload = payload.get("payload", {})
 
     if not actuator_id:
-        raise HTTPException(status_code=400, detail="Missing command 'id' in response")
+        raise HTTPException(status_code=400, detail="Missing actuator_id in response")
     if resp_actuator_id != actuator_id:
         raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
     if response_ok is None:
         raise HTTPException(status_code=400, detail="Missing 'response' (True/False) in response")
 
-    logger.info(
-        "Actuator %s responded to command %s (%s) with %s, payload=%s",
-        actuator_id,
-        cmd,
-        ts,
-        response_ok,
-        response_payload,
-    )
+    actuator = Actuator.actuators[actuator_id]
 
-    return {
-        "status": "received",
-        "actuator_id": actuator_id,
-        "time_stamp": ts,
-        "response_payload": response_payload,
-    }
+    # Save original payload
+    actuator.queue_response_command(payload)
+
+    if response_ok:
+        logger.info(
+            "Actuator %s responded to command %s (%s) with %s, payload=%s",
+            actuator_id,
+            payload.get("cmd"),
+            payload.get("time_stamp"),
+            response_ok,
+            payload.get("payload"),
+        )
+    else:
+        logger.error(
+            "Actuator %s responded to command %s (%s) with %s, payload=%s",
+            actuator_id,
+            payload.get("cmd"),
+            payload.get("time_stamp"),
+            response_ok,
+            payload.get("payload"),
+        )
+
+    # TODO: add database insertion of the Actuator's response
+
+    return {"status": "received"}
