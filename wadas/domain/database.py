@@ -400,36 +400,32 @@ class DataBase(ABC):
         else:
             logger.error("Failed to insert object into db as session could not been created.")
 
-    def update_db_version(self, db_version):
+    def update_db_version(self):
         """Method to update database version."""
 
+        cur_db_version = DataBase.get_db_version()
+        cur_db = DataBase.get_instance()
         try:
             # Backup db
-            if self.db_type == DataBase.DBTypes.SQLITE:
+            if DataBase.wadas_db.type == DataBase.DBTypes.SQLITE:
                 # Backup file
-                backup_file = f"{self.db_path}.bak_{datetime.datetime.now():%Y%m%d%H%M%S}"
-                shutil.copy2(self.db_path, backup_file)
+                backup_file = f"{cur_db.host}.bak_{datetime.datetime.now():%Y%m%d%H%M%S}"
+                shutil.copy2(cur_db.host, backup_file)
                 logger.info("SQLite backup created at %s", backup_file)
 
-            elif self.db_type in (DataBase.DBTypes.MYSQL, DataBase.DBTypes.MARIADB):
+            elif DataBase.wadas_db.type in (DataBase.DBTypes.MYSQL, DataBase.DBTypes.MARIADB):
                 # Backup db
-                logger.info("Preparing migration for %s database", self.db_type.name)
+                logger.info("Preparing migration for %s database", DataBase.wadas_db.type.name)
                 # TODO: implement mysqldump or snapshot
                 pass
 
             # Update db
-            if db_version <= "v0.9.7":
-                ok = DataBase.run_query("ALTER TABLE my_table ADD COLUMN new_col TEXT;")
-                if ok:
-                    DataBase.run_query(
-                        "ALTER TABLE my_table ADD COLUMN command_response BOOLEAN NULL;"
-                    )
-                    logger.info("Database updated from v0.9.7 to v0.9.8")
-                else:
-                    logger.error("Migration step failed for v0.9.7 → v0.9.8")
-                    return False
-            return True
-
+            if cur_db_version <= "v0.9.7":
+                DataBase.run_query(
+                    text("ALTER TABLE actuation_events ADD COLUMN command_response BOOLEAN NULL;")
+                )
+            DataBase.run_query(text(f"UPDATE db_metadata SET version='{__dbversion__}';"))
+            logger.info("Database updated from %s to %s", cur_db_version, __dbversion__)
         except Exception:
             logger.exception("Unable to update db to latest version.")
             raise

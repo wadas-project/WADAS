@@ -420,23 +420,23 @@ class ConfigureDBDialog(QDialog, Ui_ConfigureDBDialog):
             reply = QMessageBox.question(
                 self,
                 "Confirm database update",
-                "By accepting WADAS database will be updated to the latest version.\n"
+                "A new database version is available!\n"
+                "By accepting WADAS will update your database to the latest version.\n"
                 "It is recommended to back up the database first. Are you sure you want to continue?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )
             if reply == QMessageBox.Yes:
-                success = False
                 try:
-                    success = DataBase.update_db_version(db_version)
-                    message = "Database update completed successfully!" if success else "Database update failed!"
+                    DataBase.get_instance().update_db_version()
                     self.show_status_dialog("Database update status",
-                                            message,
-                                            success)
+                                            "Database update completed successfully!",
+                                            True)
                 except Exception as e:
                     self.show_status_dialog("Database update status",
+                                            f"Database update failed!\n"
                                             f"An exception occurred while updating db:\n{e}",
-                                            success)
+                                            False)
                     return
 
 
