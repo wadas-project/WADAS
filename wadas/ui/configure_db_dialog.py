@@ -422,7 +422,7 @@ class ConfigureDBDialog(QDialog, Ui_ConfigureDBDialog):
                 "Confirm database update",
                 "A new database version is available!\n"
                 "By accepting WADAS will update your database to the latest version.\n"
-                "It is recommended to back up the database first. Are you sure you want to continue?",
+                "It is recommended to back up the database first. \nAre you sure you want to continue?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )

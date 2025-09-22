@@ -70,6 +70,8 @@ video_frames/
 #*.ico
 *.svg
 
+# DB backup directories
+*db_backup/
 
 cache
 

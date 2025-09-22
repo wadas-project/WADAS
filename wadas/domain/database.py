@@ -19,9 +19,12 @@
 import datetime
 import json
 import logging
+import os
 import shutil
+import subprocess
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 
 import keyring
 from mariadb import OperationalError as mariadbOperationalerror
@@ -59,6 +62,7 @@ from wadas.domain.usb_camera import USBCamera
 from wadas.domain.utils import get_precise_timestamp
 
 logger = logging.getLogger(__name__)
+WADAS_DIR = Path(__file__).resolve().parents[2]
 
 
 class DBMetadata:
@@ -406,20 +410,9 @@ class DataBase(ABC):
         cur_db_version = DataBase.get_db_version()
         cur_db = DataBase.get_instance()
         try:
-            # Backup db
-            if DataBase.wadas_db.type == DataBase.DBTypes.SQLITE:
-                # Backup file
-                backup_file = f"{cur_db.host}.bak_{datetime.datetime.now():%Y%m%d%H%M%S}"
-                shutil.copy2(cur_db.host, backup_file)
-                logger.info("SQLite backup created at %s", backup_file)
+            backup_file = cur_db.backup()
 
-            elif DataBase.wadas_db.type in (DataBase.DBTypes.MYSQL, DataBase.DBTypes.MARIADB):
-                # Backup db
-                logger.info("Preparing migration for %s database", DataBase.wadas_db.type.name)
-                # TODO: implement mysqldump or snapshot
-                pass
-
-            # Update db
+            # Update db from a given version
             if cur_db_version <= "v0.9.7":
                 DataBase.run_query(
                     text("ALTER TABLE actuation_events ADD COLUMN command_response BOOLEAN NULL;")
@@ -1124,6 +1117,10 @@ class DataBase(ABC):
         """Generate the connection string based on the database type."""
 
     @abstractmethod
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+    @abstractmethod
     def serialize(self):
         """Method to serialize DataBase object into file."""
 
@@ -1215,6 +1212,32 @@ class MySQLDataBase(DataBase):
         # Create all tables
         Base.metadata.create_all(DataBase.wadas_db_engine)
 
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+        outdir = WADAS_DIR / "mysqldb_backup"
+        os.makedirs(outdir, exist_ok=True)
+
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_file = os.path.join(outdir, f"{self.database_name}_backup_{ts}.sql")
+
+        cmd = [
+            "mysqldump",
+            f"-h{self.host}",
+            f"-P{self.port}",
+            f"-u{self.username}",
+            f"-p{self.get_password()}",
+            "--routines",
+            "--events",
+            "--triggers",  # optional: include extra objects
+            self.database_name,
+        ]
+
+        with open(backup_file, "w", encoding="utf-8") as f:
+            subprocess.run(cmd, stdout=f, check=True)
+
+        return backup_file
+
     def serialize(self):
         """Method to serialize MySQL DataBase object into file."""
 
@@ -1278,6 +1301,32 @@ class MariaDBDataBase(DataBase):
             return False
         return True
 
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+        outdir = WADAS_DIR / "mariadb_backup"
+        os.makedirs(outdir, exist_ok=True)
+
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_file = os.path.join(outdir, f"{self.database_name}_backup_{ts}.sql")
+
+        cmd = [
+            "mysqldump",
+            f"-h{self.host}",
+            f"-P{self.port}",
+            f"-u{self.username}",
+            f"-p{self.get_password()}",
+            "--routines",
+            "--events",
+            "--triggers",  # optional: include extra objects
+            self.database_name,
+        ]
+
+        with open(backup_file, "w", encoding="utf-8") as f:
+            subprocess.run(cmd, stdout=f, check=True)
+
+        return backup_file
+
     def serialize(self):
         """Method to serialize MariaDB DataBase object into file."""
 
@@ -1325,6 +1374,23 @@ class SQLiteDataBase(DataBase):
         else:
             logger.warning("Database engine is not initialized.")
             return False
+
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+        # Prepare
+        outdir = WADAS_DIR / "sqlitedb_backup"
+        outdir.mkdir(parents=True, exist_ok=True)
+
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        db_name = Path(self.host).stem
+        backup_file = outdir / f"{db_name}.bak_{ts}.sqlite"
+
+        # Copy
+        shutil.copy2(self.host, backup_file)
+        logger.info("SQLite backup created at %s", backup_file)
+
+        return backup_file
 
     def serialize(self):
         """Method to serialize SQLite DataBase object into file."""
