@@ -18,15 +18,35 @@
 # Description: Actuator module
 
 import datetime
+import json
 import logging
 from abc import abstractmethod
 from collections import deque
+from dataclasses import dataclass, field
 from enum import Enum
 from queue import Empty, Queue
 
 from wadas.domain.actuation_event import ActuationEvent
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Command:
+    id: str
+    cmd: str
+    payload: dict = field(default_factory=dict)
+    time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
+
+    def to_json(self) -> str:
+        return json.dumps(
+            {
+                "id": self.id,
+                "cmd": self.cmd,
+                "payload": self.payload,
+                "time_stamp": self.time_stamp.isoformat(),
+            }
+        )
 
 
 class Actuator:
@@ -39,6 +59,9 @@ class Actuator:
         FEEDER = "Feeder"
         DETERRENT = "Deterrent"
 
+    class Commands(Enum):
+        TEST = "Test"
+
     def __init__(self, actuator_id, enabled=False):
         self.cmd_queue = Queue()
         self.id = actuator_id
@@ -48,15 +71,21 @@ class Actuator:
         self.type = None
         self.responses: deque[dict] = deque(maxlen=50)  # Actuator responses FIFO
 
+    @classmethod
+    def build_command(
+        self, id: str, cmd: Commands, time_stamp: datetime, payload: dict = None
+    ) -> Command:
+        """Factory to create a Command object with unique ID and optional payload."""
+        return Command(id=id, cmd=cmd.value, time_stamp=time_stamp, payload=payload or {})
+
     def queue_response_command(self, response: dict):
         """Method to insert an actuator response into a dedicated queue"""
         self.responses.append(response)
         self.last_update = datetime.datetime.now()
 
-    def send_command(self, cmd: Enum):
+    @abstractmethod
+    def send_command(self, command: Command):
         """Method to insert a command into the actuator queue"""
-
-        self.cmd_queue.put(cmd.value)
 
     def get_command(self):
         """Method to get the last command of the queue"""

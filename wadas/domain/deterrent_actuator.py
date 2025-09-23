@@ -17,30 +17,13 @@
 # Date: 2024-07-02
 # Description: Module containing Deterrent Actuator class and methods.
 
-import datetime
-import json
 import logging
-import uuid
-from dataclasses import dataclass, field
 from enum import Enum
 
 from wadas.domain.actuation_event import ActuationEvent
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import Actuator, Command
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class Command:
-    cmd: str
-    payload: dict = field(default_factory=dict)
-    id: str = field(
-        default_factory=lambda: f"{int(datetime.utcnow().timestamp() * 1000)}-"
-        f"{uuid.uuid4().hex[:6]}"
-    )
-
-    def to_json(self) -> str:
-        return json.dumps({"id": self.id, "cmd": self.cmd, "payload": self.payload})
 
 
 class DeterrentActuator(Actuator):
@@ -55,28 +38,38 @@ class DeterrentActuator(Actuator):
         super().__init__(id, enabled)
         self.type = Actuator.ActuatorTypes.DETERRENT
 
-    def build_command(self, cmd: Commands, payload: dict = None) -> Command:
-        """Factory to create a Command object with unique ID and optional payload."""
-        return Command(cmd=cmd.value, payload=payload or {})
-
-    def send_command(self, cmd: Commands, payload: dict = None):
+    def send_command(self, command: Command):
         """Send command to actuator queue with unique ID."""
-        if not isinstance(cmd, DeterrentActuator.Commands):
-            logger.error(
-                "Actuator %s with ID %s received an unknown command: %s.", self.type, self.id, cmd
-            )
-            raise Exception("Unknown command.")
 
-        command_obj = self.build_command(cmd, payload)
-        super().send_command(command_obj)
-        return command_obj.id  # return ID so caller can track responses
+        # Check that the ID is valid
+        if not command.id or not isinstance(command.id, str):
+            logger.error("Actuator %s received a command without valid ID.", command.id)
+            raise ValueError("Command must have a valid ID (non-empty string).")
+
+        # Check that the command is a valid enum member
+        if command.cmd not in {c.value for c in DeterrentActuator.Commands}:
+            logger.error(
+                "Actuator %s with ID %s received an unknown command: %s.",
+                self.type,
+                command.id,
+                command.cmd,
+            )
+            raise ValueError("Unknown command.")
+
+        # Insert command in queue
+        self.cmd_queue.put(command.to_json())
+
+        # Return command execution status
+        return True
 
     def actuate(self, actuation_event: ActuationEvent):
         """Method to trigger the Deterrent Actuator sending it the ON Command"""
 
-        cmd = self.Commands.ON
-        if self.send_command(cmd):
-            actuation_event.command = cmd
+        command = Actuator.build_command(
+            actuation_event.actuator_id, DeterrentActuator.Commands.ON, actuation_event.time_stamp
+        )
+        if self.send_command(command):
+            actuation_event.command = command.cmd
 
     def serialize(self):
         """Method to serialize Deterrent Actuator object into file."""

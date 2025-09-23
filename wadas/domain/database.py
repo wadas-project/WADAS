@@ -17,7 +17,6 @@
 # Date: 2025-01-04
 # Description: database module.
 import datetime
-import json
 import logging
 import os
 import shutil
@@ -754,13 +753,13 @@ class DataBase(ABC):
                 creation_date=get_precise_timestamp(),
             )
         elif isinstance(domain_object, ActuationEvent):
-            command = json.loads(domain_object.command.value)
+            cmd = DeterrentActuator.Commands(domain_object.command)
 
             return ORMActuationEvent(
                 actuator_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 detection_event_id=foreign_key[1],
-                command=next(iter(command)),
+                command=cmd,
             )
         elif isinstance(domain_object, DetectionEvent):
             # Count detections before assignment as video classification does not provide this value
