@@ -1,18 +1,21 @@
-from enum import Enum
+import datetime
 from queue import Empty
 
 import pytest
 
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import Actuator, Command
 
 
-class TestEnum(Enum):
-    TEST_CMD = "test_command"
+class DummyActuator(Actuator):
+    """Concrete subclass of Actuator for testing."""
+
+    def send_command(self, command: Command):
+        self.cmd_queue.put(command)
 
 
 @pytest.fixture
 def actuator():
-    return Actuator(actuator_id="test_actuator")
+    return DummyActuator(actuator_id="test_actuator")
 
 
 def test_actuator_initialization(actuator):
@@ -24,15 +27,24 @@ def test_actuator_initialization(actuator):
 
 
 def test_send_command(actuator):
-    actuator.send_command(TestEnum.TEST_CMD)
+    cmd = actuator.build_command(
+        id="cmd1", cmd=Actuator.Commands.TEST, time_stamp=datetime.datetime.now()
+    )
+    actuator.send_command(cmd)
     assert not actuator.cmd_queue.empty()
-    assert actuator.cmd_queue.get() == "test_command"
+    queued = actuator.cmd_queue.get()
+    assert isinstance(queued, Command)
+    assert queued.cmd == "Test"
 
 
 def test_get_command_with_command(actuator):
-    actuator.send_command(TestEnum.TEST_CMD)
+    cmd = actuator.build_command(
+        id="cmd2", cmd=Actuator.Commands.TEST, time_stamp=datetime.datetime.now()
+    )
+    actuator.send_command(cmd)
     command = actuator.get_command()
-    assert command == "test_command"
+    assert isinstance(command, Command)
+    assert command.cmd == "Test"
     assert actuator.last_update is not None
     assert actuator.cmd_queue.empty()
 
