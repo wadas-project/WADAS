@@ -25,6 +25,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from queue import Empty, Queue
+from typing import Optional
 
 from wadas.domain.actuation_event import ActuationEvent
 
@@ -33,19 +34,38 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Command:
-    id: str
+    actuator_id: str
     cmd: str
+    response: Optional[bool] = None
     payload: dict = field(default_factory=dict)
     time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
+    response_timestamp: Optional[datetime.datetime] = None
 
     def to_json(self) -> str:
         return json.dumps(
             {
-                "id": self.id,
+                "actuator_id": self.actuator_id,
                 "cmd": self.cmd,
                 "payload": self.payload,
                 "time_stamp": self.time_stamp.isoformat(),
+                "response": self.response,
+                "response_timestamp": (
+                    self.response_timestamp.isoformat() if self.response_timestamp else None
+                ),
             }
+        )
+
+    @classmethod
+    def from_json(cls, s: str) -> "Command":
+        """Deserialize command from JSON with ISO timestamp."""
+        data = json.loads(s)
+        return cls(
+            actuator_id=data["actuator_id"],
+            cmd=data["cmd"],
+            payload=data.get("payload", {}),
+            time_stamp=datetime.datetime.fromisoformat(data["time_stamp"]),
+            response=data["response"],
+            response_timestamp=datetime.datetime.fromisoformat(data["response_timestamp"]),
         )
 
 
@@ -71,12 +91,18 @@ class Actuator:
         self.type = None
         self.responses: deque[dict] = deque(maxlen=50)  # Actuator responses FIFO
 
+    @abstractmethod
+    def check_command(self):
+        """Method to check if a provided command is in the allowed pool"""
+
     @classmethod
     def build_command(
-        self, id: str, cmd: Commands, time_stamp: datetime, payload: dict = None
+        self, actuator_id: str, cmd: Commands, time_stamp: datetime, payload: dict = None
     ) -> Command:
         """Factory to create a Command object with unique ID and optional payload."""
-        return Command(id=id, cmd=cmd.value, time_stamp=time_stamp, payload=payload or {})
+        return Command(
+            actuator_id=actuator_id, cmd=cmd.value, time_stamp=time_stamp, payload=payload or {}
+        )
 
     def queue_response_command(self, response: dict):
         """Method to insert an actuator response into a dedicated queue"""

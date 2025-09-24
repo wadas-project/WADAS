@@ -36,7 +36,7 @@ from sqlalchemy.orm import sessionmaker
 
 from wadas._version import __dbversion__
 from wadas.domain.actuation_event import ActuationEvent
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import Actuator, Command
 from wadas.domain.camera import cameras
 from wadas.domain.db_model import ActuationEvent as ORMActuationEvent
 from wadas.domain.db_model import Actuator as ORMActuator
@@ -321,7 +321,7 @@ class DataBase(ABC):
     def insert_into_db(cls, domain_object):
         """Method to insert a WADAS object into the db."""
 
-        logger.debug("Inserting object into db...")
+        logger.debug("Inserting <%s> object into db...", type(domain_object))
         if session := cls.create_session():
             try:
                 foreign_key = []
@@ -344,6 +344,7 @@ class DataBase(ABC):
                             domain_object.camera_id,
                         )
                         return
+
                 if isinstance(domain_object, ActuationEvent):
                     # If Actuator associated to the actuation event is not in db abort insertion
                     foreign_key.append(
@@ -397,7 +398,7 @@ class DataBase(ABC):
                 )
             except InterfaceError:
                 session.rollback()
-                logger.error("Database connection lost. Insert operation failed.")
+                logger.exception("Database connection lost. Insert operation failed.")
             finally:
                 session.close()
         else:
@@ -565,6 +566,50 @@ class DataBase(ABC):
                 .values(enabled=enabled)
             )
             cls.run_query(stmt)
+        return True
+
+    @classmethod
+    def update_actuation_event(cls, command: Command):
+        """Update command_response in ActuationEvent given actuator_id (resolved via DB)
+        and time_stamp."""
+
+        logger.debug(
+            "Updating actuation event for actuator_id: %s, time_stamp: %s, response: %s",
+            command.actuator_id,
+            command.time_stamp,
+            command.response,
+        )
+
+        # Get actuator db id from actuator name
+        db_actuator_id = cls.get_actuator_id(command.actuator_id)
+        if not db_actuator_id:
+            logger.error("Invalid actuator id: %s (not found in DB)", command.actuator_id)
+            return False
+
+        if not command.time_stamp:
+            logger.error("Invalid time_stamp: %s", command.time_stamp)
+            return False
+
+        stmt = (
+            update(ORMActuationEvent)
+            .where(
+                ORMActuationEvent.actuator_id == db_actuator_id,
+                ORMActuationEvent.time_stamp == command.time_stamp,
+            )
+            .values(command_response=command.response)
+        )
+
+        logger.debug("Running UPDATE stmt: %s", stmt)
+        result = cls.run_query(stmt)
+
+        if result.rowcount == 0:
+            logger.error(
+                "Unable to update ActuationEvent. Actuator ID %s at %s not found.",
+                db_actuator_id,
+                command.time_stamp,
+            )
+            return False
+
         return True
 
     @classmethod
@@ -759,7 +804,7 @@ class DataBase(ABC):
                 actuator_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 detection_event_id=foreign_key[1],
-                command=cmd,
+                command=cmd.value,
             )
         elif isinstance(domain_object, DetectionEvent):
             # Count detections before assignment as video classification does not provide this value

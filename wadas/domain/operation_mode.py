@@ -308,6 +308,7 @@ class OperationMode(QObject):
                     actuation_event = ActuationEvent(
                         actuator.id, get_precise_timestamp(), detection_event
                     )
+                    logger.info("Running actuation for actuator %s.", actuator.id)
                     actuator.actuate(actuation_event)
                     # Insert actuation event into db, if enabled
                     if db := DataBase.get_enabled_db():

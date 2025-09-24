@@ -24,7 +24,8 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import Actuator, Command
+from wadas.domain.database import DataBase
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ async def respond_actuator_command(
 
     Expected payload format:
     {
-        "id": "<command-id>",
+        "actuator_id": "<actuator-id>",
         "cmd": "<command-name>",
         "time_stamp": <datetime>
         "response": true|false,
@@ -81,39 +82,77 @@ async def respond_actuator_command(
         raise HTTPException(status_code=404, detail="Actuator does not exist")
 
     resp_actuator_id = payload.get("actuator_id")
+    cmd = payload.get("cmd")
     response_ok = payload.get("response")
 
     if not actuator_id:
-        raise HTTPException(status_code=400, detail="Missing actuator_id in response")
+        raise HTTPException(status_code=400, detail="Missing actuator id in response")
     if resp_actuator_id != actuator_id:
         raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
+    if not cmd:
+        raise HTTPException(status_code=400, detail="Missing command")
     if response_ok is None:
-        raise HTTPException(status_code=400, detail="Missing 'response' (True/False) in response")
+        raise HTTPException(status_code=400, detail="Missing response status")
+
+    # Convert payload → Command object
+    try:
+        command = Command.from_json(json.dumps(payload))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid command format")
 
     actuator = Actuator.actuators[actuator_id]
 
     # Save original payload
-    actuator.queue_response_command(payload)
+    actuator.queue_response_command(command)
+
+    # Build logging according to command payload
+    inner_payload = payload.get("payload", {})
 
     if response_ok:
-        logger.info(
-            "Actuator %s responded to command %s (%s) with %s, payload=%s",
-            actuator_id,
-            payload.get("cmd"),
-            payload.get("time_stamp"),
-            response_ok,
-            payload.get("payload"),
+        if isinstance(inner_payload, dict) and "message" in inner_payload:
+            logger.info(
+                "Actuator %s responded SUCCESS to command '%s' (%s). Message: %s",
+                command.actuator_id,
+                command.cmd,
+                command.time_stamp,
+                inner_payload.get("message"),
+            )
+        else:
+            logger.info(
+                "Actuator %s responded SUCCESS to command '%s' (%s).",
+                command.actuator_id,
+                command.cmd,
+                command.time_stamp,
+            )
+    elif isinstance(inner_payload, dict) and "warning" in inner_payload:
+        logger.warning(
+            "Actuator %s responded to command '%s' (%s) with warning message: %s",
+            command.actuator_id,
+            command.cmd,
+            command.time_stamp,
+            inner_payload.get("warning"),
+        )
+    elif isinstance(inner_payload, dict) and "error" in inner_payload:
+        logger.error(
+            "Actuator %s responded to command '%s' (%s) with error message: %s",
+            command.actuator_id,
+            command.cmd,
+            command.time_stamp,
+            inner_payload.get("error"),
         )
     else:
         logger.error(
-            "Actuator %s responded to command %s (%s) with %s, payload=%s",
-            actuator_id,
-            payload.get("cmd"),
-            payload.get("time_stamp"),
-            response_ok,
+            "Actuator %s responded to command '%s' (%s) with %s, payload=%s",
+            command.actuator_id,
+            command.cmd,
+            command.time_stamp,
+            command.response,
             payload.get("payload"),
         )
 
-    # TODO: add database insertion of the Actuator's response
+    # Insert actuation event into db, if enabled
+    if db := DataBase.get_enabled_db():
+        logger.debug("Updating Actuation event to add response info...")
+        db.update_actuation_event(command)
 
     return {"status": "received"}
