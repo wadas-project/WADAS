@@ -28,7 +28,7 @@ def test_actuator_initialization(actuator):
 
 def test_send_command(actuator):
     cmd = actuator.build_command(
-        id="cmd1", cmd=Actuator.Commands.TEST, time_stamp=datetime.datetime.now()
+        actuator_id="cmd1", cmd=Actuator.Commands.TEST, time_stamp=datetime.datetime.now()
     )
     actuator.send_command(cmd)
     assert not actuator.cmd_queue.empty()
@@ -39,7 +39,7 @@ def test_send_command(actuator):
 
 def test_get_command_with_command(actuator):
     cmd = actuator.build_command(
-        id="cmd2", cmd=Actuator.Commands.TEST, time_stamp=datetime.datetime.now()
+        actuator_id="cmd2", cmd=Actuator.Commands.TEST, time_stamp=datetime.datetime.now()
     )
     actuator.send_command(cmd)
     command = actuator.get_command()

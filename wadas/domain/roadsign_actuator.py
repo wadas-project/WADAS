@@ -17,13 +17,11 @@
 # Date: 2024-10-23
 # Description: Module containing Road Sign Actuator class and methods.
 
-
-import json
 import logging
 from enum import Enum
 
 from wadas.domain.actuation_event import ActuationEvent
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import Actuator, Command
 
 logger = logging.getLogger(__name__)
 
@@ -32,35 +30,46 @@ class RoadSignActuator(Actuator):
     """RoadSignActuator, specialization of Actuator."""
 
     class Commands(Enum):
-        DISPLAY_ON = json.dumps({"display": True})
+        DISPLAY_ON = "display"
 
     def __init__(self, id, enabled):
         super().__init__(id, enabled)
         self.type = Actuator.ActuatorTypes.ROADSIGN
 
-    def send_command(self, cmd):
-        """Method to send the specific command to the Actuator superclass."""
+    def send_command(self, command: Command):
+        """Send command to actuator queue with unique ID."""
 
-        command_sent = False
-        if isinstance(cmd, RoadSignActuator.Commands):
-            super().send_command(cmd)
-            command_sent = True
-        else:
+        # Check that the ID is valid
+        if not command.actuator_id or not isinstance(command.actuator_id, str):
+            logger.error("Actuator %s received a command without valid ID.", command.actuator_id)
+            raise ValueError("Command must have a valid ID (non-empty string).")
+
+        # Check that the command is a valid enum member
+        if command.cmd not in {c.value for c in RoadSignActuator.Commands}:
             logger.error(
                 "Actuator %s with ID %s received an unknown command: %s.",
                 self.type,
-                self.id,
-                cmd,
+                command.actuator_id,
+                command.cmd,
             )
-            raise Exception("Unknown command.")
-        return command_sent
+            raise ValueError("Unknown command.")
+
+        # Insert command in queue
+        self.cmd_queue.put(command.to_json())
+
+        # Return command execution status
+        return True
 
     def actuate(self, actuation_event: ActuationEvent):
         """Method to trigger the RoadSignActuator sending it the DISPLAY_ON Command"""
 
-        cmd = self.Commands.DISPLAY_ON
-        if self.send_command(cmd):
-            actuation_event.command = cmd
+        command = Actuator.build_command(
+            actuation_event.actuator_id,
+            RoadSignActuator.Commands.DISPLAY_ON,
+            actuation_event.time_stamp,
+        )
+        if self.send_command(command):
+            actuation_event.command = command.cmd
 
     def serialize(self):
         """Method to serialize RoadSignActuator object into file."""

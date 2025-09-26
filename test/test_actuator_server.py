@@ -8,7 +8,7 @@ import requests
 import util
 from fastapi.testclient import TestClient
 
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import Actuator, Command
 from wadas.domain.actuator_server_app import app
 from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.roadsign_actuator import RoadSignActuator
@@ -116,12 +116,17 @@ def test_actuator_command(actuator_server, actuator):
     thread = actuator_server.run()
     assert thread is not None
     Actuator.actuators[actuator.id] = actuator
-    actuator.send_command(RoadSignActuator.Commands.DISPLAY_ON)
+    actuator.send_command(Command(actuator.id, RoadSignActuator.Commands.DISPLAY_ON.value))
     time.sleep(3)
     path = app.routes[0].path.format(actuator_id=actuator.id)
     response = requests.get(f"https://127.0.0.1:{HTTPS_PORT}{path}", verify=False)
     assert response.status_code == 200
-    assert response.json() == json.loads(RoadSignActuator.Commands.DISPLAY_ON.value)
+    data = response.json()
+    assert data["actuator_id"] == "123"
+    assert data["cmd"] == RoadSignActuator.Commands.DISPLAY_ON.value
+    assert data["payload"] == {}
+    assert data["response"] is None
+    assert data["response_timestamp"] is None
     actuator_server.stop()
     thread.join()
 
