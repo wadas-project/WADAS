@@ -602,7 +602,7 @@ class DataBase(ABC):
         logger.debug("Running UPDATE stmt: %s", stmt)
         result = cls.run_query(stmt)
 
-        if result.rowcount == 0:
+        if not result:
             logger.error(
                 "Unable to update ActuationEvent. Actuator ID %s at %s not found.",
                 db_actuator_id,
