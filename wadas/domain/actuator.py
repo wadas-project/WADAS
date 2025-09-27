@@ -40,6 +40,7 @@ class Command:
     payload: dict = field(default_factory=dict)
     time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
     response_timestamp: Optional[datetime.datetime] = None
+    response_message: Optional[str] = None
 
     def to_json(self) -> str:
         return json.dumps(
@@ -52,6 +53,7 @@ class Command:
                 "response_timestamp": (
                     self.response_timestamp.isoformat() if self.response_timestamp else None
                 ),
+                "response_message": self.response_message,
             }
         )
 
@@ -66,6 +68,7 @@ class Command:
             time_stamp=datetime.datetime.fromisoformat(data["time_stamp"]),
             response=data["response"],
             response_timestamp=datetime.datetime.fromisoformat(data["response_timestamp"]),
+            response_message=data["response_message"],
         )
 
 

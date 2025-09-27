@@ -59,7 +59,8 @@ async def respond_actuator_command(
             "time_stamp": "2025-09-15T10:32:00.123456Z",
             "cmd": "send_log",
             "response": True,
-            "payload": {"data": ["..."]},
+            "response_timestamp": "2025-09-15T10:32:00.123456Z",
+            "payload": {},
         },
     ),  # noqa: B008
 ):
@@ -75,6 +76,9 @@ async def respond_actuator_command(
         "response_timestamp": <datetime>
         "payload": { ... }  # optional extra data
     }
+    payload format should embedd a message reporting the command execution,
+    by specifying whether is informative ("message": "..."), a warning ("warning":"...")
+    or an error ("error": "...").
     """
 
     if actuator_id not in Actuator.actuators:
@@ -105,17 +109,14 @@ async def respond_actuator_command(
     # Save original payload
     actuator.queue_response_command(command)
 
-    # Build logging according to command payload
-    inner_payload = payload.get("payload", {})
-
     if response_ok:
-        if isinstance(inner_payload, dict) and "message" in inner_payload:
+        if command.response_message:
             logger.info(
                 "Actuator %s responded SUCCESS to command '%s' (%s). Message: %s",
                 command.actuator_id,
                 command.cmd,
                 command.time_stamp,
-                inner_payload.get("message"),
+                command.response_message,
             )
         else:
             logger.info(
@@ -124,21 +125,23 @@ async def respond_actuator_command(
                 command.cmd,
                 command.time_stamp,
             )
-    elif isinstance(inner_payload, dict) and "warning" in inner_payload:
+    elif "warning:" in command.response_message.lower():
+        response_message = command.response_message.lower().replace("warning:", "", 1).strip()
         logger.warning(
             "Actuator %s responded to command '%s' (%s) with warning message: %s",
             command.actuator_id,
             command.cmd,
             command.time_stamp,
-            inner_payload.get("warning"),
+            response_message,
         )
-    elif isinstance(inner_payload, dict) and "error" in inner_payload:
+    elif "error:" in command.response_message.lower():
+        response_message = command.response_message.lower().replace("error:", "", 1).strip()
         logger.error(
             "Actuator %s responded to command '%s' (%s) with error message: %s",
             command.actuator_id,
             command.cmd,
             command.time_stamp,
-            inner_payload.get("error"),
+            response_message,
         )
     else:
         logger.error(

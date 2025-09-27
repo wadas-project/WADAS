@@ -196,6 +196,7 @@ class ActuationEvent(Base):
     detection_event_id = Column(Integer, ForeignKey("detection_events.id"), nullable=False)
     command = Column(Text, nullable=True)
     command_response = Column(Boolean, nullable=True)
+    command_response_message = Column(Text, nullable=True)
 
     actuator = relationship("Actuator", back_populates="actuation_events")
     detection_event = relationship("DetectionEvent", back_populates="actuation_events")

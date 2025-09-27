@@ -417,6 +417,12 @@ class DataBase(ABC):
                 DataBase.run_query(
                     text("ALTER TABLE actuation_events ADD COLUMN command_response BOOLEAN NULL;")
                 )
+                DataBase.run_query(
+                    text(
+                        "ALTER TABLE actuation_events ADD COLUMN "
+                        "command_response_message TEXT NULL;"
+                    )
+                )
             DataBase.run_query(text(f"UPDATE db_metadata SET version='{__dbversion__}';"))
             logger.info("Database updated from %s to %s", cur_db_version, __dbversion__)
         except Exception:
@@ -596,7 +602,9 @@ class DataBase(ABC):
                 ORMActuationEvent.actuator_id == db_actuator_id,
                 ORMActuationEvent.time_stamp == command.time_stamp,
             )
-            .values(command_response=command.response)
+            .values(
+                command_response=command.response, command_response_message=command.response_message
+            )
         )
 
         logger.debug("Running UPDATE stmt: %s", stmt)
