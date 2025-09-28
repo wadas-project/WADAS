@@ -127,31 +127,3 @@ class ActuatorRuntimeView(BaseModel):
     humidity: Optional[float] = None
     log: Optional[str] = None
     last_update: Optional[datetime] = None
-
-
-def actuator_to_viewmodel(db_actuator, runtime_actuator=None) -> ActuatorDetail:
-    """As ActuatorDetails class is intended to be for Admin only and contains data
-    from runtime class, this method helps to build attributes info from both db and
-    runtime class itself."""
-    return ActuatorDetail(
-        id=db_actuator.db_id,
-        name=db_actuator.actuator_id,
-        type=db_actuator.type.value if db_actuator.type else None,
-        enabled=db_actuator.enabled,
-        creation_date=db_actuator.creation_date,
-        deletion_date=db_actuator.deletion_date,
-        last_update=getattr(runtime_actuator, "last_update", None),
-        temperature=getattr(runtime_actuator, "temperature", None),
-        humidity=getattr(runtime_actuator, "humidity", None),
-        log=getattr(runtime_actuator, "log", None),
-    )
-
-
-def runtime_actuator_to_viewmodel(runtime_actuator) -> ActuatorRuntimeView:
-    """Returns only Actuator runtime class attributes. No db data."""
-    return ActuatorRuntimeView(
-        temperature=getattr(runtime_actuator, "temperature", None),
-        humidity=getattr(runtime_actuator, "humidity", None),
-        log=getattr(runtime_actuator, "log", None),
-        last_update=getattr(runtime_actuator, "last_update", None),
-    )

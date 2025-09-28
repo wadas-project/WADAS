@@ -32,6 +32,7 @@ from starlette.responses import FileResponse, Response, StreamingResponse
 
 from wadas.domain.actuator import Actuator
 from wadas_webserver.database import Database
+from wadas_webserver.mapper import actuator_to_viewmodel, runtime_actuator_to_viewmodel
 from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
 from wadas_webserver.view_model import (
@@ -43,8 +44,6 @@ from wadas_webserver.view_model import (
     RefreshResponse,
     RefreshTokenRequest,
     User,
-    actuator_to_viewmodel,
-    runtime_actuator_to_viewmodel,
 )
 
 logger = logging.getLogger(__name__)
