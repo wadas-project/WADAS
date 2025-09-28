@@ -16,6 +16,7 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-02-21
 # Description: Module containing FastAPI exposed endpoints.
+
 import json
 import logging
 import os
@@ -29,6 +30,7 @@ from jose import JWTError, jwt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
 
+from wadas.domain.actuator import Actuator
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
@@ -41,6 +43,8 @@ from wadas_webserver.view_model import (
     RefreshResponse,
     RefreshTokenRequest,
     User,
+    actuator_to_viewmodel,
+    runtime_actuator_to_viewmodel,
 )
 
 logger = logging.getLogger(__name__)
@@ -321,3 +325,56 @@ async def catch_all(full_path: str):
         raise HTTPException(status_code=404, detail="Frontend not found")
 
     return FileResponse(index_path)
+
+
+@app.get("/api/v1/actuators", response_model=DataResponse)
+async def get_actuators(
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Return the list of existing actuators (admin only)"""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    db_actuators = Database.instance.get_actuators()
+    result = [
+        actuator_to_viewmodel(db_act, Actuator.actuators.get(db_act.actuator_id))
+        for db_act in db_actuators
+    ]
+
+    return DataResponse(data=result)
+
+
+@app.get("/api/v1/actuators/{actuator_id}", response_model=DataResponse)
+async def get_actuator(
+    actuator_id: str,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Return a single actuator (admin only)"""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    db_actuator = Database.instance.get_actuator_by_name(actuator_id)
+    if not db_actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    runtime_act = Actuator.actuators.get(actuator_id)
+    return DataResponse(data=actuator_to_viewmodel(db_actuator, runtime_act))
+
+
+@app.get("/api/v1/actuators/{actuator_id}/runtime")
+async def get_actuator_runtime(
+    actuator_id: str,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Return only runtime info for a given actuator (admin only)."""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    runtime_act = Actuator.actuators.get(actuator_id)
+    if not runtime_act:
+        raise HTTPException(status_code=404, detail="Runtime actuator not found")
+
+    return DataResponse(data=runtime_actuator_to_viewmodel(runtime_act))

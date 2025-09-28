@@ -93,6 +93,9 @@ class Actuator:
         self.stop_thread = False
         self.type = None
         self.responses: deque[dict] = deque(maxlen=50)  # Actuator responses FIFO
+        self.log = None
+        self.temperature = None
+        self.humidity = None
 
     @abstractmethod
     def check_command(self):

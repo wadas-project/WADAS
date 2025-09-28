@@ -16,6 +16,7 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-02-21
 # Description: Class to map database-model objects to view-model objects.
+
 from wadas.domain.db_model import ActuationEvent as DB_ActuationEvent
 from wadas.domain.db_model import Actuator as DB_Actuator
 from wadas.domain.db_model import Camera as DB_Camera
@@ -25,6 +26,7 @@ from wadas.domain.db_model import User as DB_User
 from wadas_webserver.view_model import (
     ActuationEvent,
     Actuator,
+    ActuatorDetail,
     Camera,
     ClassifiedAnimal,
     DetectionEvent,
@@ -107,3 +109,18 @@ class Mapper:
             db_actevent.actuator.actuator_id,
             db_actevent.command,
         ]
+
+    @staticmethod
+    def actuator_to_viewmodel(db_actuator, runtime_actuator=None) -> ActuatorDetail:
+        """Map ORM + runtime actuator into a Pydantic view model"""
+        return ActuatorDetail(
+            id=db_actuator.db_id,
+            name=db_actuator.actuator_id,
+            type=db_actuator.type.value if db_actuator.type else None,
+            enabled=db_actuator.enabled,
+            creation_date=db_actuator.creation_date,
+            deletion_date=db_actuator.deletion_date,
+            temperature=getattr(runtime_actuator, "temperature", None),
+            humidity=getattr(runtime_actuator, "humidity", None),
+            log=getattr(runtime_actuator, "log", None),
+        )
