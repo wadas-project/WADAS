@@ -434,7 +434,7 @@ class ConfigureDBDialog(QDialog, Ui_ConfigureDBDialog):
                                             True)
                 except Exception as e:
                     self.show_status_dialog("Database update status",
-                                            f"Database update failed!\n"
+                                            "Database update failed!\n"
                                             f"An exception occurred while updating db:\n{e}",
                                             False)
                     return

@@ -408,8 +408,10 @@ class DataBase(ABC):
     def update_db_version(self):
         """Method to update database version."""
 
+        failed = False
         cur_db_version = DataBase.get_db_version()
         cur_db = DataBase.get_instance()
+
         try:
             backup_file = cur_db.backup()
 
@@ -428,9 +430,10 @@ class DataBase(ABC):
             logger.info("Database updated from %s to %s", cur_db_version, __dbversion__)
         except Exception:
             logger.exception("Unable to update db to latest version.")
+            failed = True
             raise
         finally:
-            if "e" in locals() and backup_file and self.db_type == DataBase.DBTypes.SQLITE:
+            if failed and backup_file and self.db_type == DataBase.DBTypes.SQLITE:
                 logger.warning("Restoring DB from backup due to failure...")
                 try:
                     self.restore_db(backup_file)
