@@ -17,6 +17,7 @@
 # Date: 2025-01-04
 # Description: database module.
 import datetime
+import glob
 import logging
 import os
 import shutil
@@ -1267,14 +1268,39 @@ class MySQLDataBase(DataBase):
     def backup(self):
         """Method to back up the database prior to updated or potentially destructive operations."""
 
+        def find_mysql_dump():
+            """
+            Try to locate mysqldump executable.
+            Priority:
+            1. If mysqldump is already in PATH, use it.
+            2. If running on Windows, try to detect it in
+               'C:\\Program Files\\MySQL\\MySQL Server *\\bin'.
+            3. Otherwise, raise FileNotFoundError.
+            """
+            # mysqldump is in PATH
+            exe = shutil.which("mysqldump")
+            if exe:
+                return exe
+
+            # Windows specific lookup with wildcard
+            if os.name == "nt":  # Windows
+                candidates = glob.glob(r"C:\Program Files\MySQL\MySQL Server *\bin\mysqldump.exe")
+                if candidates:
+                    candidates.sort()
+                    return candidates[-1]  # pick the latest version installed
+
+            # If Not found
+            raise FileNotFoundError("Could not locate mysqldump executable.")
+
         outdir = WADAS_DIR / "mysqldb_backup"
         os.makedirs(outdir, exist_ok=True)
 
         ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         backup_file = os.path.join(outdir, f"{self.database_name}_backup_{ts}.sql")
+        dump_exe = find_mysql_dump()
 
         cmd = [
-            "mysqldump",
+            dump_exe,
             f"-h{self.host}",
             f"-P{self.port}",
             f"-u{self.username}",
@@ -1356,14 +1382,38 @@ class MariaDBDataBase(DataBase):
     def backup(self):
         """Method to back up the database prior to updated or potentially destructive operations."""
 
+        def find_mariadb_dump():
+            """
+            Try to locate mariadb-dump executable.
+            Priority:
+            1. If mariadb-dump is already in PATH, use it.
+            2. If running on Windows, try to detect it in 'C:\\Program Files\\MariaDB *\\bin'.
+            3. Otherwise, raise FileNotFoundError.
+            """
+            # Case 1: mariadb-dump is in PATH
+            exe = shutil.which("mariadb-dump")
+            if exe:
+                return exe
+
+            # Windows specific lookup with wildcard
+            if os.name == "nt":  # Windows
+                candidates = glob.glob(r"C:\Program Files\MariaDB *\bin\mariadb-dump.exe")
+                if candidates:
+                    candidates.sort()
+                    return candidates[-1]  # pick the latest version installed
+
+            # If Not found
+            raise FileNotFoundError("Could not locate mariadb-dump executable.")
+
         outdir = WADAS_DIR / "mariadb_backup"
         os.makedirs(outdir, exist_ok=True)
 
         ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         backup_file = os.path.join(outdir, f"{self.database_name}_backup_{ts}.sql")
+        dump_exe = find_mariadb_dump()
 
         cmd = [
-            "mysqldump",
+            dump_exe,
             f"-h{self.host}",
             f"-P{self.port}",
             f"-u{self.username}",
