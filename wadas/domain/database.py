@@ -37,10 +37,11 @@ from sqlalchemy.orm import sessionmaker
 
 from wadas._version import __dbversion__
 from wadas.domain.actuation_event import ActuationEvent
-from wadas.domain.actuator import Actuator, Command
+from wadas.domain.actuator import Actuator, ActuatorBatteryStatus, Command
 from wadas.domain.camera import cameras
 from wadas.domain.db_model import ActuationEvent as ORMActuationEvent
 from wadas.domain.db_model import Actuator as ORMActuator
+from wadas.domain.db_model import ActuatorBatteryStatus as ORMActuatorBattery
 from wadas.domain.db_model import Base
 from wadas.domain.db_model import Camera as ORMCamera
 from wadas.domain.db_model import ClassifiedAnimals as ORMClassifiedAnimals
@@ -376,6 +377,26 @@ class DataBase(ABC):
                         )
                         return
 
+                if isinstance(domain_object, ActuatorBatteryStatus):
+                    # Check that actuator exists
+                    actuator_fk = (
+                        session.query(ORMActuator.db_id)
+                        .filter(
+                            and_(
+                                ORMActuator.actuator_id == domain_object.actuator_id,
+                                ORMActuator.deletion_date.is_(None),
+                            )
+                        )
+                        .scalar()
+                    )
+                    if not actuator_fk:
+                        logger.error(
+                            "Unable to add Battery status into db as %s actuator id is not found",
+                            domain_object.actuator_id,
+                        )
+                        return
+                    foreign_key.append(actuator_fk)
+
                 orm_object = DataBase.domain_to_orm(domain_object, foreign_key)
                 session.add(orm_object)
 
@@ -424,6 +445,18 @@ class DataBase(ABC):
                     text(
                         "ALTER TABLE actuation_events ADD COLUMN "
                         "command_response_message TEXT NULL;"
+                    )
+                )
+                DataBase.run_query(
+                    text(
+                        """
+                        CREATE TABLE IF NOT EXISTS actuator_battery_status (
+                            actuator_id VARCHAR(64) NOT NULL,
+                            time_stamp DATETIME(6) NOT NULL,
+                            voltage FLOAT NULL,
+                            PRIMARY KEY (actuator_id, time_stamp)
+                        );
+                        """
                     )
                 )
             DataBase.run_query(text(f"UPDATE db_metadata SET version='{__dbversion__}';"))
@@ -846,6 +879,12 @@ class DataBase(ABC):
                 email=domain_object.email,
                 role=domain_object.role,
                 created_at=get_precise_timestamp(),
+            )
+        elif isinstance(domain_object, ActuatorBatteryStatus):
+            return ORMActuatorBattery(
+                actuator_id=foreign_key[0],
+                time_stamp=domain_object.time_stamp,
+                voltage=domain_object.voltage,
             )
         else:
             raise ValueError(f"Unsupported domain object type: {type(domain_object).__name__}")

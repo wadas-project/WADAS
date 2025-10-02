@@ -16,7 +16,7 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2024-10-23
 # Description: FASTAPI app for HTTPS Actuator Server
-
+import datetime
 import json
 import logging
 
@@ -24,7 +24,7 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
-from wadas.domain.actuator import Actuator, Command
+from wadas.domain.actuator import Actuator, ActuatorBatteryStatus, Command
 from wadas.domain.database import DataBase
 
 logger = logging.getLogger(__name__)
@@ -157,5 +157,54 @@ async def respond_actuator_command(
     if db := DataBase.get_enabled_db():
         logger.debug("Updating Actuation event to add response info...")
         db.update_actuation_event(command)
+
+    return {"status": "received"}
+
+
+@app.post("/api/v1/actuators/{actuator_id}/battery_status")
+async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  # noqa: B008
+    """Receive actuator's battery status update.
+    Battery and battery monitor are considered optional components
+    of the actuator device.
+    """
+
+    resp_actuator_id = payload.get("actuator_id")
+    cmd = payload.get("cmd")
+    response_ok = payload.get("response")
+
+    if not actuator_id:
+        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
+    if resp_actuator_id != actuator_id:
+        raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
+    if not cmd or cmd != "battery_status":
+        raise HTTPException(status_code=400, detail="Invalid or missing command")
+    if response_ok is None:
+        raise HTTPException(status_code=400, detail="Missing response status")
+
+    # Get actuator from list
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    voltage = payload.get("payload", {}).get("volt")
+    if voltage is None:
+        raise HTTPException(status_code=400, detail="Missing 'volt' in payload")
+
+    # Timestamp set by server
+    ts = datetime.datetime.now(datetime.timezone.utc)
+
+    # Update Actuator class
+    battery_status = ActuatorBatteryStatus(
+        actuator_id=actuator_id,
+        voltage=voltage,
+        time_stamp=ts,
+    )
+    actuator.battery_status = battery_status
+    logger.info("Received actuator %s battery status: %s", actuator_id, voltage)
+
+    # Persist in DB
+    if db := DataBase.get_enabled_db():
+        logger.debug("Inserting battery status into db...")
+        db.insert_into_db(battery_status)
 
     return {"status": "received"}

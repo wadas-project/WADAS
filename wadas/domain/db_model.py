@@ -202,6 +202,14 @@ class ActuationEvent(Base):
     detection_event = relationship("DetectionEvent", back_populates="actuation_events")
 
 
+class ActuatorBatteryStatus(Base):
+    __tablename__ = "actuator_battery_status"
+
+    actuator_id = Column(Integer, ForeignKey("actuators.id"), primary_key=True, nullable=False)
+    time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
+    voltage = Column(Float, nullable=True)
+
+
 # Database service tables, not mapped with any WADAS class
 class User(Base):
     __tablename__ = "users"

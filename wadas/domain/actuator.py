@@ -72,6 +72,13 @@ class Command:
         )
 
 
+@dataclass
+class ActuatorBatteryStatus:
+    actuator_id: str
+    voltage: float
+    time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
+
+
 class Actuator:
     """Base class of an actuator."""
 
@@ -84,6 +91,8 @@ class Actuator:
 
     class Commands(Enum):
         TEST = "Test"
+        SEND_LOG = "send_log"
+        BATTERY_STATUS = "battery_status"
 
     def __init__(self, actuator_id, enabled=False):
         self.cmd_queue = Queue()
@@ -96,6 +105,7 @@ class Actuator:
         self.log = None
         self.temperature = None
         self.humidity = None
+        self.battery_status: None
 
     @abstractmethod
     def check_command(self):
