@@ -78,6 +78,15 @@ class ActuatorBatteryStatus:
     voltage: float
     time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
 
+    def to_json(self) -> str:
+        return json.dumps(
+            {
+                "actuator_id": self.actuator_id,
+                "voltage": self.cmd,
+                "time_stamp": self.time_stamp.isoformat(),
+            }
+        )
+
 
 class Actuator:
     """Base class of an actuator."""

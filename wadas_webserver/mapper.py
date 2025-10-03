@@ -83,6 +83,8 @@ class Mapper:
             detection_event_id=db_actevent.detection_event_id,
             command=db_actevent.command,
             timestamp=db_actevent.time_stamp,
+            command_response=db_actevent.command_response,
+            command_response_message=db_actevent.command_response_message,
         )
 
     @staticmethod
@@ -109,6 +111,8 @@ class Mapper:
             db_actevent.time_stamp.strftime("%Y-%m-%d %H:%M"),
             db_actevent.actuator.actuator_id,
             db_actevent.command,
+            db_actevent.command_response,
+            db_actevent.command_response_message,
         ]
 
     @staticmethod

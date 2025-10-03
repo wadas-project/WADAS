@@ -95,6 +95,8 @@ class ActuationEvent(BaseModel):
     detection_event_id: int
     command: str
     timestamp: datetime
+    command_response: Optional[bool] = None
+    command_response_message: Optional[str] = None
 
 
 class RefreshResponse(BaseModel):

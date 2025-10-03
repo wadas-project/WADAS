@@ -483,14 +483,16 @@ async def get_actuator_status(
     if user.role != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    runtime_act = Actuator.actuators.get(actuator_id)
-    if not runtime_act:
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
         raise HTTPException(status_code=404, detail="Actuator not found")
 
+    # NOTE: depending on the actuator status some of the following params might not be available
     status_data = {
-        "last_update": runtime_act.last_update.isoformat() if runtime_act.last_update else None,
-        "temperature": runtime_act.temperature,
-        "humidity": runtime_act.humidity,
+        "last_update": actuator.last_update.isoformat() if actuator.last_update else None,
+        "temperature": actuator.temperature if actuator.temperature else None,
+        "humidity": actuator.humidity if actuator.humidity else None,
+        "battery": actuator.battery_status.to_json() if actuator.battery_status else None,
     }
 
     return DataResponse(data=status_data)
