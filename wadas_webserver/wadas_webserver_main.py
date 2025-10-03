@@ -22,11 +22,11 @@ import logging
 import os
 import signal
 import socket
-
-from utils import cert_gen, setup_logger
+import threading
 
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
+from wadas_webserver.utils import cert_gen, setup_logger
 from wadas_webserver.web_server import WebServer
 from wadas_webserver.web_server_app import app
 
@@ -69,43 +69,64 @@ def start_web_server():
     return app.server
 
 
-def blocking_socket():
-    """Method to instantiate a blocking socket on a fixed port
-    to wait communication attempts from WADAS main process
-    """
+def blocking_socket(stop_event: threading.Event):
+    """Blocking socket with periodic stop check"""
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = ("localhost", 65000)
     server_socket.bind(server_address)
-
     server_socket.listen(1)
     server_socket.settimeout(1)
-    logger.info("WADAS Webserver listening on %s:%d", server_address[0], server_address[1])
-    while flag_run:
+
+    logger.info("Webserver listening on %s:%d", server_address[0], server_address[1])
+
+    while not stop_event.is_set():
         try:
             connection, client_address = server_socket.accept()
         except socket.timeout:
             continue
+        except Exception:
+            break
 
         try:
-            logger.info("Connection established with %s", client_address)
             data = connection.recv(1024).decode("utf-8")
-            match data:
-                case "status":
-                    logger.info("Received <status> command")
-                    # TODO: check server status
-                    response = "ok"
-                case "kill":
-                    logger.info("Received <kill> command")
-                    handle_shutdown()
-                    response = "killing"
-                case _:
-                    logger.info("Received unknown <%s> command", data)
-                    response = "unknown"
-
-            connection.sendall(response.encode("utf-8"))
-
+            if data == "kill":
+                handle_shutdown()
+            connection.sendall(b"ok")
         finally:
             connection.close()
+
+    server_socket.close()
+    logger.info("Socket loop exited")
+
+
+def run_webserver_threaded(enc_conn_str, project_uuid, stop_event: threading.Event):
+    global flag_run
+    flag_run = True
+
+    conn_string = base64.b64decode(enc_conn_str).decode("utf-8")
+    if config := ServerConfig(project_uuid):
+        ServerConfig.instance = config
+        Database.instance = Database(conn_string)
+
+        # Certs...
+        cert_filepath = ServerConfig.CERT_FILEPATH
+        key_filepath = ServerConfig.KEY_FILEPATH
+        if not os.path.exists(ServerConfig.CERT_FOLDER):
+            os.makedirs(ServerConfig.CERT_FOLDER)
+            cert_gen(key_filepath, cert_filepath)
+
+        # Start FastAPI server in thread
+        ws_thread = threading.Thread(target=start_web_server, daemon=True)
+        ws_thread.start()
+
+        # Start socket loop (stoppable)
+        blocking_socket(stop_event)
+
+        # Clean shutdown
+        handle_shutdown()
+        ws_thread.join()
+    else:
+        logger.error("Unable to initialize Config instance.")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ import base64
 import logging
 import subprocess
 import sys
+import threading
 import time
 from enum import Enum
 from pathlib import Path
@@ -127,6 +128,8 @@ class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
         self.ui.pushButton_start_web_interface.clicked.connect(self.on_web_interface_start_clicked)
         self.webserver_monitor.status_signal.connect(self.catch_web_interface_status)
 
+        self.webserver_thread = None
+        self.webserver_stop_event = None
         # Init dialog
         self.initialize_dialog()
 
@@ -166,79 +169,101 @@ class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
             self.ui.label_errorMessage.setText("Database not configured or enabled!")
 
     def catch_web_interface_status(self, status):
-        self.web_interface_status = status
-        if self.web_interface_expected_status and self.web_interface_status != self.web_interface_expected_status:
+        """Slot to catch web interface status updates"""
+
+        # If no thread or stop event exists, force INACTIVE
+        if self.webserver_thread is None or self.webserver_stop_event is None:
+            self.web_interface_status = WebInterfaceStatus.INACTIVE
+        else:
+            self.web_interface_status = status
+
+        # Warn if we expected a different status
+        if (
+                self.web_interface_expected_status
+                and self.web_interface_status != self.web_interface_expected_status
+        ):
             QMessageBox.warning(
                 self,
                 "Error",
-                "Unable to communicate with WADAS Web Interface.\nSee WADAS_webserver.log for further details."
+                "Unable to communicate with WADAS Web Interface.\n"
+                "See WADAS_webserver.log for further details."
             )
+
+        # Always update UI
         self.update_web_interface_status()
+        self.web_interface_expected_status = None
 
     def update_web_interface_status(self):
-        """Method to reflect up-to-date web interface status."""
+        """Update the UI to reflect current web interface status."""
 
         status = self.web_interface_status
         status_txt = status.value
-        status_color = "color: green" if status == WebInterfaceStatus.ACTIVE else "color: red" \
-            if status == WebInterfaceStatus.INACTIVE else "color:black"
+
+        if status == WebInterfaceStatus.ACTIVE:
+            status_color = "color: green"
+        elif status == WebInterfaceStatus.INACTIVE:
+            status_color = "color: red"
+        else:
+            status_color = "color: black"
+
         self.ui.label_web_interface_status.setText(status_txt)
         self.ui.label_web_interface_status.setStyleSheet(status_color)
+
+        # Enable/disable buttons depending on the status
         self.ui.pushButton_start_web_interface.setEnabled(status == WebInterfaceStatus.INACTIVE)
         self.ui.pushButton_stop_web_interface.setEnabled(status == WebInterfaceStatus.ACTIVE)
+
+        # Reset "expected status"
         self.web_interface_expected_status = None
 
     def on_web_interface_start_clicked(self):
-        """Method to trigger start of web interface"""
+        """Method to trigger start of web interface in-thread"""
 
-        script_path = webserver_dir / self.WEB_INTERFACE_MAIN_FILE
+        enc_conn_str = base64.b64encode(
+            DataBase.get_instance().get_connection_string().encode("utf-8")
+        ).decode("utf-8")
 
-        enc_conn_str = base64.b64encode(DataBase.get_instance().get_connection_string().encode("utf-8")).decode("utf-8")
+        try:
+            from wadas_webserver import wadas_webserver_main
 
-        if script_path.exists():
-            try:
-                subprocess.Popen(
-                    [sys.executable, script_path, f"--enc_conn_str={enc_conn_str}",
-                     f"--project_uuid={self.project_uuid}"],
+            self.webserver_stop_event = threading.Event()
+            self.webserver_thread = threading.Thread(
+                target=wadas_webserver_main.run_webserver_threaded,
+                args=(enc_conn_str, self.project_uuid, self.webserver_stop_event),
+                daemon=True,
+            )
+            self.webserver_thread.start()
 
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    close_fds=True
-                )
-                self.web_interface_status = WebInterfaceStatus.STARTING
-                self.update_web_interface_status()
+            self.web_interface_status = WebInterfaceStatus.STARTING
+            self.update_web_interface_status()
+            self.web_interface_expected_status = WebInterfaceStatus.ACTIVE
+            self.webserver_monitor.start()
 
-                # check actual status
-                self.web_interface_expected_status = WebInterfaceStatus.ACTIVE
-                self.webserver_monitor.start()
-            except Exception:
-                logger.exception("Unable to start WADAS Web Interface process")
-                QMessageBox.warning(
-                    self,
-                    "Error",
-                    "Unable to start WADAS Web Interface process"
-                )
-        else:
-            logger.error("Web Interface file not found")
+        except Exception:
+            logger.exception("Unable to start WADAS Web Interface thread")
             QMessageBox.warning(
                 self,
                 "Error",
-                "Web Interface file not found"
+                "Unable to start WADAS Web Interface thread"
             )
 
     def on_web_interface_stop_clicked(self):
-        """Method to trigger stop of web interface"""
+        """Method to trigger stop of web interface in-thread"""
+
         try:
-            received = send_data_on_local_socket(WEBSERVER_SOCKET_PORT, WebserverCommands.KILL)
+            if self.webserver_stop_event:
+                self.webserver_stop_event.set()
+            if self.webserver_thread:
+                self.webserver_thread.join(timeout=5)
+                self.webserver_thread = None
+            self.webserver_stop_event = None
+
         except Exception:
-            logger.error("Unable to communicate with Web Interface")
+            logger.exception("Unable to stop Web Interface thread")
 
         self.web_interface_status = WebInterfaceStatus.STOPPING
         self.update_web_interface_status()
-
-        # check actual status
         self.web_interface_expected_status = WebInterfaceStatus.INACTIVE
-        self.webserver_monitor.start()
 
     def add_user(self):
         """Method to add a user into the dialog"""

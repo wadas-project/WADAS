@@ -99,7 +99,7 @@ class Actuator:
         DETERRENT = "Deterrent"
 
     class Commands(Enum):
-        TEST = "Test"
+        TEST = "test"
         SEND_LOG = "send_log"
         BATTERY_STATUS = "battery_status"
 
