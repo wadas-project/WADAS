@@ -34,7 +34,7 @@ def test_send_command(actuator):
     assert not actuator.cmd_queue.empty()
     queued = actuator.cmd_queue.get()
     assert isinstance(queued, Command)
-    assert queued.cmd == "Test"
+    assert queued.cmd == "test"
 
 
 def test_get_command_with_command(actuator):
@@ -44,7 +44,7 @@ def test_get_command_with_command(actuator):
     actuator.send_command(cmd)
     command = actuator.get_command()
     assert isinstance(command, Command)
-    assert command.cmd == "Test"
+    assert command.cmd == "test"
     assert actuator.last_update is not None
     assert actuator.cmd_queue.empty()
 
