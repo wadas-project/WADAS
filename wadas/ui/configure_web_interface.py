@@ -43,9 +43,10 @@ from PySide6.QtWidgets import (
 from validators import email as valid_email
 
 from wadas.domain.database import DataBase, DBUser
-from wadas.domain.utils import send_data_on_local_socket
+from wadas.domain.webinterface_manager import WebInterfaceManager
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_configure_web_interface import Ui_DialogConfigureWebInterface
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +54,6 @@ module_dir_path = Path(__file__).parent
 webserver_dir = Path(module_dir_path).parent.parent / "wadas_webserver"
 
 WEBSERVER_SOCKET_PORT = 65000
-
-
-class WebserverCommands(Enum):
-    KILL = "kill"
-    STATUS = "status"
 
 
 class WebInterfaceStatus(Enum):
@@ -69,20 +65,29 @@ class WebInterfaceStatus(Enum):
 
 
 class WebserverMonitorThread(QThread):
+    """Thread that periodically checks whether the web interface is running."""
     status_signal = Signal(WebInterfaceStatus)
 
     def run(self):
-        time.sleep(0.2)
-        try:
-            received = send_data_on_local_socket(WEBSERVER_SOCKET_PORT, WebserverCommands.STATUS)
-            self.status_signal.emit(WebInterfaceStatus.ACTIVE if received is not None else WebInterfaceStatus.INACTIVE)
-        except ConnectionRefusedError:
-            self.status_signal.emit(WebInterfaceStatus.INACTIVE)
+        manager = WebInterfaceManager()  # singleton instance
+        time.sleep(0.3)  # short initial delay
+
+        last_status = None
+        while True:
+            status = (
+                WebInterfaceStatus.ACTIVE
+                if manager.is_running()
+                else WebInterfaceStatus.INACTIVE
+            )
+            # Emit only when status changes to avoid unnecessary UI updates
+            if status != last_status:
+                self.status_signal.emit(status)
+                last_status = status
+            time.sleep(1)  # poll interval
 
 
-class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
-    """Class to configure FTP server and cameras"""
-    WEB_INTERFACE_MAIN_FILE = "wadas_webserver_main.py"
+class DialogConfigureWebInterface(QDialog):
+    """Dialog to configure and control the WADAS Web Interface."""
 
     def __init__(self, project_uuid):
         super(DialogConfigureWebInterface, self).__init__()
@@ -91,15 +96,12 @@ class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
         self.removed_users = []
         self.removed_rows = set()
         self.roles = ["Admin", "Viewer"]
-        self.web_interface_status = WebInterfaceStatus.CHECKING
-        self.web_interface_expected_status = None
         self.project_uuid = project_uuid
-
-        self.webserver_monitor = WebserverMonitorThread()
-        self.webserver_monitor.start()
 
         # DB enablement status
         self.db_enabled = bool(DataBase.get_enabled_db())
+        self.manager = WebInterfaceManager()
+        self.web_interface_status = WebInterfaceStatus.CHECKING
 
         # UI
         self.ui.setupUi(self)
@@ -108,7 +110,7 @@ class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
         self.ui.pushButton_reset_password.setEnabled(False)
         self.ui.label_errorMessage.setStyleSheet("color: red")
 
-        # Create scrollable area for users
+        # Scrollable users area
         scroll_area = QScrollArea(self.ui.verticalLayoutWidget)
         scroll_area.setWidgetResizable(True)
         scroll_widget = QWidget()
@@ -117,21 +119,26 @@ class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
         users_grid_layout.setObjectName("gridLayout_users")
         self.ui.verticalLayout_users.addWidget(scroll_area)
 
+        # Default user row
         self.add_user()
 
-        # Slots
+        # Connect signals
         self.ui.buttonBox.accepted.connect(self.accept_and_close)
         self.ui.pushButton_add_user.clicked.connect(self.add_user)
         self.ui.pushButton_remove_user.clicked.connect(self.remove_user)
         self.ui.pushButton_reset_password.clicked.connect(self.reset_user_password)
-        self.ui.pushButton_stop_web_interface.clicked.connect(self.on_web_interface_stop_clicked)
         self.ui.pushButton_start_web_interface.clicked.connect(self.on_web_interface_start_clicked)
-        self.webserver_monitor.status_signal.connect(self.catch_web_interface_status)
+        self.ui.pushButton_stop_web_interface.clicked.connect(self.on_web_interface_stop_clicked)
 
-        self.webserver_thread = None
-        self.webserver_stop_event = None
+        # Launch background thread for monitoring
+        self.webserver_monitor = WebserverMonitorThread()
+        self.webserver_monitor.status_signal.connect(self.catch_web_interface_status)
+        self.webserver_monitor.start()
+
         # Init dialog
         self.initialize_dialog()
+        # Initialize UI state
+        self.update_web_interface_status()
 
     def initialize_dialog(self):
         """Method to initialize dialog with existing values (if any)."""
@@ -168,102 +175,54 @@ class DialogConfigureWebInterface(QDialog, Ui_DialogConfigureWebInterface):
             self.ui.pushButton_start_web_interface.setEnabled(False)
             self.ui.label_errorMessage.setText("Database not configured or enabled!")
 
-    def catch_web_interface_status(self, status):
-        """Slot to catch web interface status updates"""
 
-        # If no thread or stop event exists, force INACTIVE
-        if self.webserver_thread is None or self.webserver_stop_event is None:
-            self.web_interface_status = WebInterfaceStatus.INACTIVE
-        else:
-            self.web_interface_status = status
-
-        # Warn if we expected a different status
-        if (
-                self.web_interface_expected_status
-                and self.web_interface_status != self.web_interface_expected_status
-        ):
-            QMessageBox.warning(
-                self,
-                "Error",
-                "Unable to communicate with WADAS Web Interface.\n"
-                "See WADAS_webserver.log for further details."
-            )
-
-        # Always update UI
+    def catch_web_interface_status(self, status: WebInterfaceStatus):
+        """Slot: update UI when status changes."""
+        self.web_interface_status = status
         self.update_web_interface_status()
-        self.web_interface_expected_status = None
 
     def update_web_interface_status(self):
-        """Update the UI to reflect current web interface status."""
-
+        """Refresh label color and buttons based on web interface status."""
         status = self.web_interface_status
-        status_txt = status.value
+        self.ui.label_web_interface_status.setText(status.value)
 
-        if status == WebInterfaceStatus.ACTIVE:
-            status_color = "color: green"
-        elif status == WebInterfaceStatus.INACTIVE:
-            status_color = "color: red"
-        else:
-            status_color = "color: black"
+        color_map = {
+            WebInterfaceStatus.ACTIVE: "green",
+            WebInterfaceStatus.INACTIVE: "red",
+        }
+        self.ui.label_web_interface_status.setStyleSheet(
+            f"color: {color_map.get(status, 'black')}"
+        )
 
-        self.ui.label_web_interface_status.setText(status_txt)
-        self.ui.label_web_interface_status.setStyleSheet(status_color)
-
-        # Enable/disable buttons depending on the status
+        # Button logic
         self.ui.pushButton_start_web_interface.setEnabled(status == WebInterfaceStatus.INACTIVE)
         self.ui.pushButton_stop_web_interface.setEnabled(status == WebInterfaceStatus.ACTIVE)
 
-        # Reset "expected status"
-        self.web_interface_expected_status = None
-
     def on_web_interface_start_clicked(self):
-        """Method to trigger start of web interface in-thread"""
-
+        """Handler to start the web interface via manager."""
         enc_conn_str = base64.b64encode(
             DataBase.get_instance().get_connection_string().encode("utf-8")
         ).decode("utf-8")
 
-        try:
-            from wadas_webserver import wadas_webserver_main
-
-            self.webserver_stop_event = threading.Event()
-            self.webserver_thread = threading.Thread(
-                target=wadas_webserver_main.run_webserver_threaded,
-                args=(enc_conn_str, self.project_uuid, self.webserver_stop_event),
-                daemon=True,
-            )
-            self.webserver_thread.start()
-
-            self.web_interface_status = WebInterfaceStatus.STARTING
-            self.update_web_interface_status()
-            self.web_interface_expected_status = WebInterfaceStatus.ACTIVE
-            self.webserver_monitor.start()
-
-        except Exception:
-            logger.exception("Unable to start WADAS Web Interface thread")
-            QMessageBox.warning(
-                self,
-                "Error",
-                "Unable to start WADAS Web Interface thread"
-            )
+        self.manager.start(enc_conn_str, self.project_uuid)
+        self.web_interface_status = WebInterfaceStatus.STARTING
+        self.update_web_interface_status()
 
     def on_web_interface_stop_clicked(self):
-        """Method to trigger stop of web interface in-thread"""
-
-        try:
-            if self.webserver_stop_event:
-                self.webserver_stop_event.set()
-            if self.webserver_thread:
-                self.webserver_thread.join(timeout=5)
-                self.webserver_thread = None
-            self.webserver_stop_event = None
-
-        except Exception:
-            logger.exception("Unable to stop Web Interface thread")
-
+        """Handler to stop the web interface via manager."""
         self.web_interface_status = WebInterfaceStatus.STOPPING
         self.update_web_interface_status()
-        self.web_interface_expected_status = WebInterfaceStatus.INACTIVE
+
+        self.manager.stop()
+        # Let the monitor reflect the final state
+        time.sleep(0.5)
+        self.web_interface_status = (
+            WebInterfaceStatus.ACTIVE
+            if self.manager.is_running()
+            else WebInterfaceStatus.INACTIVE
+        )
+        self.update_web_interface_status()
+
 
     def add_user(self):
         """Method to add a user into the dialog"""

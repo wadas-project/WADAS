@@ -23,6 +23,7 @@ import os
 import signal
 import socket
 import threading
+import time
 
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
@@ -34,6 +35,8 @@ flag_run = True
 webserver = None
 
 logger = logging.getLogger(__name__)
+flag_run = False
+webserver = None
 
 
 def handle_shutdown():
@@ -100,33 +103,75 @@ def blocking_socket(stop_event: threading.Event):
 
 
 def run_webserver_threaded(enc_conn_str, project_uuid, stop_event: threading.Event):
-    global flag_run
+    """
+    Run WADAS webserver in threaded mode (used by WebInterfaceManager).
+    The server runs inside a thread and stops cleanly when stop_event is set.
+    """
+    global flag_run, webserver
     flag_run = True
+    webserver = None
 
     conn_string = base64.b64decode(enc_conn_str).decode("utf-8")
+
     if config := ServerConfig(project_uuid):
         ServerConfig.instance = config
         Database.instance = Database(conn_string)
 
-        # Certs...
+        # Ensure certificates exist
         cert_filepath = ServerConfig.CERT_FILEPATH
         key_filepath = ServerConfig.KEY_FILEPATH
         if not os.path.exists(ServerConfig.CERT_FOLDER):
             os.makedirs(ServerConfig.CERT_FOLDER)
+        if not os.path.exists(cert_filepath) or not os.path.exists(key_filepath):
             cert_gen(key_filepath, cert_filepath)
 
-        # Start FastAPI server in thread
-        ws_thread = threading.Thread(target=start_web_server, daemon=True)
+        # Start Uvicorn server in a thread
+        def server_target():
+            global webserver
+            webserver = start_web_server()
+
+        ws_thread = threading.Thread(target=server_target, daemon=True)
         ws_thread.start()
+        logger.info("WADAS webserver running in threaded mode")
 
-        # Start socket loop (stoppable)
-        blocking_socket(stop_event)
+        # Wait until stop_event is set
+        while not stop_event.is_set() and flag_run:
+            time.sleep(0.5)
 
-        # Clean shutdown
-        handle_shutdown()
-        ws_thread.join()
+        logger.info("Stop event received, shutting down webserver...")
+        handle_shutdown_threaded()
+
+        ws_thread.join(timeout=5)
+        if ws_thread.is_alive():
+            logger.warning("Webserver thread did not exit within timeout.")
+
+        flag_run = False
+        logger.info("WADAS webserver stopped cleanly.")
     else:
         logger.error("Unable to initialize Config instance.")
+
+
+def handle_shutdown_threaded():
+    """Gracefully stop the Uvicorn webserver when running in threaded mode."""
+    global flag_run, webserver
+
+    if not flag_run:
+        return
+
+    flag_run = False
+    logger.info("Killing WADAS web server (threaded mode)")
+
+    try:
+        if webserver:
+            webserver.should_exit = True
+            webserver.force_exit = True
+            if hasattr(webserver, "server") and webserver.server:
+                webserver.server.should_exit = True
+            logger.info("Shutdown signal sent to Uvicorn (threaded mode).")
+        else:
+            logger.warning("No active webserver instance found.")
+    except Exception:
+        logger.exception("Error during threaded webserver shutdown.")
 
 
 if __name__ == "__main__":
@@ -136,7 +181,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--enc_conn_string", type=str, required=True, help="Encoded connection string"
     )
-
     parser.add_argument("--project_uuid", type=str, required=True, help="WADAS Project UUID")
 
     try:
@@ -149,8 +193,11 @@ if __name__ == "__main__":
             ServerConfig.instance = config
             Database.instance = Database(conn_string)
             webserver = start_web_server()
+
+            # Standard signal handlers
             signal.signal(signal.SIGINT, lambda signum, frame: handle_shutdown())
             signal.signal(signal.SIGTERM, lambda signum, frame: handle_shutdown())
+
             try:
                 blocking_socket()
             except Exception:
