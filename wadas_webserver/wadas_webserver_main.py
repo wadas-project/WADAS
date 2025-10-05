@@ -31,9 +31,6 @@ from wadas_webserver.utils import cert_gen, setup_logger
 from wadas_webserver.web_server import WebServer
 from wadas_webserver.web_server_app import app
 
-flag_run = True
-webserver = None
-
 logger = logging.getLogger(__name__)
 flag_run = False
 webserver = None
@@ -53,7 +50,7 @@ def stop_server():
         webserver.server.should_exit = True
 
 
-def start_web_server():
+def start_web_server(threaded=False):
     """Method to start the WADAS FastAPI web server on a separate thread
     N.B. HTTPS certificates are built on-the-fly and stored under CERT_FOLDER
     """
@@ -67,7 +64,7 @@ def start_web_server():
     elif not os.path.exists(cert_filepath) or not os.path.exists(key_filepath):
         cert_gen(key_filepath, cert_filepath)
 
-    app.server = WebServer("0.0.0.0", 443, cert_filepath, key_filepath)
+    app.server = WebServer("0.0.0.0", 443, cert_filepath, key_filepath, threaded)
     app.server.run()
     return app.server
 
@@ -128,7 +125,7 @@ def run_webserver_threaded(enc_conn_str, project_uuid, stop_event: threading.Eve
         # Start Uvicorn server in a thread
         def server_target():
             global webserver
-            webserver = start_web_server()
+            webserver = start_web_server(True)
 
         ws_thread = threading.Thread(target=server_target, daemon=True)
         ws_thread.start()
