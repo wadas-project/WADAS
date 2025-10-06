@@ -82,7 +82,25 @@ class ActuatorBatteryStatus:
         return json.dumps(
             {
                 "actuator_id": self.actuator_id,
-                "voltage": self.cmd,
+                "voltage": self.voltage,
+                "time_stamp": self.time_stamp.isoformat(),
+            }
+        )
+
+
+@dataclass
+class ActuatorTemperatureStatus:
+    actuator_id: str
+    temperature: float
+    humidity: float
+    time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
+
+    def to_json(self) -> str:
+        return json.dumps(
+            {
+                "actuator_id": self.actuator_id,
+                "temperature": self.temperature,
+                "humidity": self.humidity,
                 "time_stamp": self.time_stamp.isoformat(),
             }
         )
