@@ -170,7 +170,6 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
 
     resp_actuator_id = payload.get("actuator_id")
     cmd = payload.get("cmd")
-    response_ok = payload.get("response")
 
     if not actuator_id:
         raise HTTPException(status_code=400, detail="Missing actuator id in API path")
@@ -178,8 +177,6 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
         raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
     if not cmd or cmd != "battery_status":
         raise HTTPException(status_code=400, detail="Invalid or missing command")
-    if response_ok is None:
-        raise HTTPException(status_code=400, detail="Missing response status")
 
     # Get actuator from list
     actuator = Actuator.actuators.get(actuator_id)

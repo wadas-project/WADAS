@@ -362,6 +362,9 @@ async def get_actuator(
     return DataResponse(data=actuator_to_viewmodel(db_actuator, runtime_act))
 
 
+# Section related to API endpoints that requires WADAS to be up and running.
+
+
 @app.get("/api/v1/actuators/{actuator_id}/runtime")
 async def get_actuator_runtime(
     actuator_id: str,
@@ -385,9 +388,9 @@ async def request_actuator_log(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
     """Ask an actuator to send back its log (admin only)."""
-    # user = verify_token(x_access_token)
-    # if user.role != "Admin":
-    #     raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
     actuator = Actuator.actuators.get(actuator_id)
     if not actuator:
