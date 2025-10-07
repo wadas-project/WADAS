@@ -33,6 +33,8 @@ class DeterrentActuator(Actuator):
         ON = "on"
         SEND_LOG = "send_log"
         TEST = "test"
+        BATTERY_STATUS = "battery_status"
+        TEMPERATURE_STATUS = "temperature_status"
 
     def __init__(self, id, enabled):
         super().__init__(id, enabled)
