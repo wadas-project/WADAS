@@ -32,7 +32,6 @@ from starlette.responses import FileResponse, Response, StreamingResponse
 
 from wadas.domain.actuator import Actuator, Command
 from wadas_webserver.database import Database
-from wadas_webserver.mapper import actuator_to_viewmodel, runtime_actuator_to_viewmodel
 from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
 from wadas_webserver.view_model import (
@@ -326,7 +325,10 @@ async def catch_all(full_path: str):
     return FileResponse(index_path)
 
 
-@app.get("/api/v1/actuators", response_model=DataResponse)
+# Section related to API endpoints that requires WADAS to be up and running.
+
+
+@app.get("/api/v1/actuators")
 async def get_actuators(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
@@ -335,51 +337,55 @@ async def get_actuators(
     if user.role != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
+    # Get actuators from domain class
     db_actuators = Database.instance.get_actuators()
-    result = [
-        actuator_to_viewmodel(db_act, Actuator.actuators.get(db_act.actuator_id))
-        for db_act in db_actuators
-    ]
 
-    return DataResponse(data=result)
+    # Fetch only Actuator's required fields
+    result = []
+    for db_act in db_actuators:
+        actuator = Actuator.actuators.get(db_act.actuator_id)
+        if actuator:
+            result.append(
+                {
+                    "id": actuator.id,
+                    "type": actuator.type.value if actuator.type else None,
+                    "last_update": actuator.last_update,
+                }
+            )
+
+    return {"data": result}
 
 
-@app.get("/api/v1/actuators/{actuator_id}", response_model=DataResponse)
-async def get_actuator(
+@app.get("/api/v1/actuators/{actuator_id}/detail")
+async def get_actuator_detail(
     actuator_id: str,
     x_access_token: Annotated[str | None, Header()] = None,
 ):
-    """Return a single actuator (admin only)"""
+    """Return detailed info of a given actuator (admin only)"""
     user = verify_token(x_access_token)
     if user.role != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    db_actuator = Database.instance.get_actuator_by_name(actuator_id)
-    if not db_actuator:
-        raise HTTPException(status_code=404, detail="Actuator not found")
-
-    runtime_act = Actuator.actuators.get(actuator_id)
-    return DataResponse(data=actuator_to_viewmodel(db_actuator, runtime_act))
-
-
-# Section related to API endpoints that requires WADAS to be up and running.
-
-
-@app.get("/api/v1/actuators/{actuator_id}/runtime")
-async def get_actuator_runtime(
-    actuator_id: str,
-    x_access_token: Annotated[str | None, Header()] = None,
-):
-    """Return only runtime info for a given actuator (admin only)."""
-    user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
-
+    # Retrieve the actuator from the in-memory registry
     actuator = Actuator.actuators.get(actuator_id)
-    if not actuator:
-        raise HTTPException(status_code=404, detail="Runtime actuator not found")
+    if actuator is None:
+        raise HTTPException(status_code=404, detail=f"Actuator '{actuator_id}' not found")
 
-    return DataResponse(data=runtime_actuator_to_viewmodel(actuator))
+    battery_status = Database.get_last_battery_status(actuator_id)
+    temperature, humidity = Database.get_last_temperature_status(actuator_id)
+
+    # Build the response
+    detail = {
+        "id": actuator.id,
+        "type": actuator.type.value if actuator.type else None,
+        "last_update": actuator.last_update,
+        "log": actuator.log,
+        "temperature": temperature,
+        "humidity": humidity,
+        "battery_status": battery_status,
+    }
+
+    return {"data": detail}
 
 
 @app.post("/api/v1/actuators/{actuator_id}/log", response_model=DataResponse)
@@ -416,7 +422,7 @@ async def request_actuator_log(
             if resp.cmd == cmd.cmd and resp.time_stamp == cmd.time_stamp:
                 actuator.responses.remove(resp)
                 if resp.response:
-                    return DataResponse(data={"logs": resp.payload.get("logs", [])})
+                    return DataResponse(data={"log": resp.payload.get("log", [])})
                 else:
                     raise HTTPException(
                         status_code=500, detail=resp.response_message or "Error fetching log."
@@ -476,8 +482,8 @@ async def request_actuator_test(
     raise HTTPException(status_code=504, detail="Actuator did not respond in time")
 
 
-@app.get("/api/v1/actuators/{actuator_id}/status", response_model=DataResponse)
-async def get_actuator_status(
+@app.get("/api/v1/actuators/{actuator_id}/last_update", response_model=DataResponse)
+async def get_actuator_last_update(
     actuator_id: str,
     x_access_token: Annotated[str | None, Header()] = None,
 ):
@@ -490,12 +496,9 @@ async def get_actuator_status(
     if not actuator:
         raise HTTPException(status_code=404, detail="Actuator not found")
 
-    # NOTE: depending on the actuator status some of the following params might not be available
+    # NOTE: depending on the actuator status following param might not be available
     status_data = {
         "last_update": actuator.last_update.isoformat() if actuator.last_update else None,
-        "temperature": actuator.temperature if actuator.temperature else None,
-        "humidity": actuator.humidity if actuator.humidity else None,
-        "battery": actuator.battery_status.to_json() if actuator.battery_status else None,
     }
 
     return DataResponse(data=status_data)

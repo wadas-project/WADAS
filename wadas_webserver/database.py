@@ -22,12 +22,16 @@ import logging
 from contextlib import contextmanager
 from typing import List, Optional, Tuple
 
-from sqlalchemy import and_, create_engine
+from sqlalchemy import and_, create_engine, desc
 from sqlalchemy.orm import Query, Session, joinedload, sessionmaker
 
 from wadas.domain.actuator import Actuator
 from wadas.domain.db_model import ActuationEvent as DB_ActuationEvent
 from wadas.domain.db_model import Actuator as DB_Actuator
+from wadas.domain.db_model import ActuatorBatteryStatus as DB_ActuatorBatteryStatus
+from wadas.domain.db_model import (
+    ActuatorTemperatureStatus as DB_ActuatorTemperatureStatus,
+)
 from wadas.domain.db_model import Camera as DB_Camera
 from wadas.domain.db_model import ClassifiedAnimals as DB_ClassifiedAnimal
 from wadas.domain.db_model import DetectionEvent as DB_DetectionEvent
@@ -269,3 +273,51 @@ class Database:
             query = self._build_actuation_events_query(session, actuation_filter)
             result = query.all()
             return self._get_csv_string(headers, result, DB_ActuationEvent)
+
+    def get_last_temperature_status(self, actuator_id: str) -> Optional[Tuple[float, float]]:
+        """Return the latest temperature and humidity for a given actuator (by name)."""
+        with self.get_session() as session:
+            # Step 1: find actuator db_id by its id
+            db_actuator = (
+                session.query(DB_Actuator).filter(DB_Actuator.actuator_id == actuator_id).first()
+            )
+            if db_actuator is None:
+                return None  # actuator not found
+
+            # Step 2: query temperature/humidity table using db_id
+            result = (
+                session.query(DB_ActuatorTemperatureStatus)
+                .filter(DB_ActuatorTemperatureStatus.actuator_id == db_actuator.db_id)
+                .order_by(desc(DB_ActuatorTemperatureStatus.time_stamp))
+                .limit(1)
+                .first()
+            )
+
+            if result is None:
+                return None  # no temperature/humidity data available
+
+            return result.temperature, result.humidity
+
+    def get_last_battery_status(self, actuator_id: str) -> Optional[float]:
+        """Return the latest battery voltage for a given actuator (by name)."""
+        with self.get_session() as session:
+            # Step 1: find actuator db_id by its id
+            db_actuator = (
+                session.query(DB_Actuator).filter(DB_Actuator.actuator_id == actuator_id).first()
+            )
+            if db_actuator is None:
+                return None  # actuator not found in the 'actuators' table
+
+            # Step 2: query the most recent battery voltage using db_id
+            result = (
+                session.query(DB_ActuatorBatteryStatus)
+                .filter(DB_ActuatorBatteryStatus.actuator_id == db_actuator.db_id)
+                .order_by(desc(DB_ActuatorBatteryStatus.time_stamp))
+                .limit(1)
+                .first()
+            )
+
+            if result is None:
+                return None  # no battery records found for this actuator
+
+            return result.voltage

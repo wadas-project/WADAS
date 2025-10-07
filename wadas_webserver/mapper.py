@@ -19,6 +19,10 @@
 
 from wadas.domain.db_model import ActuationEvent as DB_ActuationEvent
 from wadas.domain.db_model import Actuator as DB_Actuator
+from wadas.domain.db_model import ActuatorBatteryStatus as DB_ActuatorBatteryStatus
+from wadas.domain.db_model import (
+    ActuatorTemperatureStatus as DB_ActuatorTemperatureStatus,
+)
 from wadas.domain.db_model import Camera as DB_Camera
 from wadas.domain.db_model import ClassifiedAnimals as DB_ClassifiedAnimals
 from wadas.domain.db_model import DetectionEvent as DB_DetectionEvent
@@ -26,8 +30,8 @@ from wadas.domain.db_model import User as DB_User
 from wadas_webserver.view_model import (
     ActuationEvent,
     Actuator,
-    ActuatorDetail,
-    ActuatorRuntimeView,
+    ActuatorBatteryStatus,
+    ActuatorTemperatureStatus,
     Camera,
     ClassifiedAnimal,
     DetectionEvent,
@@ -116,44 +120,16 @@ class Mapper:
         ]
 
     @staticmethod
-    def actuator_to_viewmodel(db_actuator, runtime_actuator=None) -> ActuatorDetail:
-        """Map ORM + runtime actuator into a Pydantic view model"""
-        return ActuatorDetail(
-            id=db_actuator.db_id,
-            name=db_actuator.actuator_id,
-            type=db_actuator.type.value if db_actuator.type else None,
-            enabled=db_actuator.enabled,
-            creation_date=db_actuator.creation_date,
-            deletion_date=db_actuator.deletion_date,
-            temperature=getattr(runtime_actuator, "temperature", None),
-            humidity=getattr(runtime_actuator, "humidity", None),
-            log=getattr(runtime_actuator, "log", None),
+    def map_actuator_battery_status(db_battery_status: DB_ActuatorBatteryStatus):
+        return ActuatorBatteryStatus(
+            voltage=db_battery_status.voltage,
+            timestamp=db_battery_status.time_stamp,
         )
 
-
-def actuator_to_viewmodel(db_actuator, runtime_actuator=None) -> ActuatorDetail:
-    """As ActuatorDetails class is intended to be for Admin only and contains data
-    from runtime class, this method helps to build attributes info from both db and
-    runtime class itself."""
-    return ActuatorDetail(
-        id=db_actuator.db_id,
-        name=db_actuator.actuator_id,
-        type=db_actuator.type.value if db_actuator.type else None,
-        enabled=db_actuator.enabled,
-        creation_date=db_actuator.creation_date,
-        deletion_date=db_actuator.deletion_date,
-        last_update=getattr(runtime_actuator, "last_update", None),
-        temperature=getattr(runtime_actuator, "temperature", None),
-        humidity=getattr(runtime_actuator, "humidity", None),
-        log=getattr(runtime_actuator, "log", None),
-    )
-
-
-def runtime_actuator_to_viewmodel(runtime_actuator) -> ActuatorRuntimeView:
-    """Returns only Actuator runtime class attributes. No db data."""
-    return ActuatorRuntimeView(
-        temperature=getattr(runtime_actuator, "temperature", None),
-        humidity=getattr(runtime_actuator, "humidity", None),
-        log=getattr(runtime_actuator, "log", None),
-        last_update=getattr(runtime_actuator, "last_update", None),
-    )
+    @staticmethod
+    def map_actuator_temperature_status(db_temperature_status: DB_ActuatorTemperatureStatus):
+        return ActuatorTemperatureStatus(
+            temperature=db_temperature_status.temperature,
+            humidity=db_temperature_status.humidity,
+            timestamp=db_temperature_status.time_stamp,
+        )

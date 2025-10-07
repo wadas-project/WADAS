@@ -24,7 +24,12 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
-from wadas.domain.actuator import Actuator, ActuatorBatteryStatus, Command
+from wadas.domain.actuator import (
+    Actuator,
+    ActuatorBatteryStatus,
+    ActuatorTemperatureStatus,
+    Command,
+)
 from wadas.domain.database import DataBase
 
 logger = logging.getLogger(__name__)
@@ -203,5 +208,47 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
     if db := DataBase.get_enabled_db():
         logger.debug("Inserting battery status into db...")
         db.insert_into_db(battery_status)
+
+    return {"status": "received"}
+
+
+@app.post("/api/v1/actuators/{actuator_id}/temperature_status")
+async def receive_temperature_status(actuator_id: str, payload: dict = Body(...)):  # noqa: B008
+    """Receive actuator's temperature status update."""
+
+    resp_actuator_id = payload.get("actuator_id")
+    cmd = payload.get("cmd")
+    time_stamp = payload.get("time_stamp")
+
+    if not actuator_id:
+        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
+    if resp_actuator_id != actuator_id:
+        raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
+    if not cmd or cmd != "temperature_status":
+        raise HTTPException(status_code=400, detail="Invalid or missing command")
+
+    # Get actuator from list
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    temperature = payload.get("payload", {}).get("temperature")
+    if temperature is None:
+        raise HTTPException(status_code=400, detail="Missing 'temperature' in payload")
+    else:
+        logger.info("Received actuator %s temperature status: %s", actuator_id, temperature)
+    humidity = payload.get("payload", {}).get("humidity")
+    if humidity is None:
+        logger.warning("Actuator %s has not provided humidity data.", actuator_id)
+
+    # Update Actuator class
+    temperature_status = ActuatorTemperatureStatus(
+        actuator_id=actuator_id, temperature=temperature, humidity=humidity, time_stamp=time_stamp
+    )
+
+    # Persist in DB
+    if db := DataBase.get_enabled_db():
+        logger.debug("Inserting temperature status into db...")
+        db.insert_into_db(temperature_status)
 
     return {"status": "received"}

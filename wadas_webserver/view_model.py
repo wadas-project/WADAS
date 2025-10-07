@@ -114,18 +114,12 @@ class PaginatedResponse(BaseModel):
     data: object
 
 
-class ActuatorDetail(Actuator):
-    enabled: bool
-    creation_date: datetime
-    deletion_date: Optional[datetime] = None
-    last_update: Optional[datetime] = None
+class ActuatorTemperatureStatus(BaseModel):
     temperature: Optional[float] = None
     humidity: Optional[float] = None
-    log: Optional[str] = None
+    timestamp: datetime
 
 
-class ActuatorRuntimeView(BaseModel):
-    temperature: Optional[float] = None
-    humidity: Optional[float] = None
-    log: Optional[str] = None
-    last_update: Optional[datetime] = None
+class ActuatorBatteryStatus(BaseModel):
+    voltage: Optional[float] = None
+    timestamp: datetime
