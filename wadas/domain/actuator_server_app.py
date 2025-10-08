@@ -233,13 +233,19 @@ async def receive_temperature_status(actuator_id: str, payload: dict = Body(...)
         raise HTTPException(status_code=404, detail="Actuator not found")
 
     temperature = payload.get("payload", {}).get("temperature")
+    humidity = payload.get("payload", {}).get("humidity")
     if temperature is None:
         raise HTTPException(status_code=400, detail="Missing 'temperature' in payload")
     else:
-        logger.info("Received actuator %s temperature status: %s", actuator_id, temperature)
-    humidity = payload.get("payload", {}).get("humidity")
-    if humidity is None:
-        logger.warning("Actuator %s has not provided humidity data.", actuator_id)
+        if humidity is None:
+            logger.info("Received actuator %s temperature: %s", actuator_id, temperature)
+        else:
+            logger.info(
+                "Received actuator %s temperature: %s - humidity: %s",
+                actuator_id,
+                temperature,
+                humidity,
+            )
 
     # Update Actuator class
     temperature_status = ActuatorTemperatureStatus(

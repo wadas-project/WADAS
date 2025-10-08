@@ -36,6 +36,8 @@ from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
 from wadas_webserver.view_model import (
     ActuationsRequest,
+    ActuatorDetailed,
+    ActuatorStatus,
     DataResponse,
     DetectionsRequest,
     LoginRequest,
@@ -346,11 +348,9 @@ async def get_actuators(
         actuator = Actuator.actuators.get(db_act.actuator_id)
         if actuator:
             result.append(
-                {
-                    "id": actuator.id,
-                    "type": actuator.type.value if actuator.type else None,
-                    "last_update": actuator.last_update,
-                }
+                ActuatorStatus(
+                    id=actuator.id, type=actuator.type.value, last_update=actuator.last_update
+                )
             )
 
     return {"data": result}
@@ -374,18 +374,15 @@ async def get_actuator_detail(
     battery_status = Database.get_last_battery_status(actuator_id)
     temperature, humidity = Database.get_last_temperature_status(actuator_id)
 
-    # Build the response
-    detail = {
-        "id": actuator.id,
-        "type": actuator.type.value if actuator.type else None,
-        "last_update": actuator.last_update,
-        "log": actuator.log,
-        "temperature": temperature,
-        "humidity": humidity,
-        "battery_status": battery_status,
-    }
-
-    return {"data": detail}
+    return ActuatorDetailed(
+        actuator_id=actuator.id,
+        type=actuator.type.value,
+        last_update=actuator.last_update,
+        log=actuator.log,
+        temperature=temperature,
+        humidity=humidity,
+        battery_status=battery_status,
+    )
 
 
 @app.post("/api/v1/actuators/{actuator_id}/log", response_model=DataResponse)
@@ -439,9 +436,9 @@ async def request_actuator_test(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
     """Ask an actuator to perform a short test actuation (admin only)."""
-    # user = verify_token(x_access_token)
-    # if user.role != "Admin":
-    #   raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
     actuator = Actuator.actuators.get(actuator_id)
     if not actuator:

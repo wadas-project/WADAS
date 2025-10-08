@@ -114,6 +114,22 @@ class PaginatedResponse(BaseModel):
     data: object
 
 
+class ActuatorDetailed(BaseModel):
+    actuator_id: str
+    type: str
+    last_update: datetime
+    log: str
+    temperature: float
+    humidity: float
+    battery_status: float
+
+
+class ActuatorStatus(BaseModel):
+    id: str
+    type: str
+    last_update: datetime
+
+
 class ActuatorTemperatureStatus(BaseModel):
     temperature: Optional[float] = None
     humidity: Optional[float] = None
