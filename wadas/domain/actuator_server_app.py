@@ -243,7 +243,10 @@ async def receive_temperature_status(actuator_id: str, payload: dict = Body(...)
 
     # Update Actuator class
     temperature_status = ActuatorTemperatureStatus(
-        actuator_id=actuator_id, temperature=temperature, humidity=humidity, time_stamp=time_stamp
+        actuator_id=actuator_id,
+        temperature=temperature,
+        humidity=humidity,
+        time_stamp=datetime.datetime.fromisoformat(time_stamp),
     )
 
     # Persist in DB
