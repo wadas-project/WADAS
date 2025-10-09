@@ -114,14 +114,6 @@ def run_webserver_threaded(enc_conn_str, project_uuid, stop_event: threading.Eve
         ServerConfig.instance = config
         Database.instance = Database(conn_string)
 
-        # Ensure certificates exist
-        cert_filepath = ServerConfig.CERT_FILEPATH
-        key_filepath = ServerConfig.KEY_FILEPATH
-        if not os.path.exists(ServerConfig.CERT_FOLDER):
-            os.makedirs(ServerConfig.CERT_FOLDER)
-        if not os.path.exists(cert_filepath) or not os.path.exists(key_filepath):
-            cert_gen(key_filepath, cert_filepath)
-
         # Start Uvicorn server in a thread
         def server_target():
             global webserver

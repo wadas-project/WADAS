@@ -1367,8 +1367,7 @@ class MySQLDataBase(DataBase):
             3. Otherwise, raise FileNotFoundError.
             """
             # mysqldump is in PATH
-            exe = shutil.which("mysqldump")
-            if exe:
+            if exe := shutil.which("mysqldump"):
                 return exe
 
             # Windows specific lookup with wildcard
@@ -1480,8 +1479,7 @@ class MariaDBDataBase(DataBase):
             3. Otherwise, raise FileNotFoundError.
             """
             # Case 1: mariadb-dump is in PATH
-            exe = shutil.which("mariadb-dump")
-            if exe:
+            if exe := shutil.which("mariadb-dump"):
                 return exe
 
             # Windows specific lookup with wildcard
