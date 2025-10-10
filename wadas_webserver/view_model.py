@@ -95,6 +95,8 @@ class ActuationEvent(BaseModel):
     detection_event_id: int
     command: str
     timestamp: datetime
+    command_response: Optional[bool] = None
+    command_response_message: Optional[str] = None
 
 
 class RefreshResponse(BaseModel):
@@ -110,3 +112,30 @@ class PaginatedResponse(BaseModel):
     total: int
     count: int
     data: object
+
+
+class ActuatorDetailed(BaseModel):
+    actuator_id: str
+    type: str
+    last_update: datetime
+    log: str
+    temperature: float
+    humidity: float
+    battery_status: float
+
+
+class ActuatorStatus(BaseModel):
+    id: str
+    type: str
+    last_update: datetime
+
+
+class ActuatorTemperatureStatus(BaseModel):
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    timestamp: datetime
+
+
+class ActuatorBatteryStatus(BaseModel):
+    voltage: Optional[float] = None
+    timestamp: datetime

@@ -22,18 +22,18 @@ import logging
 import os
 import signal
 import socket
-
-from utils import cert_gen, setup_logger
+import threading
+import time
 
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
+from wadas_webserver.utils import cert_gen, setup_logger
 from wadas_webserver.web_server import WebServer
 from wadas_webserver.web_server_app import app
 
-flag_run = True
-webserver = None
-
 logger = logging.getLogger(__name__)
+flag_run = False
+webserver = None
 
 
 def handle_shutdown():
@@ -50,7 +50,7 @@ def stop_server():
         webserver.server.should_exit = True
 
 
-def start_web_server():
+def start_web_server(threaded=False):
     """Method to start the WADAS FastAPI web server on a separate thread
     N.B. HTTPS certificates are built on-the-fly and stored under CERT_FOLDER
     """
@@ -64,48 +64,103 @@ def start_web_server():
     elif not os.path.exists(cert_filepath) or not os.path.exists(key_filepath):
         cert_gen(key_filepath, cert_filepath)
 
-    app.server = WebServer("0.0.0.0", 443, cert_filepath, key_filepath)
+    app.server = WebServer("0.0.0.0", 443, cert_filepath, key_filepath, threaded)
     app.server.run()
     return app.server
 
 
-def blocking_socket():
-    """Method to instantiate a blocking socket on a fixed port
-    to wait communication attempts from WADAS main process
-    """
+def blocking_socket(stop_event: threading.Event):
+    """Blocking socket with periodic stop check"""
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = ("localhost", 65000)
     server_socket.bind(server_address)
-
     server_socket.listen(1)
     server_socket.settimeout(1)
-    logger.info("WADAS Webserver listening on %s:%d", server_address[0], server_address[1])
-    while flag_run:
+
+    logger.info("Webserver listening on %s:%d", server_address[0], server_address[1])
+
+    while not stop_event.is_set():
         try:
             connection, client_address = server_socket.accept()
         except socket.timeout:
             continue
+        except Exception:
+            break
 
         try:
-            logger.info("Connection established with %s", client_address)
             data = connection.recv(1024).decode("utf-8")
-            match data:
-                case "status":
-                    logger.info("Received <status> command")
-                    # TODO: check server status
-                    response = "ok"
-                case "kill":
-                    logger.info("Received <kill> command")
-                    handle_shutdown()
-                    response = "killing"
-                case _:
-                    logger.info("Received unknown <%s> command", data)
-                    response = "unknown"
-
-            connection.sendall(response.encode("utf-8"))
-
+            if data == "kill":
+                handle_shutdown()
+            connection.sendall(b"ok")
         finally:
             connection.close()
+
+    server_socket.close()
+    logger.info("Socket loop exited")
+
+
+def run_webserver_threaded(enc_conn_str, project_uuid, stop_event: threading.Event):
+    """
+    Run WADAS webserver in threaded mode (used by WebInterfaceManager).
+    The server runs inside a thread and stops cleanly when stop_event is set.
+    """
+    global flag_run, webserver
+    flag_run = True
+    webserver = None
+
+    conn_string = base64.b64decode(enc_conn_str).decode("utf-8")
+
+    if config := ServerConfig(project_uuid):
+        ServerConfig.instance = config
+        Database.instance = Database(conn_string)
+
+        # Start Uvicorn server in a thread
+        def server_target():
+            global webserver
+            webserver = start_web_server(True)
+
+        ws_thread = threading.Thread(target=server_target, daemon=True)
+        ws_thread.start()
+        logger.info("WADAS webserver running in threaded mode")
+
+        # Wait until stop_event is set
+        while not stop_event.is_set() and flag_run:
+            time.sleep(0.5)
+
+        logger.info("Stop event received, shutting down webserver...")
+        handle_shutdown_threaded()
+
+        ws_thread.join(timeout=5)
+        if ws_thread.is_alive():
+            logger.warning("Webserver thread did not exit within timeout.")
+
+        flag_run = False
+        logger.info("WADAS webserver stopped cleanly.")
+    else:
+        logger.error("Unable to initialize Config instance.")
+
+
+def handle_shutdown_threaded():
+    """Gracefully stop the Uvicorn webserver when running in threaded mode."""
+    global flag_run, webserver
+
+    if not flag_run:
+        return
+
+    flag_run = False
+    logger.info("Killing WADAS web server (threaded mode)")
+
+    try:
+        if webserver:
+            webserver.should_exit = True
+            webserver.force_exit = True
+            if hasattr(webserver, "server") and webserver.server:
+                webserver.server.should_exit = True
+            logger.info("Shutdown signal sent to Uvicorn (threaded mode).")
+        else:
+            logger.warning("No active webserver instance found.")
+    except Exception:
+        logger.exception("Error during threaded webserver shutdown.")
 
 
 if __name__ == "__main__":
@@ -115,7 +170,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--enc_conn_string", type=str, required=True, help="Encoded connection string"
     )
-
     parser.add_argument("--project_uuid", type=str, required=True, help="WADAS Project UUID")
 
     try:
@@ -128,8 +182,11 @@ if __name__ == "__main__":
             ServerConfig.instance = config
             Database.instance = Database(conn_string)
             webserver = start_web_server()
+
+            # Standard signal handlers
             signal.signal(signal.SIGINT, lambda signum, frame: handle_shutdown())
             signal.signal(signal.SIGTERM, lambda signum, frame: handle_shutdown())
+
             try:
                 blocking_socket()
             except Exception:

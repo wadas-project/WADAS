@@ -195,9 +195,28 @@ class ActuationEvent(Base):
     time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
     detection_event_id = Column(Integer, ForeignKey("detection_events.id"), nullable=False)
     command = Column(Text, nullable=True)
+    command_response = Column(Boolean, nullable=True)
+    command_response_message = Column(Text, nullable=True)
 
     actuator = relationship("Actuator", back_populates="actuation_events")
     detection_event = relationship("DetectionEvent", back_populates="actuation_events")
+
+
+class ActuatorBatteryStatus(Base):
+    __tablename__ = "actuator_battery_status"
+
+    actuator_id = Column(Integer, ForeignKey("actuators.id"), primary_key=True, nullable=False)
+    time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
+    voltage = Column(Float)
+
+
+class ActuatorTemperatureStatus(Base):
+    __tablename__ = "actuator_temperature_status"
+
+    actuator_id = Column(Integer, ForeignKey("actuators.id"), primary_key=True, nullable=False)
+    time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
+    temperature = Column(Float)
+    humidity = Column(Float, nullable=True)
 
 
 # Database service tables, not mapped with any WADAS class

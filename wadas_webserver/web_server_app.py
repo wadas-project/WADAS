@@ -16,6 +16,7 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-02-21
 # Description: Module containing FastAPI exposed endpoints.
+
 import json
 import logging
 import os
@@ -29,11 +30,14 @@ from jose import JWTError, jwt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
 
+from wadas.domain.actuator import Actuator, Command
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
 from wadas_webserver.view_model import (
     ActuationsRequest,
+    ActuatorDetailed,
+    ActuatorStatus,
     DataResponse,
     DetectionsRequest,
     LoginRequest,
@@ -321,3 +325,177 @@ async def catch_all(full_path: str):
         raise HTTPException(status_code=404, detail="Frontend not found")
 
     return FileResponse(index_path)
+
+
+# Section related to API endpoints that requires WADAS to be up and running.
+
+
+@app.get("/api/v1/actuators")
+async def get_actuators(
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Return the list of existing actuators (admin only)"""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    # Get actuators from domain class
+    db_actuators = Database.instance.get_actuators()
+
+    # Fetch only Actuator's required fields
+    result = []
+    for db_act in db_actuators:
+        actuator = Actuator.actuators.get(db_act.actuator_id)
+        if actuator:
+            result.append(
+                ActuatorStatus(
+                    id=actuator.id, type=actuator.type.value, last_update=actuator.last_update
+                )
+            )
+
+    return {"data": result}
+
+
+@app.get("/api/v1/actuators/{actuator_id}/detail")
+async def get_actuator_detail(
+    actuator_id: str,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Return detailed info of a given actuator (admin only)"""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    # Retrieve the actuator from the in-memory registry
+    actuator = Actuator.actuators.get(actuator_id)
+    if actuator is None:
+        raise HTTPException(status_code=404, detail=f"Actuator '{actuator_id}' not found")
+
+    battery_status = Database.get_last_battery_status(actuator_id)
+    temperature, humidity = Database.get_last_temperature_status(actuator_id)
+
+    return ActuatorDetailed(
+        actuator_id=actuator.id,
+        type=actuator.type.value,
+        last_update=actuator.last_update,
+        log=actuator.log,
+        temperature=temperature,
+        humidity=humidity,
+        battery_status=battery_status,
+    )
+
+
+@app.post("/api/v1/actuators/{actuator_id}/log", response_model=DataResponse)
+async def request_actuator_log(
+    actuator_id: str,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Ask an actuator to send back its log (admin only)."""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    # Build SEND_LOG Command
+    cmd = Command(actuator_id=actuator_id, cmd=Actuator.Commands.SEND_LOG.value)
+
+    try:
+        actuator.cmd_queue.put_nowait(cmd.to_json())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unable to queue log request: {e}")
+
+    # Polling for response
+    import asyncio
+
+    timeout_s = 10
+    interval_s = 0.2
+    waited = 0.0
+
+    while waited < timeout_s:
+        for resp in list(actuator.responses):
+            if resp.cmd == cmd.cmd and resp.time_stamp == cmd.time_stamp:
+                actuator.responses.remove(resp)
+                if resp.response:
+                    return DataResponse(data={"log": resp.payload.get("log", [])})
+                else:
+                    raise HTTPException(
+                        status_code=500, detail=resp.response_message or "Error fetching log."
+                    )
+        await asyncio.sleep(interval_s)
+        waited += interval_s
+
+    raise HTTPException(status_code=504, detail="Actuator did not respond in time")
+
+
+@app.post("/api/v1/actuators/{actuator_id}/test", response_model=DataResponse)
+async def request_actuator_test(
+    actuator_id: str,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Ask an actuator to perform a short test actuation (admin only)."""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    # Build TEST command
+    cmd = Command(actuator_id=actuator_id, cmd=Actuator.Commands.TEST.value)
+
+    try:
+        actuator.cmd_queue.put_nowait(cmd.to_json())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unable to queue test request: {e}")
+
+    # Polling for response
+    import asyncio
+
+    timeout_s = 10
+    interval_s = 0.2
+    waited = 0.0
+
+    while waited < timeout_s:
+        for resp in list(actuator.responses):
+            if resp.cmd == cmd.cmd and resp.time_stamp == cmd.time_stamp:
+                actuator.responses.remove(resp)
+                if resp.response:
+                    # Sample payload: {"duration": 10}
+                    return DataResponse(
+                        data={"message": resp.response_message, "payload": resp.payload}
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=resp.response_message or "Error during test actuation",
+                    )
+        await asyncio.sleep(interval_s)
+        waited += interval_s
+
+    raise HTTPException(status_code=504, detail="Actuator did not respond in time")
+
+
+@app.get("/api/v1/actuators/{actuator_id}/last_update", response_model=DataResponse)
+async def get_actuator_last_update(
+    actuator_id: str,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
+    """Get current actuator status (last update, temperature, humidity)."""
+    user = verify_token(x_access_token)
+    if user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    # NOTE: depending on the actuator status following param might not be available
+    status_data = {
+        "last_update": actuator.last_update.isoformat() if actuator.last_update else None,
+    }
+
+    return DataResponse(data=status_data)

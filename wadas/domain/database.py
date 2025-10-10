@@ -16,11 +16,15 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-01-04
 # Description: database module.
-
-import json
+import datetime
+import glob
 import logging
+import os
+import shutil
+import subprocess
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 
 import keyring
 from mariadb import OperationalError as mariadbOperationalerror
@@ -33,10 +37,17 @@ from sqlalchemy.orm import sessionmaker
 
 from wadas._version import __dbversion__
 from wadas.domain.actuation_event import ActuationEvent
-from wadas.domain.actuator import Actuator
+from wadas.domain.actuator import (
+    Actuator,
+    ActuatorBatteryStatus,
+    ActuatorTemperatureStatus,
+    Command,
+)
 from wadas.domain.camera import cameras
 from wadas.domain.db_model import ActuationEvent as ORMActuationEvent
 from wadas.domain.db_model import Actuator as ORMActuator
+from wadas.domain.db_model import ActuatorBatteryStatus as ORMActuatorBattery
+from wadas.domain.db_model import ActuatorTemperatureStatus as ORMActuatorTemperature
 from wadas.domain.db_model import Base
 from wadas.domain.db_model import Camera as ORMCamera
 from wadas.domain.db_model import ClassifiedAnimals as ORMClassifiedAnimals
@@ -58,6 +69,7 @@ from wadas.domain.usb_camera import USBCamera
 from wadas.domain.utils import get_precise_timestamp
 
 logger = logging.getLogger(__name__)
+WADAS_DIR = Path(__file__).resolve().parents[2]
 
 
 class DBMetadata:
@@ -317,7 +329,7 @@ class DataBase(ABC):
     def insert_into_db(cls, domain_object):
         """Method to insert a WADAS object into the db."""
 
-        logger.debug("Inserting object into db...")
+        logger.debug("Inserting <%s> object into db...", type(domain_object))
         if session := cls.create_session():
             try:
                 foreign_key = []
@@ -340,6 +352,7 @@ class DataBase(ABC):
                             domain_object.camera_id,
                         )
                         return
+
                 if isinstance(domain_object, ActuationEvent):
                     # If Actuator associated to the actuation event is not in db abort insertion
                     foreign_key.append(
@@ -370,6 +383,47 @@ class DataBase(ABC):
                         )
                         return
 
+                if isinstance(domain_object, ActuatorBatteryStatus):
+                    # Check that actuator exists
+                    actuator_fk = (
+                        session.query(ORMActuator.db_id)
+                        .filter(
+                            and_(
+                                ORMActuator.actuator_id == domain_object.actuator_id,
+                                ORMActuator.deletion_date.is_(None),
+                            )
+                        )
+                        .scalar()
+                    )
+                    if not actuator_fk:
+                        logger.error(
+                            "Unable to add Battery status into db as %s actuator id is not found",
+                            domain_object.actuator_id,
+                        )
+                        return
+                    foreign_key.append(actuator_fk)
+
+                if isinstance(domain_object, ActuatorTemperatureStatus):
+                    # Check that actuator exists
+                    actuator_fk = (
+                        session.query(ORMActuator.db_id)
+                        .filter(
+                            and_(
+                                ORMActuator.actuator_id == domain_object.actuator_id,
+                                ORMActuator.deletion_date.is_(None),
+                            )
+                        )
+                        .scalar()
+                    )
+                    if not actuator_fk:
+                        logger.error(
+                            "Unable to add Temperature status into db as %s actuator"
+                            " id is not found",
+                            domain_object.actuator_id,
+                        )
+                        return
+                    foreign_key.append(actuator_fk)
+
                 orm_object = DataBase.domain_to_orm(domain_object, foreign_key)
                 session.add(orm_object)
 
@@ -393,11 +447,72 @@ class DataBase(ABC):
                 )
             except InterfaceError:
                 session.rollback()
-                logger.error("Database connection lost. Insert operation failed.")
+                logger.exception("Database connection lost. Insert operation failed.")
             finally:
                 session.close()
         else:
             logger.error("Failed to insert object into db as session could not been created.")
+
+    def update_db_version(self):
+        """Method to update database version."""
+
+        failed = False
+        cur_db_version = DataBase.get_db_version()
+        cur_db = DataBase.get_instance()
+
+        try:
+            backup_file = cur_db.backup()
+
+            # Update db from a given version
+            if cur_db_version <= "v0.9.7":
+                DataBase.run_query(
+                    text("ALTER TABLE actuation_events ADD COLUMN command_response BOOLEAN NULL;")
+                )
+                DataBase.run_query(
+                    text(
+                        "ALTER TABLE actuation_events ADD COLUMN "
+                        "command_response_message TEXT NULL;"
+                    )
+                )
+                DataBase.run_query(
+                    text(
+                        """
+                        CREATE TABLE IF NOT EXISTS actuator_battery_status (
+                            actuator_id VARCHAR(64) NOT NULL,
+                            time_stamp DATETIME(6) NOT NULL,
+                            voltage FLOAT NULL,
+                            PRIMARY KEY (actuator_id, time_stamp)
+                        );
+                        """
+                    )
+                )
+                DataBase.run_query(
+                    text(
+                        """
+                        CREATE TABLE IF NOT EXISTS actuator_temperature_status (
+                            actuator_id VARCHAR(64) NOT NULL,
+                            time_stamp DATETIME(6) NOT NULL,
+                            temperature FLOAT NULL,
+                            humidity FLOAT NULL,
+                            PRIMARY KEY (actuator_id, time_stamp)
+                        );
+                        """
+                    )
+                )
+            DataBase.run_query(text(f"UPDATE db_metadata SET version='{__dbversion__}';"))
+            logger.info("Database updated from %s to %s", cur_db_version, __dbversion__)
+        except Exception:
+            logger.exception("Unable to update db to latest version.")
+            failed = True
+            raise
+        finally:
+            if failed and backup_file and self.db_type == DataBase.DBTypes.SQLITE:
+                logger.warning("Restoring DB from backup due to failure...")
+                try:
+                    self.restore_db(backup_file)
+                    logger.info("DB successfully restored from backup")
+                except Exception:
+                    logger.exception("Restore failed! Manual intervention required.")
 
     def update_detection_event(cls, detection_event: DetectionEvent):
         """Update fields of a detection_events record in db.
@@ -534,6 +649,52 @@ class DataBase(ABC):
                 .values(enabled=enabled)
             )
             cls.run_query(stmt)
+        return True
+
+    @classmethod
+    def update_actuation_event(cls, command: Command):
+        """Update command_response in ActuationEvent given actuator_id (resolved via DB)
+        and time_stamp."""
+
+        logger.debug(
+            "Updating actuation event for actuator_id: %s, time_stamp: %s, response: %s",
+            command.actuator_id,
+            command.time_stamp,
+            command.response,
+        )
+
+        # Get actuator db id from actuator name
+        db_actuator_id = cls.get_actuator_id(command.actuator_id)
+        if not db_actuator_id:
+            logger.error("Invalid actuator id: %s (not found in DB)", command.actuator_id)
+            return False
+
+        if not command.time_stamp:
+            logger.error("Invalid time_stamp: %s", command.time_stamp)
+            return False
+
+        stmt = (
+            update(ORMActuationEvent)
+            .where(
+                ORMActuationEvent.actuator_id == db_actuator_id,
+                ORMActuationEvent.time_stamp == command.time_stamp,
+            )
+            .values(
+                command_response=command.response, command_response_message=command.response_message
+            )
+        )
+
+        logger.debug("Running UPDATE stmt: %s", stmt)
+        result = cls.run_query(stmt)
+
+        if not result:
+            logger.error(
+                "Unable to update ActuationEvent. Actuator ID %s at %s not found.",
+                db_actuator_id,
+                command.time_stamp,
+            )
+            return False
+
         return True
 
     @classmethod
@@ -722,13 +883,13 @@ class DataBase(ABC):
                 creation_date=get_precise_timestamp(),
             )
         elif isinstance(domain_object, ActuationEvent):
-            command = json.loads(domain_object.command.value)
+            cmd = DeterrentActuator.Commands(domain_object.command)
 
             return ORMActuationEvent(
                 actuator_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 detection_event_id=foreign_key[1],
-                command=next(iter(command)),
+                command=cmd.value,
             )
         elif isinstance(domain_object, DetectionEvent):
             # Count detections before assignment as video classification does not provide this value
@@ -758,6 +919,19 @@ class DataBase(ABC):
                 email=domain_object.email,
                 role=domain_object.role,
                 created_at=get_precise_timestamp(),
+            )
+        elif isinstance(domain_object, ActuatorBatteryStatus):
+            return ORMActuatorBattery(
+                actuator_id=foreign_key[0],
+                time_stamp=domain_object.time_stamp,
+                voltage=domain_object.voltage,
+            )
+        elif isinstance(domain_object, ActuatorTemperatureStatus):
+            return ORMActuatorTemperature(
+                actuator_id=foreign_key[0],
+                time_stamp=domain_object.time_stamp,
+                temperature=domain_object.temperature,
+                humidity=domain_object.humidity,
             )
         else:
             raise ValueError(f"Unsupported domain object type: {type(domain_object).__name__}")
@@ -1085,6 +1259,10 @@ class DataBase(ABC):
         """Generate the connection string based on the database type."""
 
     @abstractmethod
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+    @abstractmethod
     def serialize(self):
         """Method to serialize DataBase object into file."""
 
@@ -1176,6 +1354,56 @@ class MySQLDataBase(DataBase):
         # Create all tables
         Base.metadata.create_all(DataBase.wadas_db_engine)
 
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+        def find_mysql_dump():
+            """
+            Try to locate mysqldump executable.
+            Priority:
+            1. If mysqldump is already in PATH, use it.
+            2. If running on Windows, try to detect it in
+               'C:\\Program Files\\MySQL\\MySQL Server *\\bin'.
+            3. Otherwise, raise FileNotFoundError.
+            """
+            # mysqldump is in PATH
+            if exe := shutil.which("mysqldump"):
+                return exe
+
+            # Windows specific lookup with wildcard
+            if os.name == "nt":  # Windows
+                candidates = glob.glob(r"C:\Program Files\MySQL\MySQL Server *\bin\mysqldump.exe")
+                if candidates:
+                    candidates.sort()
+                    return candidates[-1]  # pick the latest version installed
+
+            # If Not found
+            raise FileNotFoundError("Could not locate mysqldump executable.")
+
+        outdir = WADAS_DIR / "mysqldb_backup"
+        os.makedirs(outdir, exist_ok=True)
+
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_file = os.path.join(outdir, f"{self.database_name}_backup_{ts}.sql")
+        dump_exe = find_mysql_dump()
+
+        cmd = [
+            dump_exe,
+            f"-h{self.host}",
+            f"-P{self.port}",
+            f"-u{self.username}",
+            f"-p{self.get_password()}",
+            "--routines",
+            "--events",
+            "--triggers",  # optional: include extra objects
+            self.database_name,
+        ]
+
+        with open(backup_file, "w", encoding="utf-8") as f:
+            subprocess.run(cmd, stdout=f, check=True)
+
+        return backup_file
+
     def serialize(self):
         """Method to serialize MySQL DataBase object into file."""
 
@@ -1239,6 +1467,55 @@ class MariaDBDataBase(DataBase):
             return False
         return True
 
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+        def find_mariadb_dump():
+            """
+            Try to locate mariadb-dump executable.
+            Priority:
+            1. If mariadb-dump is already in PATH, use it.
+            2. If running on Windows, try to detect it in 'C:\\Program Files\\MariaDB *\\bin'.
+            3. Otherwise, raise FileNotFoundError.
+            """
+            # Case 1: mariadb-dump is in PATH
+            if exe := shutil.which("mariadb-dump"):
+                return exe
+
+            # Windows specific lookup with wildcard
+            if os.name == "nt":  # Windows
+                candidates = glob.glob(r"C:\Program Files\MariaDB *\bin\mariadb-dump.exe")
+                if candidates:
+                    candidates.sort()
+                    return candidates[-1]  # pick the latest version installed
+
+            # If Not found
+            raise FileNotFoundError("Could not locate mariadb-dump executable.")
+
+        outdir = WADAS_DIR / "mariadb_backup"
+        os.makedirs(outdir, exist_ok=True)
+
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_file = os.path.join(outdir, f"{self.database_name}_backup_{ts}.sql")
+        dump_exe = find_mariadb_dump()
+
+        cmd = [
+            dump_exe,
+            f"-h{self.host}",
+            f"-P{self.port}",
+            f"-u{self.username}",
+            f"-p{self.get_password()}",
+            "--routines",
+            "--events",
+            "--triggers",  # optional: include extra objects
+            self.database_name,
+        ]
+
+        with open(backup_file, "w", encoding="utf-8") as f:
+            subprocess.run(cmd, stdout=f, check=True)
+
+        return backup_file
+
     def serialize(self):
         """Method to serialize MariaDB DataBase object into file."""
 
@@ -1286,6 +1563,23 @@ class SQLiteDataBase(DataBase):
         else:
             logger.warning("Database engine is not initialized.")
             return False
+
+    def backup(self):
+        """Method to back up the database prior to updated or potentially destructive operations."""
+
+        # Prepare
+        outdir = WADAS_DIR / "sqlitedb_backup"
+        outdir.mkdir(parents=True, exist_ok=True)
+
+        ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        db_name = Path(self.host).stem
+        backup_file = outdir / f"{db_name}.bak_{ts}.sqlite"
+
+        # Copy
+        shutil.copy2(self.host, backup_file)
+        logger.info("SQLite backup created at %s", backup_file)
+
+        return backup_file
 
     def serialize(self):
         """Method to serialize SQLite DataBase object into file."""

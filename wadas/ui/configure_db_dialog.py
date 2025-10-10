@@ -416,6 +416,30 @@ class ConfigureDBDialog(QDialog, Ui_ConfigureDBDialog):
                                     False)
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
 
+        if db_version and db_version != __dbversion__:
+            reply = QMessageBox.question(
+                self,
+                "Confirm database update",
+                "A new database version is available!\n"
+                "By accepting WADAS will update your database to the latest version.\n"
+                "It is recommended to back up the database first. \nAre you sure you want to continue?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                try:
+                    DataBase.get_instance().update_db_version()
+                    self.show_status_dialog("Database update status",
+                                            "Database update completed successfully!",
+                                            True)
+                except Exception as e:
+                    self.show_status_dialog("Database update status",
+                                            "Database update failed!\n"
+                                            f"An exception occurred while updating db:\n{e}",
+                                            False)
+                    return
+
+
     def on_cancel_clicked(self):
         """Method to cancel and exit the dialog"""
 

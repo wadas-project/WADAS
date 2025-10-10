@@ -16,8 +16,13 @@
 # Author(s): Stefano Dell'Osa, Alessandro Palla, Cesare Di Mauro, Antonio Farina
 # Date: 2025-02-21
 # Description: Class to map database-model objects to view-model objects.
+
 from wadas.domain.db_model import ActuationEvent as DB_ActuationEvent
 from wadas.domain.db_model import Actuator as DB_Actuator
+from wadas.domain.db_model import ActuatorBatteryStatus as DB_ActuatorBatteryStatus
+from wadas.domain.db_model import (
+    ActuatorTemperatureStatus as DB_ActuatorTemperatureStatus,
+)
 from wadas.domain.db_model import Camera as DB_Camera
 from wadas.domain.db_model import ClassifiedAnimals as DB_ClassifiedAnimals
 from wadas.domain.db_model import DetectionEvent as DB_DetectionEvent
@@ -25,6 +30,8 @@ from wadas.domain.db_model import User as DB_User
 from wadas_webserver.view_model import (
     ActuationEvent,
     Actuator,
+    ActuatorBatteryStatus,
+    ActuatorTemperatureStatus,
     Camera,
     ClassifiedAnimal,
     DetectionEvent,
@@ -80,6 +87,8 @@ class Mapper:
             detection_event_id=db_actevent.detection_event_id,
             command=db_actevent.command,
             timestamp=db_actevent.time_stamp,
+            command_response=db_actevent.command_response,
+            command_response_message=db_actevent.command_response_message,
         )
 
     @staticmethod
@@ -106,4 +115,21 @@ class Mapper:
             db_actevent.time_stamp.strftime("%Y-%m-%d %H:%M"),
             db_actevent.actuator.actuator_id,
             db_actevent.command,
+            db_actevent.command_response,
+            db_actevent.command_response_message,
         ]
+
+    @staticmethod
+    def map_actuator_battery_status(db_battery_status: DB_ActuatorBatteryStatus):
+        return ActuatorBatteryStatus(
+            voltage=db_battery_status.voltage,
+            timestamp=db_battery_status.time_stamp,
+        )
+
+    @staticmethod
+    def map_actuator_temperature_status(db_temperature_status: DB_ActuatorTemperatureStatus):
+        return ActuatorTemperatureStatus(
+            temperature=db_temperature_status.temperature,
+            humidity=db_temperature_status.humidity,
+            timestamp=db_temperature_status.time_stamp,
+        )
