@@ -194,7 +194,7 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
         raise HTTPException(status_code=400, detail="Missing 'volt' in payload")
 
     # Timestamp set by server
-    ts = datetime.datetime.now(datetime.timezone.utc)
+    ts = datetime.datetime.now()
 
     # Update Actuator class
     battery_status = ActuatorBatteryStatus(
