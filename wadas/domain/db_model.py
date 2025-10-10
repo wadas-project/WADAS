@@ -207,7 +207,7 @@ class ActuatorBatteryStatus(Base):
 
     actuator_id = Column(Integer, ForeignKey("actuators.id"), primary_key=True, nullable=False)
     time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
-    voltage = Column(Float, nullable=True)
+    voltage = Column(Float)
 
 
 class ActuatorTemperatureStatus(Base):
@@ -215,7 +215,7 @@ class ActuatorTemperatureStatus(Base):
 
     actuator_id = Column(Integer, ForeignKey("actuators.id"), primary_key=True, nullable=False)
     time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
-    temperature = Column(Float, nullable=True)
+    temperature = Column(Float)
     humidity = Column(Float, nullable=True)
 
 

@@ -86,6 +86,8 @@ async def respond_actuator_command(
     or an error ("error": "...").
     """
 
+    if not actuator_id:
+        raise HTTPException(status_code=400, detail="Missing actuator id in response")
     if actuator_id not in Actuator.actuators:
         logger.error("No actuator found with ID: %s", actuator_id)
         raise HTTPException(status_code=404, detail="Actuator does not exist")
@@ -94,8 +96,6 @@ async def respond_actuator_command(
     cmd = payload.get("cmd")
     response_ok = payload.get("response")
 
-    if not actuator_id:
-        raise HTTPException(status_code=400, detail="Missing actuator id in response")
     if resp_actuator_id != actuator_id:
         raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
     if not cmd:
@@ -173,11 +173,12 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
     of the actuator device.
     """
 
+    if not actuator_id:
+        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
+
     resp_actuator_id = payload.get("actuator_id")
     cmd = payload.get("cmd")
 
-    if not actuator_id:
-        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
     if resp_actuator_id != actuator_id:
         raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
     if not cmd or cmd != "battery_status":
@@ -216,12 +217,13 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
 async def receive_temperature_status(actuator_id: str, payload: dict = Body(...)):  # noqa: B008
     """Receive actuator's temperature status update."""
 
+    if not actuator_id:
+        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
+
     resp_actuator_id = payload.get("actuator_id")
     cmd = payload.get("cmd")
     time_stamp = payload.get("time_stamp")
 
-    if not actuator_id:
-        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
     if resp_actuator_id != actuator_id:
         raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
     if not cmd or cmd != "temperature_status":
