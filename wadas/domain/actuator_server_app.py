@@ -239,6 +239,12 @@ async def receive_temperature_status(actuator_id: str, payload: dict = Body(...)
     if temperature is None:
         raise HTTPException(status_code=400, detail="Missing 'temperature' in payload")
     else:
+        # Round temperature and humidity to 1 digit
+        temperature = round(temperature, 1)
+
+        if humidity is not None:
+            humidity = round(humidity, 1)
+
         if humidity is None:
             logger.info("Received actuator %s temperature: %s", actuator_id, temperature)
         else:
