@@ -265,8 +265,11 @@ class Classifier:
 
     CROP_SIZE = 182
 
-    def __init__(self, device):
-        self.model = OVModel(Path("classification", "DFv1.2_openvino_model", "DFv1.2.xml"), device)
+    def __init__(self, device, version="DFv1.2"):
+        self.version = version
+        self.model = OVModel(
+            Path("classification", f"{version}_openvino_model", f"{version}.xml"), device
+        )
         self.transforms = transforms.Compose(
             [
                 transforms.Resize(
@@ -284,15 +287,17 @@ class Classifier:
         )
 
     @staticmethod
-    def check_model():
+    def check_model(version="DFv1.2"):
         """Check if classification model is initialized"""
-        return OVModel.check_model(Path("classification", "DFv1.2_openvino_model", "DFv1.2.xml"))
+        return OVModel.check_model(
+            Path("classification", f"{version}_openvino_model", f"{version}.xml")
+        )
 
     @staticmethod
-    def download_model(force: bool = False):
+    def download_model(version="DFv1.2", force: bool = False):
         """Download classification model"""
         return OVModel.download_model(
-            Path("classification", "DFv1.2_openvino_model", "DFv1.2"), force
+            Path("classification", f"{version}_openvino_model", f"{version}"), force
         )
 
     def predictOnBatch(self, batchtensor, withsoftmax=True):
