@@ -93,7 +93,7 @@ class DetectionPipeline:
         return ray.get(result) if self.distributed_inference else result
 
     def set_language(self, language):
-        if language not in txt_animalclasses:
+        if language not in txt_animalclasses[self.classifier.version]:
             raise ValueError("Language not supported")
         """Method to set the language for the classification labels."""
         self.language = language
@@ -168,7 +168,7 @@ class DetectionPipeline:
         class_request = tuple(zip(img, results))
 
         logits_lst = self.run_model(self.classifier.predictOnImages, class_request)
-        labels = txt_animalclasses[self.language]
+        labels = txt_animalclasses[self.classifier.version][self.language]
         total_classification = []
         for logits, res in zip(logits_lst, results):
             classification_id = 0
