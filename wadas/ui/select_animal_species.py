@@ -46,7 +46,7 @@ class DialogSelectAnimalSpecies(QDialog,Ui_DialogSelectAnimalSpecies):
     def populate_species_dropdown(self):
         """Populate the dropdown with the list of available actuators."""
         self.ui.comboBox_select_species.clear()
-        for species in txt_animalclasses[AiModel.language]:
+        for species in txt_animalclasses[AiModel.classification_model_version][AiModel.language]:
             self.ui.comboBox_select_species.addItem(species)
 
     def accept_and_close(self):

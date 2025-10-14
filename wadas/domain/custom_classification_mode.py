@@ -41,7 +41,10 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
 
     def set_animal_species(self, target_animal_label):
         """Method to select animal to classify according to Ai model availability"""
-        if target_animal_label in txt_animalclasses[AiModel.language]:
+        if (
+            target_animal_label
+            in txt_animalclasses[AiModel.classification_model_version][AiModel.language]
+        ):
             self.custom_target_species = target_animal_label
             logger.debug("%s species selected.", target_animal_label)
             return True

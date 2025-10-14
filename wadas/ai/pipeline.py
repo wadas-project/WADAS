@@ -50,6 +50,7 @@ class DetectionPipeline:
         language="en",
         distributed_inference=False,
         megadetector_version="MDV5-yolov5",
+        deepfaune_version="DFv1.2",
     ):
         self.detection_device = detection_device
         self.classification_device = classification_device
@@ -67,7 +68,9 @@ class DetectionPipeline:
         )
         # Load classification model
         logger.info("Loading classification model to device %s...", self.classification_device)
-        self.classifier = self.initialize_model(Classifier, device=self.classification_device)
+        self.classifier = self.initialize_model(
+            Classifier, device=self.classification_device, version=deepfaune_version
+        )
         # Get the index of the animal class of the detection model
         self.animal_class_idx = next(
             key for key, value in OVMegaDetectorV5.CLASS_NAMES.items() if value == "animal"
@@ -90,7 +93,7 @@ class DetectionPipeline:
         return ray.get(result) if self.distributed_inference else result
 
     def set_language(self, language):
-        if language not in txt_animalclasses:
+        if language not in txt_animalclasses[self.classifier.version]:
             raise ValueError("Language not supported")
         """Method to set the language for the classification labels."""
         self.language = language
@@ -105,7 +108,7 @@ class DetectionPipeline:
         if not (detection_model_status := detector.check_model()):
             logger.error("Detection model version '%s' not found on the system.", detection_model)
 
-        if not (classification_model_status := Classifier.check_model()):
+        if not (classification_model_status := Classifier.check_model(classification_model)):
             logger.error(
                 "Classification model version '%s' not found on the system.", classification_model
             )
@@ -165,7 +168,7 @@ class DetectionPipeline:
         class_request = tuple(zip(img, results))
 
         logits_lst = self.run_model(self.classifier.predictOnImages, class_request)
-        labels = txt_animalclasses[self.language]
+        labels = txt_animalclasses[self.classifier.version][self.language]
         total_classification = []
         for logits, res in zip(logits_lst, results):
             classification_id = 0

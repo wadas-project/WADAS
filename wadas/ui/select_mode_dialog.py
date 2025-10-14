@@ -73,7 +73,7 @@ class DialogSelectMode(QDialog, Ui_DialogSelectMode):
                     self.ui.radioButton_custom_species_class_mode.setChecked(True)
                     self.enable_species_selection()
                     if (OperationMode.cur_custom_classification_species and
-                            OperationMode.cur_custom_classification_species in txt_animalclasses[AiModel.language]):
+                            OperationMode.cur_custom_classification_species in txt_animalclasses[AiModel.classification_model_version][AiModel.language]):
                       self.ui.comboBox_select_species.setCurrentText(OperationMode.cur_custom_classification_species)
 
     def accept_and_close(self):
@@ -98,7 +98,7 @@ class DialogSelectMode(QDialog, Ui_DialogSelectMode):
     def populate_species_dropdown(self):
         """Populate the dropdown with the list of available actuators."""
         self.ui.comboBox_select_species.clear()
-        for species in txt_animalclasses[AiModel.language]:
+        for species in txt_animalclasses[AiModel.classification_model_version][AiModel.language]:
             self.ui.comboBox_select_species.addItem(species)
 
     def enable_species_selection(self):
