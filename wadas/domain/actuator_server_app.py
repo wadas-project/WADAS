@@ -269,3 +269,37 @@ async def receive_temperature_status(actuator_id: str, payload: dict = Body(...)
         db.insert_into_db(temperature_status)
 
     return {"status": "received"}
+
+
+@app.post("/api/v1/actuators/{actuator_id}/battery_critical")
+async def receive_battery_critical(actuator_id: str, payload: dict = Body(...)):  # noqa: B008
+    """Receive actuator's battery critical status warning.
+    Battery is considered optional component of the actuator device.
+    """
+
+    if not actuator_id:
+        raise HTTPException(status_code=400, detail="Missing actuator id in API path")
+
+    resp_actuator_id = payload.get("actuator_id")
+    cmd = payload.get("cmd")
+
+    if resp_actuator_id != actuator_id:
+        raise HTTPException(status_code=400, detail="Response actuator id differs from API one")
+    if not cmd or cmd != "battery_critical":
+        raise HTTPException(status_code=400, detail="Invalid or missing command")
+
+    # Get actuator from list
+    actuator = Actuator.actuators.get(actuator_id)
+    if not actuator:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    logger.info("Received actuator %s battery critical status!", actuator_id)
+
+    shutdown_command = Command(
+        actuator_id=actuator_id, cmd=Actuator.Commands.SHUTDOWN_COMMAND.value
+    )
+
+    # Insert command in queue
+    actuator.cmd_queue.put(shutdown_command.to_json())
+
+    return {"status": "received"}

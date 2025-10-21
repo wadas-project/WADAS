@@ -121,6 +121,7 @@ class Actuator:
         SEND_LOG = "send_log"
         BATTERY_STATUS = "battery_status"
         TEMPERATURE_STATUS = "temperature_status"
+        SHUTDOWN_COMMAND = "shutdown_command"
 
     def __init__(self, actuator_id, enabled=False):
         self.cmd_queue = Queue()
