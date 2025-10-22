@@ -36,7 +36,7 @@ class DeterrentActuator(Actuator):
         BATTERY_STATUS = "battery_status"
         TEMPERATURE_STATUS = "temperature_status"
         BATTERY_CRITICAL = "battery_critical"
-        SHUTDOWN_COMMAND = "shutdown_command"
+        SHUT_DOWN = "shut_down"
 
     def __init__(self, id, enabled):
         super().__init__(id, enabled)

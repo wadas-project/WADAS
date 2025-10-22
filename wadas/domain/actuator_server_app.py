@@ -295,9 +295,7 @@ async def receive_battery_critical(actuator_id: str, payload: dict = Body(...)):
 
     logger.info("Received actuator %s battery critical status!", actuator_id)
 
-    shutdown_command = Command(
-        actuator_id=actuator_id, cmd=Actuator.Commands.SHUTDOWN_COMMAND.value
-    )
+    shutdown_command = Command(actuator_id=actuator_id, cmd=Actuator.Commands.SHUT_DOWN.value)
 
     # Insert command in queue
     actuator.cmd_queue.put(shutdown_command.to_json())
