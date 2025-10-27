@@ -51,23 +51,25 @@ _OPERATION_MODE_TYPE_VALUE_TO_TYPE = {mode.value: mode for mode in OperationMode
 
 
 def check_version_compatibility(config_file_version):
+    """Method to check version compatibility.
+    NOTE: Only changes to Major and Minor value triggers incompatibility if not handled."""
     wadas_version = Version(__version__.lstrip("v"))
 
     if wadas_version == config_file_version:
         return True
+
     if wadas_version < config_file_version:
         return False
+
     if wadas_version > config_file_version:
-        # Example of compatibility check to list here:
-        if config_file_version == Version("0.5.1") and wadas_version == Version("0.6.0"):
+        # IF major and minor are the same, any patch value is compatible
+        if (
+            wadas_version.major == config_file_version.major
+            and wadas_version.minor == config_file_version.minor
+        ):
             return True
-        if config_file_version <= Version("0.9.5"):
-            # Only Web interface changed
-            return True
-        if config_file_version == Version("0.9.8") and wadas_version == Version("0.9.11"):
-            return True
-        # NOTE: prerequisite to this is that new yaml keys, absent in previous version, are handled
-        # at load_configuration_from_file() time.
+
+        # If major or minor are not the same, a configuration update is requested
         return False
 
 
