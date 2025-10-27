@@ -64,7 +64,7 @@ def check_version_compatibility(config_file_version):
         if config_file_version <= Version("0.9.5"):
             # Only Web interface changed
             return True
-        if config_file_version == Version("0.9.8") and wadas_version == Version("0.9.9"):
+        if config_file_version == Version("0.9.8") and wadas_version == Version("0.9.11"):
             return True
         # NOTE: prerequisite to this is that new yaml keys, absent in previous version, are handled
         # at load_configuration_from_file() time.

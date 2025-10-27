@@ -1,13 +1,18 @@
 import logging
 import os
+from collections import defaultdict
 from enum import Enum
 
 import cv2
 import numpy as np
 from PIL import Image
+from shapely.geometry import LineString, Point, Polygon
+from shapely.prepared import prep
 from ultralytics import solutions
+from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_SOL_DICT, LOGGER
+from ultralytics.utils.checks import check_imshow
 
-from wadas.ai.ov_predictor import __model_folder__, load_ov_model
+from wadas.ai.ov_predictor import OVEncryptedYOLO, __model_folder__
 
 logger = logging.getLogger(__name__)
 
@@ -65,18 +70,77 @@ class ObjectCounter(solutions.ObjectCounter):
             batch_size (int, optional): Number of images to process in a batch. Defaults to 1.
             **kwargs: Additional keyword arguments.
         """
-        model = os.path.join(__model_folder__, model)
-        super().__init__(
-            model=model,
-            region=None,
-            classes=classes,
-            batch_size=batch_size,
-            iou=iou_threshold,
-            conf=confidence_threshold,
-            **kwargs,
+        model = os.path.join(__model_folder__, "detection", model)
+        kwargs.update(
+            {
+                "model": model,
+                "region": region,
+                "classes": classes,
+                "batch_size": batch_size,
+                "iou": iou_threshold,
+                "confidence_threshold": confidence_threshold,
+            }
         )
-        self.model.predictor.model.ov_compiled_model = load_ov_model(model, device)
-        self.region = region
+
+        #####################################################################
+        # FROM THE BASE SOLUTION CLASS INIT
+        #####################################################################
+
+        self.LineString = LineString
+        self.Polygon = Polygon
+        self.Point = Point
+        self.prep = prep
+        self.annotator = None  # Initialize annotator
+        self.tracks = None
+        self.track_data = None
+        self.boxes = []
+        self.clss = []
+        self.track_ids = []
+        self.track_line = None
+        self.masks = None
+        self.r_s = None
+
+        self.LOGGER = LOGGER  # Store logger object to be used in multiple solution classes
+
+        # Load config and update with args
+        DEFAULT_SOL_DICT.update(kwargs)
+        DEFAULT_CFG_DICT.update(kwargs)
+        self.CFG = {**DEFAULT_SOL_DICT, **DEFAULT_CFG_DICT}
+
+        self.region = self.CFG["region"]  # Store region data for other classes usage
+        self.line_width = (
+            self.CFG["line_width"] if self.CFG["line_width"] is not None else 2
+        )  # Store line_width for usage
+
+        # Load Model and store classes names
+        self.model = OVEncryptedYOLO(self.CFG["model"])
+
+        self.names = self.model.names
+        self.classes = self.CFG["classes"]
+
+        self.track_add_args = {  # Tracker additional arguments for advance configuration
+            k: self.CFG[k]
+            for k in ["iou", "conf", "device", "max_det", "half", "tracker", "device", "verbose"]
+        }  # verbose must be passed to track method; setting it False in YOLO still logs.
+
+        # Initialize environment and region setup
+        self.env_check = check_imshow(warn=True)
+        self.track_history = defaultdict(list)
+
+        #####################################################################
+        # FROM THE OBJECT COUNTER SOLUTION CLASS INIT
+        #####################################################################
+
+        self.in_count = 0  # Counter for objects moving inward
+        self.out_count = 0  # Counter for objects moving outward
+        self.counted_ids = []  # List of IDs of objects that have been counted
+        self.classwise_counts = {}  # Dictionary for counts, categorized by object class
+        self.region_initialized = False  # Flag indicating whether the region has been initialized
+
+        self.show_in = self.CFG["show_in"]
+        self.show_out = self.CFG["show_out"]
+
+        #####################################################################
 
     def process_frames(self, frames: list[np.ndarray]) -> dict:
         """

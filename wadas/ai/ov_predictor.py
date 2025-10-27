@@ -1,10 +1,12 @@
 import logging
 import os
 from pathlib import Path
+from typing import Dict
 
 import torch
 import wadas_runtime as wadas
 import yaml
+from ultralytics import YOLO
 from ultralytics.models.yolo.detect import DetectionPredictor
 from ultralytics.nn.autobackend import (
     AutoBackend,
@@ -124,3 +126,38 @@ class OVPredictor(DetectionPredictor):
         self.device = self.model.device  # update device
         self.args.half = self.model.fp16  # update half
         self.model.eval()
+
+
+class OVEncryptedYOLO(YOLO):
+    @property
+    def names(self) -> Dict[int, str]:
+        """
+        Retrieves the class names associated with the loaded model.
+
+        This property returns the class names if they are defined in the model.
+        It checks the class names for validity using the 'check_class_names' function
+        from the ultralytics.nn.autobackend module. If the predictor is not
+        initialized, it sets it up before retrieving the names.
+
+        Returns:
+            (Dict[int, str]): A dictionary of class names associated with the model,
+                where keys are class indices and values are the corresponding class names.
+
+        Raises:
+            AttributeError: If the model or predictor does not have a 'names' attribute.
+
+        Examples:
+            >>> model = YOLO("yolo11n.pt")
+            >>> print(model.names)
+            {0: 'person', 1: 'bicycle', 2: 'car', ...}
+        """
+        from ultralytics.nn.autobackend import check_class_names
+
+        if hasattr(self.model, "names"):
+            return check_class_names(self.model.names)
+        if (
+            not self.predictor
+        ):  # export formats will not have predictor defined until predict() is called
+            self.predictor = OVPredictor(overrides=self.overrides, _callbacks=self.callbacks)
+            self.predictor.setup_model(model=self.model, verbose=False)
+        return self.predictor.model.names
