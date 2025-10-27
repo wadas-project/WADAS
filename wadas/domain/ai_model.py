@@ -68,6 +68,7 @@ class AiModel:
             language=AiModel.language,
             distributed_inference=AiModel.distributed_inference,
             megadetector_version=AiModel.detection_model_version,
+            deepfaune_version=AiModel.classification_model_version,
         )
 
         self.original_image = ""
