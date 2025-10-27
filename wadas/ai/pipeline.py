@@ -101,7 +101,7 @@ class DetectionPipeline:
         detector = NAME_TO_DETECTOR.get(detection_model)
         if detector is None:
             logger.error("Unknown detection model version: %s", detection_model)
-            detector = False
+            return False
         if not (detection_model_status := detector.check_model()):
             logger.error("Detection model version '%s' not found on the system.", detection_model)
 
