@@ -211,3 +211,10 @@ def test_set_language_valid(detection_pipeline, language):
 def test_set_language_invalid(detection_pipeline, language):
     with pytest.raises(ValueError, match="Language not supported"):
         detection_pipeline.set_language(language)
+
+
+def test_check_models_with_invalid_detector():
+    """Test that check_models handles invalid detector model gracefully."""
+    # This should not raise AttributeError when detector is None
+    result = DetectionPipeline.check_models("INVALID_MODEL", "DFv1.2")
+    assert result is False
