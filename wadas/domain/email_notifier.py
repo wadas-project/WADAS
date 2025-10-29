@@ -79,9 +79,10 @@ class EmailNotifier(Notifier):
             <html>
                 <body>
                     <p>Hi,<br>
+                    {message}<br>
                     Animal detected from camera {detection_event.camera_id}:
                     <img src="cid:image1"><br>
-                    {message}</p><br>
+                    </p><br>
                 </body>
             </html>
             """
