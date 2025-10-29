@@ -29,7 +29,7 @@ import keyring
 
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
-from wadas.domain.utils import is_image
+from wadas.domain.utils import is_image, is_video
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class EmailNotifier(Notifier):
         self.smtp_port = smtp_port
         self.recipients_email = recipients_email
 
-    def send_email(self, detection_event, message=""):
+    def send_email(self, detection_event, message="", preview_image=None):
         """Method to build email and send it."""
 
         credentials = keyring.get_credential("WADAS_email", self.sender_email)
@@ -96,14 +96,41 @@ class EmailNotifier(Notifier):
                 msg_img.add_header("Content-ID", "<image1>")
                 # Attach the image to the message
                 email_message.attach(msg_img)
+        elif is_video(img_path) and preview_image:
+            # HTML content with a preview image embedded
+            html = f"""\
+            <html>
+                <body>
+                    <p>Hi,<br>
+                    {message}<br>
+                    Animal detected from camera {detection_event.camera_id}:
+                    <img src="cid:image1"><br>
+                    NOTE: this is a preview image. Connect to WADAS web interface
+                     to access full video.
+                    </p><br>
+                </body>
+            </html>
+            """
+            # Attach the HTML part
+            email_message.attach(MIMEText(html, "html"))
+
+            # Open the image file in binary mode
+            with open(preview_image, "rb") as img:
+                # Attach the image file
+                msg_img = MIMEImage(img.read(), name=os.path.basename(img_path))
+                # Define the Content-ID header to use in the HTML body
+                msg_img.add_header("Content-ID", "<image1>")
+                # Attach the image to the message
+                email_message.attach(msg_img)
         else:
             # HTML content (text only)
             html = f"""\
                        <html>
                            <body>
                                <p>Hi,<br>
+                               {message}<br>
                                Animal detected from camera {detection_event.camera_id}!<br>
-                               {message}</p><br>
+                               </p><br>
                            </body>
                        </html>
                        """
@@ -126,9 +153,9 @@ class EmailNotifier(Notifier):
             smtp_server.quit()
         logger.info("Email notification for %s sent!", img_path)
 
-    def send_notification(self, detection_event: DetectionEvent, message=""):
+    def send_notification(self, detection_event: DetectionEvent, message="", preview_image=None):
         """Implementation of send_notification method specific for Email notifier."""
-        self.send_email(detection_event, message)
+        self.send_email(detection_event, message, preview_image)
 
     def is_configured(self):
         """Method that returns configuration status as bool value."""

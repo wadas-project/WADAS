@@ -175,6 +175,6 @@ class TunnelMode(OperationMode):
                     )
 
                     # Send notification
-                    self.send_notification(detection_event, message)
+                    self.send_notification(detection_event, message, results["snapshot_path"])
 
                 self.check_for_termination_requests()

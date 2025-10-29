@@ -225,6 +225,7 @@ class ObjectCounter(solutions.ObjectCounter):
         """
         Processes a video in tunnel mode:
         - If at least one detection of 'animal' occurs, saves all annotated frames to an MP4 video.
+        - Saves a single snapshot when the first animal crossing is detected.
         - Returns the total in/out object counts and the output video path
         (or None if no detection).
 
@@ -236,7 +237,8 @@ class ObjectCounter(solutions.ObjectCounter):
             dict: {
                 'in_count': int,
                 'out_count': int,
-                'video_path': str | None
+                'video_path': str | None,
+                'snapshot_path': str | None  # Path to the crossing snapshot image
             }
         """
         logger.info("Running tunnel mode detection on video %s ...", video_path)
@@ -245,7 +247,7 @@ class ObjectCounter(solutions.ObjectCounter):
         frames = self.get_video_frames(video_path)
         if not frames:
             logger.error("No frames loaded. Exiting processing.")
-            return {"in_count": 0, "out_count": 0, "video_path": None}
+            return {"in_count": 0, "out_count": 0, "video_path": None, "snapshot_path": None}
 
         # Initialize region of interest
         self.init_region(frames)
@@ -258,6 +260,12 @@ class ObjectCounter(solutions.ObjectCounter):
 
         annotated_frames = []
         detection_found = False
+        snapshot_path = None
+        snapshot_saved = False  # Flag to save only the first crossing
+
+        # Track previous counts to detect new crossings
+        prev_in_count = 0
+        prev_out_count = 0
 
         for frame in frames:
             results = self(frame)  # Run detection and tracking
@@ -268,6 +276,29 @@ class ObjectCounter(solutions.ObjectCounter):
 
             if total_animals > 0:
                 detection_found = True
+
+            # Check if there was a crossing and snapshot not yet saved
+            if not snapshot_saved and (
+                self.in_count > prev_in_count or self.out_count > prev_out_count
+            ):
+                # Save snapshot of the first crossing
+                input_basename = os.path.basename(video_path)
+                filename_wo_ext = os.path.splitext(input_basename)[0]
+
+                snapshot_filename = f"{filename_wo_ext}_crossing.jpg"
+                snapshot_path = os.path.join(output_dir, snapshot_filename)
+
+                os.makedirs(output_dir, exist_ok=True)
+
+                # Save the annotated frame
+                cv2.imwrite(snapshot_path, frame)
+                snapshot_saved = True
+
+                logger.debug("First animal crossing detected. Saved snapshot: %s", snapshot_path)
+
+            # Update previous counts
+            prev_in_count = self.in_count
+            prev_out_count = self.out_count
 
             annotated_frames.append(frame)
 
@@ -292,9 +323,10 @@ class ObjectCounter(solutions.ObjectCounter):
             logger.info("No animal detections found. Skipping video save.")
             video_result_path = None
 
-        # Return in/out counts and video path
+        # Return in/out counts, video path, and snapshot
         return {
             "in_count": self.in_count,
             "out_count": self.out_count,
             "video_path": video_result_path,
+            "snapshot_path": snapshot_path,
         }
