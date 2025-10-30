@@ -22,10 +22,10 @@ import os
 
 import keyring
 import requests
-from domain.utils import is_video
 
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
+from wadas.domain.utils import is_video
 
 logger = logging.getLogger(__name__)
 

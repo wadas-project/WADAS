@@ -22,13 +22,12 @@ import os
 
 import keyring
 import requests
-from domain.utils import is_video
 
 from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
 from wadas.domain.telegram_recipient import TelegramRecipient
-from wadas.domain.utils import image_to_base64
+from wadas.domain.utils import image_to_base64, is_video
 
 logger = logging.getLogger(__name__)
 
