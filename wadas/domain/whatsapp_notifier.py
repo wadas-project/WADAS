@@ -25,6 +25,7 @@ import requests
 
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
+from wadas.domain.utils import is_video
 
 logger = logging.getLogger(__name__)
 
@@ -52,16 +53,18 @@ class WhatsAppNotifier(Notifier):
             and credentials.password
         )
 
-    def send_notification(self, detection_event: DetectionEvent, message=""):
+    def send_notification(self, detection_event: DetectionEvent, message="", preview_image=None):
         """Implementation of send_notification method for WhatsApp notifier."""
 
-        self.send_whatsapp_message(detection_event)
+        self.send_whatsapp_message(detection_event, preview_image)
 
-    def send_whatsapp_message(self, detection_event, message=""):
+    def send_whatsapp_message(self, detection_event, message="", preview_image=None):
         """Method to send WhatsApp message notification."""
 
         whatsapp_message = (
-            f"WADAS: Animal detected from camera {detection_event.camera_id}!\n\n{message}"
+            f"WADAS: {message}\n\nAnimal detected from camera {detection_event.camera_id}!\n"
+            if message
+            else f"WADAS: Animal detected from camera {detection_event.camera_id}!"
         )
         url = f"https://graph.facebook.com/v17.0/{self.sender_id}/messages"
 
@@ -81,7 +84,19 @@ class WhatsAppNotifier(Notifier):
             if detection_event.classification
             else detection_event.detection_img_path
         )
-        media_id = self.load_image(credentials.password, img_path) if self.allow_images else None
+        if is_video(img_path) and preview_image:
+            img_path = preview_image
+            whatsapp_message = (
+                f"{whatsapp_message}\n"
+                f"NOTE: this is a preview image. "
+                f"Connect to WADAS web interface to access full video."
+            )
+
+        media_id = (
+            self.load_image(credentials.password, img_path)
+            if self.allow_images and img_path
+            else None
+        )
 
         for recipient_number in self.recipient_numbers:
             failed_txt_n_image = False

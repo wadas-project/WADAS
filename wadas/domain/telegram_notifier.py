@@ -27,7 +27,7 @@ from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.domain.detection_event import DetectionEvent
 from wadas.domain.notifier import Notifier
 from wadas.domain.telegram_recipient import TelegramRecipient
-from wadas.domain.utils import image_to_base64
+from wadas.domain.utils import image_to_base64, is_video
 
 logger = logging.getLogger(__name__)
 
@@ -110,22 +110,31 @@ class TelegramNotifier(Notifier):
         else:
             raise Exception("Unable to delete the recipient")
 
-    def send_notification(self, detection_event: DetectionEvent, message=""):
+    def send_notification(self, detection_event: DetectionEvent, message="", preview_image=None):
         """Implementation of send_notification method for Telegram notifier."""
 
         telegram_message = (
-            f"WADAS: Animal detected from camera {detection_event.camera_id}!\n\n{message}"
+            f"WADAS: {message}\n\nAnimal detected from camera {detection_event.camera_id}!\n"
+            if message
+            else f"WADAS: Animal detected from camera {detection_event.camera_id}!\n"
         )
         # Select image to attach to the notification: classification (if enabled) or detection image
-        img_path = (
-            (
+        if self.allow_images:
+            img_path = (
                 detection_event.classification_img_path
                 if detection_event.classification
                 else detection_event.detection_img_path
             )
-            if self.allow_images
-            else None
-        )
+            if is_video(img_path):
+                img_path = preview_image
+                telegram_message = (
+                    f"{telegram_message}\n"
+                    f"NOTE: this is a preview image. "
+                    f"Connect to WADAS web interface to access full video."
+                )
+        else:
+            img_path = None
+
         try:
             status, data = self.send_telegram_message(telegram_message, img_path=img_path)
             if status == 200:

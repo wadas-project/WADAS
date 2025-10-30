@@ -290,10 +290,10 @@ class OperationMode(QObject):
         else:
             self.execution_completed()
 
-    def send_notification(self, detection_event: DetectionEvent, message):
+    def send_notification(self, detection_event: DetectionEvent, message, preview_image=None):
         """Method to send notification(s) trough Notifier class (and subclasses)"""
 
-        Notifier.send_notifications(detection_event, message)
+        Notifier.send_notifications(detection_event, message, preview_image)
 
     def actuate(self, detection_event: DetectionEvent):
         """Method to trigger actuators associated to the camera, when enabled"""
