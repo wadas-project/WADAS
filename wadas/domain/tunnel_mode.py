@@ -163,18 +163,19 @@ class TunnelMode(OperationMode):
                     logger.info(message)
 
                     detection_event = DetectionEvent(
-                        cur_media["camera_id"],
-                        get_timestamp(),
-                        video_path,
-                        output_video_path,
-                        self.convert_objectcounter_to_megadetector(
+                        camera_id=cur_media["camera_id"],
+                        time_stamp=get_timestamp(),
+                        original_media=video_path,
+                        detection_media_path=output_video_path,
+                        detected_animals=self.convert_objectcounter_to_megadetector(
                             results,
                             output_video_path,
                         ),
-                        False,
+                        classification=False,
+                        preview_image=results["snapshot_path"],
                     )
 
                     # Send notification
-                    self.send_notification(detection_event, message, results["snapshot_path"])
+                    self.send_notification(detection_event, message)
 
                 self.check_for_termination_requests()

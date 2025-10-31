@@ -199,7 +199,7 @@ async def download_image(
         raise HTTPException(status_code=404, detail="Event not found")
 
     image_path = Path(ServerConfig.WADAS_ROOT_DIR) / (
-        event.classification_img_path or event.detection_img_path
+        event.classification_media_path or event.detection_media_path
     )
 
     if (ext := image_path.suffix) == ".png":

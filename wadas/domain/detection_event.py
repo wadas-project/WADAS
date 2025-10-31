@@ -29,21 +29,23 @@ class DetectionEvent:
         self,
         camera_id,
         time_stamp,
-        original_image,
-        detection_img_path,
+        original_media,
+        detection_media_path,
         detected_animals,
         classification=True,
-        classification_img_path=None,
+        classification_media_path=None,
         classified_animals=None,
+        preview_image=None,
     ):
         self.camera_id = camera_id
         self.time_stamp = time_stamp
-        self.original_image = original_image
-        self.detection_img_path = detection_img_path
+        self.original_image = original_media
+        self.detection_media_path = detection_media_path
         self.detected_animals = detected_animals
         self.classification = classification
-        self.classification_img_path = classification_img_path
+        self.classification_media_path = classification_media_path
         self.classified_animals = classified_animals
+        self.preview_image = preview_image
 
     def serialize_classified_animals(self):
         """Method to prepare JSON serialization to db of classified_animals attribute."""
