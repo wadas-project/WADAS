@@ -62,13 +62,13 @@ class AnimalDetectionAndClassificationMode(OperationMode):
             ):
                 logger.debug("Processing media from motion detection notification...")
 
-                detection_event = self._detect(cur_media, self.enable_classification)
+                detection_event = self._detect(cur_media)
 
                 self.check_for_termination_requests()
                 if detection_event:
                     if self.enable_classification:
                         # Classification is enabled
-                        if detection_event.classification_img_path:
+                        if detection_event.classification_media_path:
                             message = (
                                 f"WADAS has classified '{self.last_classified_animals_str}' "
                                 f"animal from camera {cur_media['media_id']}!"
@@ -83,7 +83,7 @@ class AnimalDetectionAndClassificationMode(OperationMode):
                         message = "WADAS has detected an animal from camera %s!" % id
 
                     # Notification
-                    if message:
+                    if self.is_notifier_enabled:
                         self.send_notification(detection_event, message)
 
                     # Actuation

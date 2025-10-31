@@ -110,7 +110,7 @@ class TelegramNotifier(Notifier):
         else:
             raise Exception("Unable to delete the recipient")
 
-    def send_notification(self, detection_event: DetectionEvent, message="", preview_image=None):
+    def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method for Telegram notifier."""
 
         telegram_message = (
@@ -121,12 +121,12 @@ class TelegramNotifier(Notifier):
         # Select image to attach to the notification: classification (if enabled) or detection image
         if self.allow_images:
             img_path = (
-                detection_event.classification_img_path
+                detection_event.classification_media_path
                 if detection_event.classification
-                else detection_event.detection_img_path
+                else detection_event.detection_media_path
             )
             if is_video(img_path):
-                img_path = preview_image
+                img_path = detection_event.preview_image
                 telegram_message = (
                     f"{telegram_message}\n"
                     f"NOTE: this is a preview image. "

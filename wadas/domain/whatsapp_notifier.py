@@ -53,12 +53,12 @@ class WhatsAppNotifier(Notifier):
             and credentials.password
         )
 
-    def send_notification(self, detection_event: DetectionEvent, message="", preview_image=None):
+    def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method for WhatsApp notifier."""
 
-        self.send_whatsapp_message(detection_event, preview_image)
+        self.send_whatsapp_message(detection_event)
 
-    def send_whatsapp_message(self, detection_event, message="", preview_image=None):
+    def send_whatsapp_message(self, detection_event, message=""):
         """Method to send WhatsApp message notification."""
 
         whatsapp_message = (
@@ -80,12 +80,12 @@ class WhatsAppNotifier(Notifier):
 
         # Select image to attach to the notification: classification (if enabled) or detection image
         img_path = (
-            detection_event.classification_img_path
+            detection_event.classification_media_path
             if detection_event.classification
-            else detection_event.detection_img_path
+            else detection_event.detection_media_path
         )
-        if is_video(img_path) and preview_image:
-            img_path = preview_image
+        if is_video(img_path) and detection_event.preview_image:
+            img_path = detection_event.preview_image
             whatsapp_message = (
                 f"{whatsapp_message}\n"
                 f"NOTE: this is a preview image. "

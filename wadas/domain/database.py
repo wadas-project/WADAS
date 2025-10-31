@@ -534,7 +534,7 @@ class DataBase(ABC):
                     .where(and_(ORMDetectionEvent.db_id == detection_event_db_id))
                     .values(
                         classification=detection_event.classification,
-                        classification_img_path=detection_event.classification_img_path,
+                        classification_img_path=detection_event.classification_media_path,
                     )
                 )
                 cls.run_query(stmt)
@@ -900,10 +900,10 @@ class DataBase(ABC):
                 camera_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 original_image=domain_object.original_image,
-                detection_img_path=domain_object.detection_img_path,
+                detection_img_path=domain_object.detection_media_path,
                 detected_animals=num_detected,  # detected_animals count
                 classification=domain_object.classification,
-                classification_img_path=domain_object.classification_img_path,
+                classification_img_path=domain_object.classification_media_path,
             )
         elif isinstance(domain_object, DBMetadata):
             return ORMDBMetadata(

@@ -132,7 +132,7 @@ class TestModelMode(OperationMode):
             "VirtualTestCamera", get_timestamp(), img_path, detected_img_path, det_results, True
         )
         # Trigger image update in WADAS mainwindow
-        self.update_image.emit(detection_event.detection_img_path)
+        self.update_image.emit(detection_event.detection_media_path)
         message = "WADAS has detected an animal!"
         self.check_for_termination_requests()
 
@@ -141,13 +141,13 @@ class TestModelMode(OperationMode):
             logger.info("Running classification on detection result(s)...")
 
             self._classify(detection_event)
-            if detection_event.classification_img_path:
+            if detection_event.classification_media_path:
                 # Trigger image update in WADAS mainwindow
-                self.update_image.emit(detection_event.classification_img_path)
+                self.update_image.emit(detection_event.classification_media_path)
                 self.update_info.emit()
                 message = (
                     f"WADAS has classified '{self.last_classified_animals_str}' "
-                    f"animal from camera {detection_event.classification_img_path}!"
+                    f"animal from camera {detection_event.classification_media_path}!"
                 )
             else:
                 logger.info("No animal classified.")

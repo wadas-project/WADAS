@@ -42,7 +42,7 @@ class Notifier:
         self.allow_images = allow_images
 
     @staticmethod
-    def send_notifications(detection_event, message="", preview_image=None):
+    def send_notifications(detection_event, message=""):
         """Method to send notification through enabled protocols."""
 
         configured_notifier = False
@@ -53,13 +53,26 @@ class Notifier:
                     configured_notifier = True
                     if Notifier.notifiers[notifier].enabled:
                         enabled_notifier = True
-                        Notifier.notifiers[notifier].send_notification(
-                            detection_event, message, preview_image
-                        )
+                        Notifier.notifiers[notifier].send_notification(detection_event, message)
         if not configured_notifier:
             logger.warning("No notification protocol configured. Skipping notification.")
         elif not enabled_notifier:
             logger.warning("No notification protocol enabled. Skipping notification.")
+
+    @staticmethod
+    def notifier_enabled():
+        """Methods that returns bool value representing notifier(s) enablement status.
+        returns true if at least a notifier is enabled, false otherwise.
+        """
+
+        for notifier in Notifier.notifiers:
+            if Notifier.notifiers[notifier]:
+                if (
+                    Notifier.notifiers[notifier].is_configured
+                    and Notifier.notifiers[notifier].enabled
+                ):
+                    return True
+        return False
 
     @abstractmethod
     def is_configured(self):

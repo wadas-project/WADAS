@@ -219,8 +219,20 @@ class AiModel:
         ]
         return classified_animals
 
-    def process_video_offline(self, video_path, classification=True, save_processed_video=False):
-        """Method to run detection model on provided video."""
+    def process_video_offline(
+        self, video_path, classification=True, save_processed_video=False, save_snapshot=False
+    ):
+        """Method to run detection model on provided video.
+
+        Args:
+            video_path (str): Path to the input video.
+            classification (bool): Whether to run classification.
+            save_processed_video (bool): Whether to save the processed video.
+            save_snapshot (bool): Whether to save a snapshot of the first detection.
+
+        Returns:
+            tuple: (tracked_animals, output_video_path, snapshot_path)
+        """
 
         logger.debug("Selected detection device: %s", AiModel.detection_device)
 
@@ -235,6 +247,9 @@ class AiModel:
 
         preview_frames = []
         output_video_path = ""
+        snapshot_path = None
+        snapshot_saved = False  # Flag to save only the first detection/classification image
+
         if classification:
             logger.info("Running classification on video %s ...", video_path)
             # Classify detected animals on all frames
@@ -247,13 +262,21 @@ class AiModel:
                 tracked_animal = tracker.update(classified_animals, array.shape[:2])
                 tracked_animals.append(tracked_animal)
 
+                classified_frame = self.build_classification_square(
+                    frame, classified_animals, "", True
+                )
                 if save_processed_video:
-                    classified_frame = self.build_classification_square(
-                        frame, classified_animals, "", True
-                    )
                     # If frame does not contain classification keep original frame
                     # to build output video
                     preview_frames.append(classified_frame if classified_frame else frame)
+
+                # Save snapshot of first classification
+                if save_snapshot and not snapshot_saved and classified_animals and classified_frame:
+                    snapshot_path = self._save_detection_snapshot(
+                        video_path=video_path, frame=classified_frame, classification=True
+                    )
+                    snapshot_saved = True
+                    logger.debug("First animal classification saved: %s", snapshot_path)
 
             if preview_frames:
                 logger.info("Saving classification video...")
@@ -264,10 +287,19 @@ class AiModel:
             # Save detection frames
             if len(detection_lists) and save_processed_video:
                 for frame, detection_results in zip(frames, detection_lists):
+
                     detection_frame = self.build_detection_square(frame, detection_results)
                     # If frame does not contain classification keep original frame
                     # to build output video
                     preview_frames.append(detection_frame if detection_frame is not None else frame)
+
+                    # Save snapshot of first detection
+                    if save_snapshot and not snapshot_saved and detection_results:
+                        snapshot_path = self._save_detection_snapshot(
+                            video_path=video_path, frame=detection_frame, classification=False
+                        )
+                        snapshot_saved = True
+                        logger.debug("First animal detection saved: %s", snapshot_path)
 
                 if preview_frames:
                     logger.info("Saving detection video...")
@@ -278,7 +310,39 @@ class AiModel:
         if preview_frames and save_processed_video:
             self.save_preview_video(preview_frames, output_video_path)
 
-        return tracked_animals, str(output_video_path)
+        return tracked_animals, str(output_video_path), snapshot_path
+
+    def _save_detection_snapshot(self, video_path, frame, classification=True):
+        """Save a snapshot of the first detection.
+
+        Args:
+            video_path (str): Original video path.
+            frame: Annotated frame to save (already contains bounding boxes).
+            classification (bool): Whether this is from classification or detection.
+
+        Returns:
+            str: Path to the saved snapshot.
+        """
+        # Determine output directory based on mode
+        output_dir = Path("classification_output" if classification else "detection_output")
+        output_dir.mkdir(exist_ok=True)
+
+        # Build snapshot filename
+        video_stem = Path(video_path).stem
+        snapshot_filename = f"{video_stem}_first_detection.jpg"
+        snapshot_path = output_dir / snapshot_filename
+
+        # Convert PIL Image to numpy array if needed, then save with cv2
+        if isinstance(frame, Image.Image):
+            frame_array = np.array(frame)
+            # Convert RGB to BGR for cv2
+            frame_array = cv2.cvtColor(frame_array, cv2.COLOR_RGB2BGR)
+        else:
+            frame_array = frame
+
+        cv2.imwrite(str(snapshot_path), frame_array)
+
+        return str(snapshot_path)
 
     def process_video(self, video_path, save_detection_image: bool):
         """Method to run detection model on provided video."""
