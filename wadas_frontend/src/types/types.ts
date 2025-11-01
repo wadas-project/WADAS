@@ -45,6 +45,10 @@ export interface AnimalsResponse {
     data: string[];
 }
 
+export interface ActuatorsResponse {
+    data: Actuator[];
+}
+
 export interface ActuatorTypesResponse {
     data: string[];
 }
