@@ -106,7 +106,7 @@ def test_is_not_configured_missing_credentials(mock_cred):
 def test_send_email_with_image(
     mock_file, mock_multipart, mock_text, mock_mime_image, mock_is_image, mock_smtp, mock_cred
 ):
-    # Setup credenziali
+    # Setup credentials
     mock_credential = MagicMock()
     mock_credential.username = "sender@example.com"
     mock_credential.password = "fake_password"
@@ -122,7 +122,7 @@ def test_send_email_with_image(
     mock_email_message.as_string.return_value = "fake email string"
     mock_multipart.return_value = mock_email_message
 
-    # Crea notifier
+    # Create notifier
     email_notifier = EmailNotifier(
         sender_email="sender@example.com",
         smtp_hostname="smtp.example.com",
@@ -138,13 +138,13 @@ def test_send_email_with_image(
 
     email_notifier.send_email(detection_event, "Test message")
 
-    # Verifica che login sia stato chiamato con le credenziali corrette
+    # Verify that login was called with the correct credentials
     mock_smtp_instance.login.assert_called_once_with("sender@example.com", "fake_password")
 
-    # Verifica che sendmail sia stato chiamato per ogni destinatario
+    # Verify that sendmail was called for each recipient
     assert mock_smtp_instance.sendmail.call_count == 2
 
-    # Verifica che quit sia stato chiamato
+    # Verify that quit was called
     mock_smtp_instance.quit.assert_called_once()
 
 

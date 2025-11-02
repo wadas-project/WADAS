@@ -65,14 +65,11 @@ class Notifier:
         returns true if at least a notifier is enabled, false otherwise.
         """
 
-        for notifier in Notifier.notifiers:
-            if Notifier.notifiers[notifier]:
-                if (
-                    Notifier.notifiers[notifier].is_configured
-                    and Notifier.notifiers[notifier].enabled
-                ):
-                    return True
-        return False
+        return any(
+            notifier.is_configured and notifier.enabled
+            for notifier_id, notifier in Notifier.notifiers.items()
+            if notifier
+        )
 
     @abstractmethod
     def is_configured(self):
