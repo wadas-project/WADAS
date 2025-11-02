@@ -1341,18 +1341,50 @@ class MySQLDataBase(DataBase):
             # Try to connect to db to check whether it exists
             with DataBase.wadas_db_engine.connect() as conn:
                 logger.debug("Database exists.")
-        except SQLAlchemyOperationalError:
-            # If db does not exist, creates it
+        except SQLAlchemyOperationalError as e:
+            # Check if it's an access denied error
+            if "Access denied" in str(e):
+                logger.error(
+                    "Access denied for user '%s'@'%s'. "
+                    "Please check username and password in keyring.",
+                    self.username,
+                    self.host,
+                )
+                return False
+
+            # If db does not exist, try to create it
             logger.info("Creating Database...")
-            temp_engine = create_engine(
-                self.get_connection_string(), pool_recycle=1800, pool_pre_ping=True
-            )
-            with temp_engine.connect() as conn:
-                conn.execute(f"CREATE DATABASE {self.database_name}")
-            logger.info("Database '%s' successfully created.", self.database_name)
+            try:
+                temp_engine = create_engine(
+                    self.get_connection_string(), pool_recycle=1800, pool_pre_ping=True
+                )
+                with temp_engine.connect() as conn:
+                    conn.execute(text(f"CREATE DATABASE {self.database_name}"))
+                logger.info("Database '%s' successfully created.", self.database_name)
+            except (SQLAlchemyOperationalError, pymysqlOperationalError) as db_error:
+                if "Access denied" in str(db_error):
+                    logger.error(
+                        "Access denied for user '%s'@'%s'. "
+                        "Please check username and password in keyring.",
+                        self.username,
+                        self.host,
+                    )
+                else:
+                    logger.exception("Error creating MySQL database")
+                return False
+            except Exception:
+                logger.exception("Unexpected error while creating database")
+                return False
 
         # Create all tables
-        Base.metadata.create_all(DataBase.wadas_db_engine)
+        try:
+            Base.metadata.create_all(DataBase.wadas_db_engine)
+            logger.info("Tables created successfully in '%s'.", self.database_name)
+        except Exception:
+            logger.exception("Error while creating the tables...")
+            return False
+
+        return True
 
     def backup(self):
         """Method to back up the database prior to updated or potentially destructive operations."""
@@ -1451,14 +1483,31 @@ class MariaDBDataBase(DataBase):
         """Method to create a new database."""
         logger.info("Creating or verifying the existence of the database...")
 
-        temp_engine = create_engine(
-            self.get_connection_string(create=True), pool_recycle=1800, pool_pre_ping=True
-        )
+        try:
+            temp_engine = create_engine(
+                self.get_connection_string(create=True), pool_recycle=1800, pool_pre_ping=True
+            )
 
-        with temp_engine.connect() as conn:
-            # Create db if not already existing
-            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {self.database_name}"))
-            logger.info("Database '%s' successfully created.", self.database_name)
+            with temp_engine.connect() as conn:
+                # Create db if not already existing
+                conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {self.database_name}"))
+                logger.info("Database '%s' successfully created.", self.database_name)
+
+        except (SQLAlchemyOperationalError, mariadbOperationalerror) as e:
+            if "Access denied" in str(e):
+                logger.error(
+                    "Access denied for user '%s'@'%s'. "
+                    "Please check username and password in keyring.",
+                    self.username,
+                    self.host,
+                )
+            else:
+                logger.exception("Error connecting to MariaDB server")
+            return False
+        except Exception:
+            logger.exception("Unexpected error while creating database")
+            return False
+
         try:
             Base.metadata.create_all(DataBase.wadas_db_engine)
             logger.info("Tables created successfully in '%s'.", self.database_name)
