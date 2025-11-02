@@ -102,9 +102,7 @@ def test_offline_video_detection_and_classification(init):
 
     # This one is the video of a bear
     VIDEO_URL = "https://videos.pexels.com/video-files/7723475/7723475-hd_1920_1080_25fps.mp4"
-    tracked_animals, _ = ai_pipeline.process_video_offline(
-        VIDEO_URL, classification=True, save_processed_video=False
-    )
+    tracked_animals, _, _ = ai_pipeline.process_video_offline(VIDEO_URL)
 
     for classified_animals in tracked_animals:
         assert classified_animals is not None
@@ -127,7 +125,7 @@ def test_offline_video_detection_and_classification_empty(init):
 
     # This one is the video of a waterfall => No animals
     VIDEO_URL = "https://videos.pexels.com/video-files/6981411/6981411-hd_1920_1080_25fps.mp4"
-    tracked_animals, _ = ai_pipeline.process_video_offline(VIDEO_URL)
+    tracked_animals, _, _ = ai_pipeline.process_video_offline(VIDEO_URL)
 
     # Flatten list of tracked animals per frame
     animals = [animal for frame_animals in tracked_animals for animal in frame_animals]

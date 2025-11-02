@@ -76,7 +76,7 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
 
                 self.check_for_termination_requests()
                 if detection_event and self.enable_classification:
-                    if detection_event.classification_img_path:
+                    if detection_event.classification_media_path:
                         # Send notification and trigger actuators if the target animal is found
                         if any(
                             classified_animal["classification"][0] == self.custom_target_species
