@@ -1342,7 +1342,7 @@ class MySQLDataBase(DataBase):
             with DataBase.wadas_db_engine.connect() as conn:
                 logger.debug("Database exists.")
         except SQLAlchemyOperationalError as e:
-            # Check if it's an access denied error
+            # Check if it's access denied error
             if "Access denied" in str(e):
                 logger.error(
                     "Access denied for user '%s'@'%s'. "
@@ -1370,7 +1370,7 @@ class MySQLDataBase(DataBase):
                         self.host,
                     )
                 else:
-                    logger.exception("Error creating MySQL database")
+                    logger.exception("Error creating MariaDB database")
                 return False
             except Exception:
                 logger.exception("Unexpected error while creating database")
@@ -1480,40 +1480,105 @@ class MariaDBDataBase(DataBase):
         return base_string if create else f"{base_string}/{self.database_name}"
 
     def create_database(self):
-        """Method to create a new database."""
-        logger.info("Creating or verifying the existence of the database...")
+        """Method to create a new database with proper exception handling."""
 
+        logger.info("Creating the database...")
+
+        database_exists = False
         try:
-            temp_engine = create_engine(
+            # Connect to MariaDB server to check DB connection, credentials and db existence
+            test_engine = create_engine(
                 self.get_connection_string(create=True), pool_recycle=1800, pool_pre_ping=True
             )
 
-            with temp_engine.connect() as conn:
-                # Create db if not already existing
-                conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {self.database_name}"))
-                logger.info("Database '%s' successfully created.", self.database_name)
+            with test_engine.connect() as conn:
+                # Query to check if database exists already
+                result = conn.execute(
+                    text(
+                        f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
+                        f"WHERE SCHEMA_NAME = '{self.database_name}'"
+                    )
+                )
+                database_exists = result.fetchone() is not None
+
+                if database_exists:
+                    logger.info("Database '%s' already exists.", self.database_name)
+                    return False
+            test_engine.dispose()
 
         except (SQLAlchemyOperationalError, mariadbOperationalerror) as e:
-            if "Access denied" in str(e):
+            error_msg = str(e)
+
+            # Handle connection refused errors
+            if "Can't connect to" in error_msg or "10061" in error_msg:
+                logger.error(
+                    "Cannot connect to MariaDB server on '%s:%s'. "
+                    "Please verify that MariaDB service is running.",
+                    self.host,
+                    self.port,
+                )
+                return False
+
+            # Handle authentication errors
+            if "Access denied" in error_msg:
                 logger.error(
                     "Access denied for user '%s'@'%s'. "
                     "Please check username and password in keyring.",
                     self.username,
                     self.host,
                 )
-            else:
-                logger.exception("Error connecting to MariaDB server")
-            return False
-        except Exception:
-            logger.exception("Unexpected error while creating database")
+                return False
+
+            # Other connection errors
+            logger.error("Error connecting to MariaDB server.")
+            logger.debug(error_msg)
             return False
 
+        except Exception:
+            logger.exception("Unexpected error while verifying database existence.")
+            return False
+
+        # If database doesn't exist, try to create it
+        if not database_exists:
+            logger.info("Database does not exist. Creating it...")
+
+            try:
+                # Connect without specifying the database
+                temp_engine = create_engine(
+                    self.get_connection_string(create=True), pool_recycle=1800, pool_pre_ping=True
+                )
+
+                with temp_engine.connect() as conn:
+                    conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {self.database_name}"))
+                    conn.commit()
+                    logger.info("Database '%s' successfully created.", self.database_name)
+
+                temp_engine.dispose()
+
+            except Exception:
+                logger.exception("Unexpected error while creating database.")
+                return False
+
+        # Ready to create database tables
         try:
+            # Dispose of old engine if it exists
+            if DataBase.wadas_db_engine:
+                DataBase.wadas_db_engine.dispose()
+                DataBase.wadas_db_engine = None
+
+            # Recreate engine with correct database
+            DataBase.wadas_db_engine = create_engine(
+                self.get_connection_string(create=False), pool_recycle=1800, pool_pre_ping=True
+            )
+
+            # Create tables
             Base.metadata.create_all(DataBase.wadas_db_engine)
             logger.info("Tables created successfully in '%s'.", self.database_name)
+
         except Exception:
-            logger.exception("Error while creating the tables...")
+            logger.exception("Error while creating the tables.")
             return False
+
         return True
 
     def backup(self):
@@ -1592,26 +1657,111 @@ class SQLiteDataBase(DataBase):
         return f"sqlite:///{self.host}"
 
     def create_database(self):
-        """Method to create database by creating all tables"""
+        """Method to create a new database with proper exception handling."""
 
-        if DataBase.wadas_db_engine:
-            try:
-                Base.metadata.create_all(DataBase.wadas_db_engine)
-            except SQLAlchemyOperationalError:
-                logger.exception("OperationalError during database creation.")
+        logger.info("Creating the database...")
+
+        database_exists = False
+        try:
+            # Connect to MySQL server to check DB connection, credentials and db existence
+            test_engine = create_engine(
+                f"mysql+pymysql://{self.username}:{self.get_password()}@{self.host}:{self.port}",
+                pool_recycle=1800,
+                pool_pre_ping=True,
+            )
+
+            with test_engine.connect() as conn:
+                # Query to check if database exists already
+                result = conn.execute(
+                    text(
+                        f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
+                        f"WHERE SCHEMA_NAME = '{self.database_name}'"
+                    )
+                )
+                database_exists = result.fetchone() is not None
+
+                if database_exists:
+                    logger.info("Database '%s' already exists.", self.database_name)
+                    return False
+            test_engine.dispose()
+
+        except (SQLAlchemyOperationalError, pymysqlOperationalError) as e:
+            error_msg = str(e)
+
+            # Handle connection refused errors
+            if "Can't connect to" in error_msg or "10061" in error_msg or "2003" in error_msg:
+                logger.error(
+                    "Cannot connect to MySQL server on '%s:%s'. "
+                    "Please verify that MySQL service is running.",
+                    self.host,
+                    self.port,
+                )
                 return False
-            except SQLAlchemyError:
-                logger.exception("SQLAlchemyError during database creation.")
+
+            # Handle authentication errors
+            if "Access denied" in error_msg:
+                logger.error(
+                    "Access denied for user '%s'@'%s'. "
+                    "Please check username and password in keyring.",
+                    self.username,
+                    self.host,
+                )
                 return False
-            except Exception:
-                logger.exception("Unexpected error during database creation.")
-                return False
-            else:
-                logger.info("SQLite Database created successfully.")
-                return True
-        else:
-            logger.warning("Database engine is not initialized.")
+
+            # Other connection errors
+            logger.error("Error connecting to MySQL server.")
+            logger.debug(error_msg)
             return False
+
+        except Exception:
+            logger.exception("Unexpected error while verifying database existence.")
+            return False
+
+        # If database doesn't exist, try to create it
+        if not database_exists:
+            logger.info("Database does not exist. Creating it...")
+
+            try:
+                # Connect without specifying the database
+                temp_engine = create_engine(
+                    f"mysql+pymysql://{self.username}:{self.get_password()}"
+                    f"@{self.host}:{self.port}",
+                    pool_recycle=1800,
+                    pool_pre_ping=True,
+                )
+
+                with temp_engine.connect() as conn:
+                    conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {self.database_name}"))
+                    conn.commit()
+                    logger.info("Database '%s' successfully created.", self.database_name)
+
+                temp_engine.dispose()
+
+            except Exception:
+                logger.exception("Unexpected error while creating database.")
+                return False
+
+        # Ready to create database tables
+        try:
+            # Dispose of old engine if it exists
+            if DataBase.wadas_db_engine:
+                DataBase.wadas_db_engine.dispose()
+                DataBase.wadas_db_engine = None
+
+            # Recreate engine with correct database
+            DataBase.wadas_db_engine = create_engine(
+                self.get_connection_string(), pool_recycle=1800, pool_pre_ping=True
+            )
+
+            # Create tables
+            Base.metadata.create_all(DataBase.wadas_db_engine)
+            logger.info("Tables created successfully in '%s'.", self.database_name)
+
+        except Exception:
+            logger.exception("Error while creating the tables.")
+            return False
+
+        return True
 
     def backup(self):
         """Method to back up the database prior to updated or potentially destructive operations."""

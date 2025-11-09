@@ -191,6 +191,7 @@ class ConfigureDBDialog(QDialog, Ui_ConfigureDBDialog):
 
         if create_db and not self.db_created:
             return
+
         self.accept()
 
     def ask_db_type_change(self):
@@ -297,6 +298,8 @@ class ConfigureDBDialog(QDialog, Ui_ConfigureDBDialog):
             if db.create_database():
                 DataBase.populate_db(self.uuid)
                 self.db_created = True
+            else:
+                DataBase.destroy_instance()
         message = "Database successfully created!" if self.db_created else "Failed to create the db!"
         self.show_status_dialog("Database creation status", message, self.db_created)
         self.validate()
