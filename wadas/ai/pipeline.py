@@ -19,6 +19,7 @@
 
 import logging
 
+import cv2
 import numpy as np
 import ray
 from PIL import Image
@@ -120,7 +121,53 @@ class DetectionPipeline:
         """Method to check if models are initialized."""
         return OVMegaDetectorV5.download_model(force) and Classifier.download_model(force)
 
-    def run_detection(self, img: Image, detection_threshold: float):
+    @staticmethod
+    def blur_bounding_box(img, bbox, kernel_size=51):
+        """Method to blur a specific bounding box region in an image.
+        
+        Args:
+            img: PIL Image or numpy array
+            bbox: Bounding box coordinates [x1, y1, x2, y2]
+            kernel_size: Size of the Gaussian blur kernel (must be odd)
+            
+        Returns:
+            PIL Image or numpy array with the blurred region
+        """
+        # Convert PIL Image to numpy array if necessary
+        is_pil = isinstance(img, Image.Image)
+        if is_pil:
+            img_array = np.array(img)
+        else:
+            img_array = img.copy()
+        
+        # Extract bounding box coordinates
+        x1, y1, x2, y2 = map(int, bbox)
+        
+        # Ensure coordinates are within image bounds
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(img_array.shape[1], x2)
+        y2 = min(img_array.shape[0], y2)
+        
+        # Ensure kernel size is odd
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+        
+        # Extract the region to blur
+        region = img_array[y1:y2, x1:x2]
+        
+        # Apply Gaussian blur to the region
+        blurred_region = cv2.GaussianBlur(region, (kernel_size, kernel_size), 0)
+        
+        # Replace the original region with the blurred one
+        img_array[y1:y2, x1:x2] = blurred_region
+        
+        # Convert back to PIL Image if input was PIL Image
+        if is_pil:
+            return Image.fromarray(img_array)
+        return img_array
+
+    def run_detection(self, img: Image, detection_threshold: float, blur_other_classes: bool = False):
         """Method to run detection model on provided image."""
         detection_results = []
         if isinstance(img, (list, tuple)):
@@ -134,7 +181,15 @@ class DetectionPipeline:
             self.detection_model.run, img_array, detection_threshold=detection_threshold
         )
 
-        for results in results_lst:
+        for idx, results in enumerate(results_lst):
+            # Blur non-animal detections if requested
+            if blur_other_classes:
+                non_animal_idx = np.where(results["detections"].class_id != self.animal_class_idx)[0]
+                for bbox_idx in non_animal_idx:
+                    bbox = results["detections"].xyxy[bbox_idx]
+                    # Blur the region in the original image array (modifies in-place)
+                    img_array[idx] = self.blur_bounding_box(img_array[idx], bbox)
+            
             # Checks for non animal in results and filter them out
             animal_idx = np.where(results["detections"].class_id == self.animal_class_idx)
             # Filter out the non animal detections
