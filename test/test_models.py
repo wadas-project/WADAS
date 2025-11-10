@@ -228,47 +228,49 @@ def test_blur_non_animal_detections(detection_pipeline):
         "https://img.freepik.com/premium-photo/"
         "happy-human-dog-walking-through-park_1199394-134331.jpg"
     )
-    
+
     img = Image.open(requests.get(URL, stream=True).raw).convert("RGB")
-    
+
     # First, run detection WITHOUT blur to get all detections including non-animals
     # We need to temporarily access the raw detections before filtering
     img_array = np.array(img)
     results_all = detection_pipeline.detection_model.run([img_array], detection_threshold=0.5)[0]
-    
+
     # Identify non-animal detections
-    non_animal_idx = np.where(results_all["detections"].class_id != detection_pipeline.animal_class_idx)[0]
-    
+    non_animal_idx = np.where(
+        results_all["detections"].class_id != detection_pipeline.animal_class_idx
+    )[0]
+
     # Verify that there are non-animal detections in this image
     assert len(non_animal_idx) > 0, "Test image should contain non-animal detections"
-    
+
     # Store original image for comparison
     original_img_array = img_array.copy()
-    
+
     # Run detection WITH blur enabled
     results = detection_pipeline.run_detection(img, 0.5, blur_other_classes=True)
-    
+
     assert results is not None
-    
+
     # The internal img_array was modified during run_detection
     # We can verify blur by testing the blur_bounding_box method directly
     test_bbox = results_all["detections"].xyxy[non_animal_idx[0]]
     blurred_test = detection_pipeline.blur_bounding_box(original_img_array.copy(), test_bbox)
-    
+
     # Check that blur_bounding_box actually modifies the image
     assert not np.array_equal(original_img_array, blurred_test)
-    
+
     # Verify the blurred region has lower variance (is more uniform)
     x1, y1, x2, y2 = map(int, test_bbox)
     original_region = original_img_array[y1:y2, x1:x2]
     blurred_region = blurred_test[y1:y2, x1:x2]
-    
+
     original_var = np.var(original_region)
     blurred_var = np.var(blurred_region)
-    
+
     # Blurred region should have lower variance
     assert blurred_var < original_var
-    
+
     # The animal detections should still be present and correct
     assert len(results["detections"].xyxy) == 2  # Two dogs
     assert results["detections"].xyxy.shape == (2, 4)
