@@ -234,7 +234,11 @@ def test_blur_non_animal_detections(detection_pipeline):
     # First, run detection WITHOUT blur to get all detections including non-animals
     # We need to temporarily access the raw detections before filtering
     img_array = np.array(img)
-    results_all = detection_pipeline.detection_model.run([img_array], detection_threshold=0.5)[0]
+    results_all = detection_pipeline.detection_model.run([img_array], detection_threshold=0.5)
+
+    # Handle the case where results_all might be a list
+    if isinstance(results_all, list):
+        results_all = results_all[0]
 
     # Identify non-animal detections
     non_animal_idx = np.where(
