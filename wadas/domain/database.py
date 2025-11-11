@@ -525,6 +525,7 @@ class DataBase(ABC):
         detection_event_db_id = cls.get_detection_event_id(detection_event)
         if not detection_event_db_id:
             logger.error("Unable to update detection event as detection event not found in db.")
+            return
 
         if session := cls.create_session():
             try:
