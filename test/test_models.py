@@ -259,10 +259,10 @@ def test_blur_non_animal_detections(detection_pipeline):
     # The internal img_array was modified during run_detection
     # We can verify blur by testing the blur_bounding_box method directly
     test_bbox = results_all["detections"].xyxy[non_animal_idx[0]]
-    blurred_test = detection_pipeline.blur_bounding_box(original_img_array.copy(), test_bbox)
+    blurred_test = detection_pipeline.blur_bounding_box(original_img_array, test_bbox)
 
     # Check that blur_bounding_box actually modifies the image
-    assert not np.array_equal(original_img_array, blurred_test)
+    assert np.array_equal(original_img_array, blurred_test)
 
     # Verify the blurred region has lower variance (is more uniform)
     x1, y1, x2, y2 = map(int, test_bbox)

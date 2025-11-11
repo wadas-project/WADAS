@@ -138,7 +138,7 @@ class DetectionPipeline:
         if is_pil:
             img_array = np.array(img)
         else:
-            img_array = img.copy()
+            img_array = img
 
         # Extract bounding box coordinates
         x1, y1, x2, y2 = map(int, bbox)
