@@ -884,7 +884,31 @@ class DataBase(ABC):
                 creation_date=get_precise_timestamp(),
             )
         elif isinstance(domain_object, ActuationEvent):
-            cmd = DeterrentActuator.Commands(domain_object.command)
+            actuator = next(
+                (a for a in Actuator.actuators if a.id == domain_object.actuator_id), None
+            )
+            if actuator is None:
+                logger.error(
+                    "Unable to find Actuator ID in the pool of available actuators. Aborting."
+                )
+                return
+
+            try:
+                # Obtain dynamically the class of Actuator Commands
+                Commands = actuator.type.Commands
+                cmd = Commands(domain_object.command)
+            except AttributeError:
+                logger.error(
+                    "Actuator type %s does not define a Commands enum. Aborting.", actuator.type
+                )
+                return
+            except ValueError:
+                logger.error(
+                    "Invalid command '%s' for actuator type %s. Aborting.",
+                    domain_object.command,
+                    actuator.type.__name__,
+                )
+                return
 
             return ORMActuationEvent(
                 actuator_id=foreign_key[0],
