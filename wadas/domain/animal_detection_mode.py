@@ -93,6 +93,6 @@ class AnimalDetectionAndClassificationMode(OperationMode):
                     # Reproduce image or video in UI
                     self._show_processed_results(detection_event)
                 else:
-                    logger.debug("No animal detected.")
+                    logger.info("No animal detected.")
 
         self.execution_completed()
