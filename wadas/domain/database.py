@@ -884,31 +884,31 @@ class DataBase(ABC):
                 creation_date=get_precise_timestamp(),
             )
         elif isinstance(domain_object, ActuationEvent):
-            actuator = next(
-                (a for a in Actuator.actuators if a.id == domain_object.actuator_id), None
-            )
+            actuator = Actuator.actuators.get(domain_object.actuator_id)
+
             if actuator is None:
                 logger.error(
-                    "Unable to find Actuator ID in the pool of available actuators. Aborting."
+                    "Unable to find actuator ID '%s' in the pool of available actuators. Aborting.",
+                    domain_object.actuator_id,
                 )
-                return
+                return None
 
             try:
-                # Obtain dynamically the class of Actuator Commands
-                Commands = actuator.type.Commands
+                Commands = actuator.__class__.Commands
                 cmd = Commands(domain_object.command)
             except AttributeError:
                 logger.error(
-                    "Actuator type %s does not define a Commands enum. Aborting.", actuator.type
+                    "Actuator class %s does not define a Commands enum. Aborting.",
+                    actuator.__class__.__name__,
                 )
-                return
+                return None
             except ValueError:
                 logger.error(
-                    "Invalid command '%s' for actuator type %s. Aborting.",
+                    "Invalid command '%s' for actuator class %s. Aborting.",
                     domain_object.command,
-                    actuator.type.__name__,
+                    actuator.__class__.__name__,
                 )
-                return
+                return None
 
             return ORMActuationEvent(
                 actuator_id=foreign_key[0],
