@@ -51,6 +51,7 @@ class AiModel:
     tunnel_mode_detection_device = "cpu"
     tunnel_mode_detection_threshold = 0.5
     tunnel_mode_detection_model_version = "MDV6b-yolov9c"
+    blur_non_animal_detections = True
 
     def __init__(self):
         # Initializing the MegaDetectorV5 model for image detection
@@ -117,7 +118,9 @@ class AiModel:
 
         img = img.convert("RGB")
 
-        results = self.detection_pipeline.run_detection(img, AiModel.detection_threshold)
+        results = self.detection_pipeline.run_detection(
+            img, AiModel.detection_threshold, AiModel.blur_non_animal_detections
+        )
         detected_img_path = ""
 
         if len(results["detections"].xyxy) > 0 and save_detection_image:
@@ -243,7 +246,9 @@ class AiModel:
         tracked_animals = []
 
         # Run the detection model on the video frames
-        detection_lists = self.detection_pipeline.run_detection(frames, AiModel.detection_threshold)
+        detection_lists = self.detection_pipeline.run_detection(
+            frames, AiModel.detection_threshold, AiModel.blur_non_animal_detections
+        )
 
         preview_frames = []
         output_video_path = ""
@@ -354,7 +359,9 @@ class AiModel:
 
         for frame, frame_count in self.get_video_frames(video_path):
 
-            results = self.detection_pipeline.run_detection(frame, AiModel.detection_threshold)
+            results = self.detection_pipeline.run_detection(
+                frame, AiModel.detection_threshold, AiModel.blur_non_animal_detections
+            )
 
             if len(results["detections"].xyxy) > 0:
                 if save_detection_image:
