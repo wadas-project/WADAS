@@ -73,6 +73,7 @@ class OperationMode(QObject):
     enforce_privacy_remove_original_img = False
     enforce_privacy_remove_detection_img = False
     enforce_privacy_remove_classification_img = False
+    enforce_privacy_blur_non_animals = True
 
     def __init__(self):
         super(OperationMode, self).__init__()

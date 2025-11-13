@@ -50,6 +50,7 @@ class DialogConfigurePrivacy(QDialog, Ui_DialogConfigurePrivacy):
         self.ui.checkBox_remove_original_image.setChecked(OperationMode.enforce_privacy_remove_original_img)
         self.ui.checkBox_remove_detection_image.setChecked(OperationMode.enforce_privacy_remove_detection_img)
         self.ui.checkBox_remove_classification_image.setChecked(OperationMode.enforce_privacy_remove_classification_img)
+        self.ui.checkBox_blur_non_animals.setChecked(OperationMode.enforce_privacy_blur_non_animals)
 
     def accept_and_close(self):
         """When Ok is clicked, save FTP config info before closing."""
@@ -57,4 +58,5 @@ class DialogConfigurePrivacy(QDialog, Ui_DialogConfigurePrivacy):
         OperationMode.enforce_privacy_remove_original_img = self.ui.checkBox_remove_original_image.isChecked()
         OperationMode.enforce_privacy_remove_detection_img = self.ui.checkBox_remove_detection_image.isChecked()
         OperationMode.enforce_privacy_remove_classification_img = self.ui.checkBox_remove_classification_image.isChecked()
+        OperationMode.enforce_privacy_blur_non_animals = self.ui.checkBox_blur_non_animals.isChecked()
         self.accept()
