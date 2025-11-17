@@ -77,6 +77,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -147,6 +148,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -217,6 +219,7 @@ ftps_server: ''
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -252,6 +255,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -325,6 +329,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -412,6 +417,7 @@ ftps_server: ''
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -459,6 +465,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -555,6 +562,7 @@ ftps_server: ''
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -590,6 +598,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -672,6 +681,7 @@ ftps_server: ''
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -711,6 +721,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -797,6 +808,7 @@ ftps_server: ''
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -864,6 +876,7 @@ ftps_server: []
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1027,6 +1040,7 @@ database: ''
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1125,6 +1139,7 @@ database: ''
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1223,6 +1238,7 @@ database: ''
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1321,6 +1337,7 @@ database: ''
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1471,6 +1488,7 @@ ftps_server: ''
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1520,6 +1538,7 @@ database: ''
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1609,6 +1628,7 @@ ftps_server:
 notification: []
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1716,6 +1736,7 @@ ftps_server:
 notification: ''
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1759,6 +1780,7 @@ notification:
     smtp_port: 123
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1848,6 +1870,7 @@ notification:
     smtp_port: 123
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -1937,6 +1960,7 @@ notification:
     smtp_port: 123
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2026,6 +2050,7 @@ notification:
     smtp_port: 123
 operation_mode:
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2091,6 +2116,7 @@ notification:
     smtp_port: 123
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2138,6 +2164,7 @@ notification:
     smtp_port: 123
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2174,6 +2201,7 @@ notification: []
 operation_mode:
     type: Test Model Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2247,6 +2275,7 @@ notification: ''
 operation_mode:
   type: Test Model Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2283,6 +2312,7 @@ notification: []
 operation_mode:
     type: Animal Detection Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2338,6 +2368,7 @@ notification: ''
 operation_mode:
   type: Animal Detection Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2374,6 +2405,7 @@ notification: []
 operation_mode:
     type: Animal Detection and Classification Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2431,6 +2463,7 @@ notification: ''
 operation_mode:
   type: Animal Detection and Classification Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2468,6 +2501,7 @@ operation_mode:
     type: Custom Species Classification Mode
     custom_target_species: chamois
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2528,6 +2562,7 @@ operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2563,6 +2598,7 @@ ftps_server: []
 notification: []
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2643,6 +2679,7 @@ operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: false
   remove_detection_img: false
   remove_original_image: false
@@ -2684,6 +2721,7 @@ ftps_server: []
 notification: []
 operation_mode: ''
 privacy:
+  blur_non_humans: true
   remove_classification_img: true
   remove_detection_img: true
   remove_original_image: true
@@ -2746,6 +2784,7 @@ operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
 privacy:
+  blur_non_humans: true
   remove_classification_img: true
   remove_detection_img: true
   remove_original_image: true
