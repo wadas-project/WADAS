@@ -471,11 +471,14 @@ class AiModel:
 
         for frame, frame_count in self.get_video_frames(video_path):
 
-            original_results = self.detection_pipeline.run_detection(
+            results = self.detection_pipeline.run_detection(
                 frame, AiModel.detection_threshold, filter_animals=False
             )
 
-            results = self.detection_pipeline.filter_animal_detections(original_results)
+            if AiModel.blur_non_animal_detections:
+                frame = self.blur_image_bounding_boxes(frame, results)
+
+            results = self.detection_pipeline.filter_animal_detections(results)
 
             if len(results["detections"].xyxy) > 0:
                 if save_detection_image:
@@ -484,9 +487,6 @@ class AiModel:
                     frame_path = os.path.join(
                         "video_frames", f"{video_filename}_frame_{frame_count}.jpg"
                     )
-
-                    if AiModel.blur_non_animal_detections:
-                        frame = self.blur_image_bounding_boxes(frame, original_results, frame_path)
 
                     frame.save(frame_path)
                     # Saving the detection results
