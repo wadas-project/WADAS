@@ -96,6 +96,90 @@ class AiModel:
         """Method to check if model is initialized."""
         return DetectionPipeline.download_models()
 
+    @staticmethod
+    def blur_bounding_box(img, bbox, kernel_size=51):
+        """Method to blur a specific bounding box region in an image.
+
+        Args:
+            img: PIL Image or numpy array
+            bbox: Bounding box coordinates [x1, y1, x2, y2]
+            kernel_size: Size of the Gaussian blur kernel (must be odd)
+
+        Returns:
+            PIL Image or numpy array with the blurred region
+        """
+        # Convert PIL Image to numpy array if necessary
+        is_pil = isinstance(img, Image.Image)
+        if is_pil:
+            img_array = np.array(img)
+        else:
+            img_array = img
+
+        # Extract bounding box coordinates
+        x1, y1, x2, y2 = map(int, bbox)
+
+        # Ensure coordinates are within image bounds
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(img_array.shape[1], x2)
+        y2 = min(img_array.shape[0], y2)
+
+        # Ensure kernel size is odd
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+
+        # Extract the region to blur
+        region = img_array[y1:y2, x1:x2]
+
+        # Apply Gaussian blur to the region
+        blurred_region = cv2.GaussianBlur(region, (kernel_size, kernel_size), 0)
+
+        # Replace the original region with the blurred one
+        img_array[y1:y2, x1:x2] = blurred_region
+
+        # Convert back to PIL Image if input was PIL Image
+        if is_pil:
+            return Image.fromarray(img_array)
+        return img_array
+
+    def blur_image_bounding_boxes(self, img, results, img_path=None):
+        # If blur_non_animal_detections is enabled and there are non-animal detections, blur them
+
+        blurred_img = img.copy()
+        if len(results["detections"].xyxy) > 0:
+            # Get all detections that are not animals (class_id != 1)
+            non_animal_mask = (
+                results["detections"].class_id != self.detection_pipeline.animal_class_idx
+            )
+            animal_mask = results["detections"].class_id == self.detection_pipeline.animal_class_idx
+            if np.any(non_animal_mask):
+                # Get bounding boxes for non-animal detections
+                non_animal_boxes = results["detections"].xyxy[non_animal_mask]
+
+                # Blur each non-animal detection
+                for bbox in non_animal_boxes:
+                    blurred_img = self.blur_bounding_box(blurred_img, bbox)
+
+            # Add the animal bounding boxes back to results to avoid blurring overlapping areas
+            if any(animal_mask):
+                animal_boxes = results["detections"].xyxy[animal_mask]
+                for bbox in animal_boxes:
+                    # Extract the original animal region from the unblurred image
+                    x1, y1, x2, y2 = map(int, bbox)
+                    x1 = max(0, x1)
+                    y1 = max(0, y1)
+                    x2 = min(img.width, x2)
+                    y2 = min(img.height, y2)
+
+                    # Get the original animal region and paste it back onto the blurred image
+                    original_region = img.crop((x1, y1, x2, y2))
+                    blurred_img.paste(original_region, (x1, y1))
+
+            if img_path:
+                blurred_img.save(img_path)
+                logger.info("Blurred non-animal detections in image %s.", img_path)
+        return blurred_img
+
     def process_image(self, img_path, save_detection_image: bool):
         """Method to run detection model on provided image."""
 
@@ -119,8 +203,15 @@ class AiModel:
         img = img.convert("RGB")
 
         results = self.detection_pipeline.run_detection(
-            img, AiModel.detection_threshold, AiModel.blur_non_animal_detections
+            img, AiModel.detection_threshold, filter_animals=False
         )
+
+        # Blur non-animal detections if requested
+        if AiModel.blur_non_animal_detections:
+            self.blur_image_bounding_boxes(img, results, img_path)
+
+        results = self.detection_pipeline.filter_animal_detections(results)
+
         detected_img_path = ""
 
         if len(results["detections"].xyxy) > 0 and save_detection_image:
@@ -247,8 +338,17 @@ class AiModel:
 
         # Run the detection model on the video frames
         detection_lists = self.detection_pipeline.run_detection(
-            frames, AiModel.detection_threshold, AiModel.blur_non_animal_detections
+            frames, AiModel.detection_threshold, filter_animals=False
         )
+
+        # Blur non-animal detections if requested
+        # if AiModel.blur_non_animal_detections:
+        #     for img, results in zip(frames, detection_lists):
+        #         self.blur_image_bounding_boxes(img, results, img_path)
+
+        filtered_detection_lists = [
+            self.detection_pipeline.filter_animal_detections(results) for results in detection_lists
+        ]
 
         preview_frames = []
         output_video_path = ""
@@ -259,10 +359,12 @@ class AiModel:
             logger.info("Running classification on video %s ...", video_path)
             # Classify detected animals on all frames
             classification_lists = self.detection_pipeline.classify(
-                frames, detection_lists, AiModel.classification_threshold
+                frames, filtered_detection_lists, AiModel.classification_threshold
             )
 
-            for frame, classified_animals in zip(frames, classification_lists):
+            for frame, detected_animals, classified_animals in zip(
+                frames, detection_lists, classification_lists
+            ):
                 array = np.array(frame)
                 tracked_animal = tracker.update(classified_animals, array.shape[:2])
                 tracked_animals.append(tracked_animal)
@@ -273,6 +375,10 @@ class AiModel:
                 if save_processed_video:
                     # If frame does not contain classification keep original frame
                     # to build output video
+                    if AiModel.blur_non_animal_detections:
+                        classified_frame = self.blur_image_bounding_boxes(
+                            classified_frame, detected_animals
+                        )
                     preview_frames.append(classified_frame if classified_frame else frame)
 
                 # Save snapshot of first classification
@@ -290,16 +396,22 @@ class AiModel:
                 )
         else:
             # Save detection frames
-            if len(detection_lists) and save_processed_video:
-                for frame, detection_results in zip(frames, detection_lists):
+            if len(filtered_detection_lists) and save_processed_video:
+                for frame, filtered_detection_results, original_detection_results in zip(
+                    frames, filtered_detection_lists, detection_lists
+                ):
 
-                    detection_frame = self.build_detection_square(frame, detection_results)
+                    detection_frame = self.build_detection_square(frame, filtered_detection_results)
                     # If frame does not contain classification keep original frame
                     # to build output video
+                    if AiModel.blur_non_animal_detections:
+                        detection_frame = self.blur_image_bounding_boxes(
+                            detection_frame, original_detection_results
+                        )
                     preview_frames.append(detection_frame if detection_frame is not None else frame)
 
                     # Save snapshot of first detection
-                    if save_snapshot and not snapshot_saved and detection_results:
+                    if save_snapshot and not snapshot_saved and filtered_detection_results:
                         snapshot_path = self._save_detection_snapshot(
                             video_path=video_path, frame=detection_frame, classification=False
                         )
@@ -359,9 +471,11 @@ class AiModel:
 
         for frame, frame_count in self.get_video_frames(video_path):
 
-            results = self.detection_pipeline.run_detection(
-                frame, AiModel.detection_threshold, AiModel.blur_non_animal_detections
+            original_results = self.detection_pipeline.run_detection(
+                frame, AiModel.detection_threshold, filter_animals=False
             )
+
+            results = self.detection_pipeline.filter_animal_detections(original_results)
 
             if len(results["detections"].xyxy) > 0:
                 if save_detection_image:
@@ -370,6 +484,10 @@ class AiModel:
                     frame_path = os.path.join(
                         "video_frames", f"{video_filename}_frame_{frame_count}.jpg"
                     )
+
+                    if AiModel.blur_non_animal_detections:
+                        frame = self.blur_image_bounding_boxes(frame, original_results, frame_path)
+
                     frame.save(frame_path)
                     # Saving the detection results
                     logger.info("Saving detection results for frame %s...", frame_count)
