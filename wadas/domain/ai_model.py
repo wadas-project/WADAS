@@ -63,6 +63,10 @@ class AiModel:
             AiModel.classification_model_version,
             AiModel.classification_device,
         )
+        logger.info(
+            "Blur of non-animals detection is %s.",
+            "enabled" if AiModel.blur_non_animal_detections else "disabled",
+        )
         self.detection_pipeline = DetectionPipeline(
             detection_device=AiModel.detection_device,
             classification_device=AiModel.classification_device,

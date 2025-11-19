@@ -329,9 +329,7 @@ def load_configuration_from_file(file_path):
             OperationMode.enforce_privacy_remove_classification_img = privacy_cfg.get(
                 "remove_classification_img", False
             )
-            OperationMode.enforce_privacy_blur_non_animals = privacy_cfg.get(
-                "blur_non_humans", False
-            )
+            AiModel.blur_non_animal_detections = privacy_cfg.get("blur_non_humans", False)
 
     except Exception as e:
         load_status["errors_on_load"] = True
@@ -411,7 +409,7 @@ def save_configuration_to_file(file_, project_uuid):
             "remove_original_image": OperationMode.enforce_privacy_remove_original_img,
             "remove_detection_img": OperationMode.enforce_privacy_remove_detection_img,
             "remove_classification_img": OperationMode.enforce_privacy_remove_classification_img,
-            "blur_non_humans": OperationMode.enforce_privacy_blur_non_animals,
+            "blur_non_humans": AiModel.blur_non_animal_detections,
         },
     }
 

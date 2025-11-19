@@ -123,7 +123,7 @@ class DetectionPipeline:
     def filter_animal_detections(self, results):
         """Method to filter out non-animal detections from results."""
         animal_idx = np.where(results["detections"].class_id == self.animal_class_idx)
-        # Filter out the non animal detections
+        # Filter out the non-animal detections
         results["labels"] = [
             label
             for label, class_id in zip(results["labels"], results["detections"].class_id)
