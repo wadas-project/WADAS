@@ -142,6 +142,7 @@ class OperationMode(QObject):
                 if db := DataBase.get_enabled_db():
                     db.insert_into_db(detection_event)
 
+                logger.info("Animal(s) detected!")
                 if self.enable_classification:
                     # Classify animal
                     self._classify(detection_event)
@@ -232,8 +233,9 @@ class OperationMode(QObject):
                 # Update detection event into db, if enabled
                 if db := DataBase.get_enabled_db():
                     db.update_detection_event(detection_event)
+                logger.info("Classified animal(s): %s", self.last_classified_animals_str)
             else:
-                logger.debug("No classified animals or classification results below threshold.")
+                logger.info("No classified animals or classification results below threshold.")
 
     def _show_processed_results(self, detection_event):
         """Method to show Ai inference results in WADAS UI"""
