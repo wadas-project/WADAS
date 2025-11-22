@@ -52,6 +52,54 @@
       </attribute>
      </widget>
     </item>
+    <item row="5" column="0">
+     <widget class="QRadioButton" name="radioButton_custom_species_class_mode">
+      <property name="text">
+       <string>Custom species classification mode</string>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">buttonGroup</string>
+      </attribute>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QRadioButton" name="radioButton_bear_det_mode">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="text">
+       <string>Bear detection mode</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="autoExclusive">
+       <bool>true</bool>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">buttonGroup</string>
+      </attribute>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QRadioButton" name="radioButton_tunnel_mode">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="text">
+       <string>Tunnel mode</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="autoExclusive">
+       <bool>true</bool>
+      </property>
+      <attribute name="buttonGroup">
+       <string notr="true">buttonGroup</string>
+      </attribute>
+     </widget>
+    </item>
     <item row="0" column="0">
      <widget class="QRadioButton" name="radioButton_test_model_mode">
       <property name="text">
@@ -81,55 +129,21 @@
       </attribute>
      </widget>
     </item>
-    <item row="4" column="0">
-     <widget class="QRadioButton" name="radioButton_bear_det_mode">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="text">
-       <string>Bear detection mode</string>
-      </property>
-      <property name="checkable">
-       <bool>true</bool>
-      </property>
-      <property name="autoExclusive">
-       <bool>true</bool>
-      </property>
-      <attribute name="buttonGroup">
-       <string notr="true">buttonGroup</string>
-      </attribute>
-     </widget>
-    </item>
     <item row="5" column="1">
-     <widget class="QComboBox" name="comboBox_select_species"/>
-    </item>
-    <item row="3" column="0">
-     <widget class="QRadioButton" name="radioButton_tunnel_mode">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
+     <widget class="QPushButton" name="pushButton_select_species">
       <property name="text">
-       <string>Tunnel mode</string>
+       <string>Select species</string>
       </property>
-      <property name="checkable">
-       <bool>true</bool>
-      </property>
-      <property name="autoExclusive">
-       <bool>true</bool>
-      </property>
-      <attribute name="buttonGroup">
-       <string notr="true">buttonGroup</string>
-      </attribute>
      </widget>
     </item>
-    <item row="5" column="0">
-     <widget class="QRadioButton" name="radioButton_custom_species_class_mode">
-      <property name="text">
-       <string>Custom species classification mode</string>
+    <item row="6" column="0" colspan="2">
+     <widget class="QLabel" name="label_custom_species">
+      <property name="enabled">
+       <bool>false</bool>
       </property>
-      <attribute name="buttonGroup">
-       <string notr="true">buttonGroup</string>
-      </attribute>
+      <property name="text">
+       <string/>
+      </property>
      </widget>
     </item>
    </layout>

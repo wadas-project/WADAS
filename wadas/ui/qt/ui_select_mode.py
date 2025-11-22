@@ -15,9 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractButton, QApplication, QButtonGroup, QComboBox,
-    QDialog, QDialogButtonBox, QGridLayout, QRadioButton,
-    QSizePolicy, QWidget)
+from PySide6.QtWidgets import (QAbstractButton, QApplication, QButtonGroup, QDialog,
+    QDialogButtonBox, QGridLayout, QLabel, QPushButton,
+    QRadioButton, QSizePolicy, QWidget)
 
 class Ui_DialogSelectMode(object):
     def setupUi(self, DialogSelectMode):
@@ -44,6 +44,30 @@ class Ui_DialogSelectMode(object):
 
         self.gridLayout.addWidget(self.radioButton_animal_det_mode, 1, 0, 1, 1)
 
+        self.radioButton_custom_species_class_mode = QRadioButton(self.verticalLayoutWidget)
+        self.buttonGroup.addButton(self.radioButton_custom_species_class_mode)
+        self.radioButton_custom_species_class_mode.setObjectName(u"radioButton_custom_species_class_mode")
+
+        self.gridLayout.addWidget(self.radioButton_custom_species_class_mode, 5, 0, 1, 1)
+
+        self.radioButton_bear_det_mode = QRadioButton(self.verticalLayoutWidget)
+        self.buttonGroup.addButton(self.radioButton_bear_det_mode)
+        self.radioButton_bear_det_mode.setObjectName(u"radioButton_bear_det_mode")
+        self.radioButton_bear_det_mode.setEnabled(True)
+        self.radioButton_bear_det_mode.setCheckable(True)
+        self.radioButton_bear_det_mode.setAutoExclusive(True)
+
+        self.gridLayout.addWidget(self.radioButton_bear_det_mode, 4, 0, 1, 1)
+
+        self.radioButton_tunnel_mode = QRadioButton(self.verticalLayoutWidget)
+        self.buttonGroup.addButton(self.radioButton_tunnel_mode)
+        self.radioButton_tunnel_mode.setObjectName(u"radioButton_tunnel_mode")
+        self.radioButton_tunnel_mode.setEnabled(True)
+        self.radioButton_tunnel_mode.setCheckable(True)
+        self.radioButton_tunnel_mode.setAutoExclusive(True)
+
+        self.gridLayout.addWidget(self.radioButton_tunnel_mode, 3, 0, 1, 1)
+
         self.radioButton_test_model_mode = QRadioButton(self.verticalLayoutWidget)
         self.buttonGroup.addButton(self.radioButton_test_model_mode)
         self.radioButton_test_model_mode.setObjectName(u"radioButton_test_model_mode")
@@ -59,34 +83,16 @@ class Ui_DialogSelectMode(object):
 
         self.gridLayout.addWidget(self.radioButton_animal_det_and_class_mode, 2, 0, 1, 1)
 
-        self.radioButton_bear_det_mode = QRadioButton(self.verticalLayoutWidget)
-        self.buttonGroup.addButton(self.radioButton_bear_det_mode)
-        self.radioButton_bear_det_mode.setObjectName(u"radioButton_bear_det_mode")
-        self.radioButton_bear_det_mode.setEnabled(True)
-        self.radioButton_bear_det_mode.setCheckable(True)
-        self.radioButton_bear_det_mode.setAutoExclusive(True)
+        self.pushButton_select_species = QPushButton(self.verticalLayoutWidget)
+        self.pushButton_select_species.setObjectName(u"pushButton_select_species")
 
-        self.gridLayout.addWidget(self.radioButton_bear_det_mode, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.pushButton_select_species, 5, 1, 1, 1)
 
-        self.comboBox_select_species = QComboBox(self.verticalLayoutWidget)
-        self.comboBox_select_species.setObjectName(u"comboBox_select_species")
+        self.label_custom_species = QLabel(self.verticalLayoutWidget)
+        self.label_custom_species.setObjectName(u"label_custom_species")
+        self.label_custom_species.setEnabled(False)
 
-        self.gridLayout.addWidget(self.comboBox_select_species, 5, 1, 1, 1)
-
-        self.radioButton_tunnel_mode = QRadioButton(self.verticalLayoutWidget)
-        self.buttonGroup.addButton(self.radioButton_tunnel_mode)
-        self.radioButton_tunnel_mode.setObjectName(u"radioButton_tunnel_mode")
-        self.radioButton_tunnel_mode.setEnabled(True)
-        self.radioButton_tunnel_mode.setCheckable(True)
-        self.radioButton_tunnel_mode.setAutoExclusive(True)
-
-        self.gridLayout.addWidget(self.radioButton_tunnel_mode, 3, 0, 1, 1)
-
-        self.radioButton_custom_species_class_mode = QRadioButton(self.verticalLayoutWidget)
-        self.buttonGroup.addButton(self.radioButton_custom_species_class_mode)
-        self.radioButton_custom_species_class_mode.setObjectName(u"radioButton_custom_species_class_mode")
-
-        self.gridLayout.addWidget(self.radioButton_custom_species_class_mode, 5, 0, 1, 1)
+        self.gridLayout.addWidget(self.label_custom_species, 6, 0, 1, 2)
 
 
         self.retranslateUi(DialogSelectMode)
@@ -99,10 +105,12 @@ class Ui_DialogSelectMode(object):
     def retranslateUi(self, DialogSelectMode):
         DialogSelectMode.setWindowTitle(QCoreApplication.translate("DialogSelectMode", u"Select operation mode", None))
         self.radioButton_animal_det_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Animal detection mode", None))
-        self.radioButton_test_model_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Test model mode", None))
-        self.radioButton_animal_det_and_class_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Animal detection and classification mode", None))
+        self.radioButton_custom_species_class_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Custom species classification mode", None))
         self.radioButton_bear_det_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Bear detection mode", None))
         self.radioButton_tunnel_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Tunnel mode", None))
-        self.radioButton_custom_species_class_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Custom species classification mode", None))
+        self.radioButton_test_model_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Test model mode", None))
+        self.radioButton_animal_det_and_class_mode.setText(QCoreApplication.translate("DialogSelectMode", u"Animal detection and classification mode", None))
+        self.pushButton_select_species.setText(QCoreApplication.translate("DialogSelectMode", u"Select species", None))
+        self.label_custom_species.setText("")
     # retranslateUi
 
