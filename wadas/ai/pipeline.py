@@ -120,7 +120,21 @@ class DetectionPipeline:
         """Method to check if models are initialized."""
         return OVMegaDetectorV5.download_model(force) and Classifier.download_model(force)
 
-    def run_detection(self, img: Image, detection_threshold: float):
+    def filter_animal_detections(self, results):
+        """Method to filter out non-animal detections from results."""
+        animal_idx = np.where(results["detections"].class_id == self.animal_class_idx)
+        # Filter out the non-animal detections
+        results["labels"] = [
+            label
+            for label, class_id in zip(results["labels"], results["detections"].class_id)
+            if class_id == self.animal_class_idx
+        ]
+        results["detections"].xyxy = results["detections"].xyxy[animal_idx]
+        results["detections"].confidence = results["detections"].confidence[animal_idx]
+        results["detections"].class_id = results["detections"].class_id[animal_idx]
+        return results
+
+    def run_detection(self, img: Image, detection_threshold: float, filter_animals: bool = True):
         """Method to run detection model on provided image."""
         detection_results = []
         if isinstance(img, (list, tuple)):
@@ -135,17 +149,9 @@ class DetectionPipeline:
         )
 
         for results in results_lst:
-            # Checks for non animal in results and filter them out
-            animal_idx = np.where(results["detections"].class_id == self.animal_class_idx)
-            # Filter out the non animal detections
-            results["labels"] = [
-                label
-                for label, class_id in zip(results["labels"], results["detections"].class_id)
-                if class_id == self.animal_class_idx
-            ]
-            results["detections"].xyxy = results["detections"].xyxy[animal_idx]
-            results["detections"].confidence = results["detections"].confidence[animal_idx]
-            results["detections"].class_id = results["detections"].class_id[animal_idx]
+
+            if filter_animals:
+                results = self.filter_animal_detections(results)
 
             detection_results.append(results)
 
