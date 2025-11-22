@@ -46,11 +46,9 @@ class Ui_DialogSelectMode(object):
         self.label_custom_species = QLabel(DialogSelectMode)
         self.label_custom_species.setObjectName(u"label_custom_species")
         self.label_custom_species.setEnabled(False)
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.label_custom_species.sizePolicy().hasHeightForWidth())
-        self.label_custom_species.setSizePolicy(sizePolicy2)
+        sizePolicy.setHeightForWidth(self.label_custom_species.sizePolicy().hasHeightForWidth())
+        self.label_custom_species.setSizePolicy(sizePolicy)
+        self.label_custom_species.setMinimumSize(QSize(385, 21))
 
         self.gridLayout.addWidget(self.label_custom_species, 6, 1, 1, 2)
 
