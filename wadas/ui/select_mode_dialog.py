@@ -99,14 +99,19 @@ class DialogSelectMode(QDialog, Ui_DialogSelectMode):
         self.ui.label_custom_species.setVisible(True)
         species_list_to_string = ", ".join(OperationMode.cur_custom_classification_species)
         self.ui.label_custom_species.setText(species_list_to_string)
+        self.ui.label_custom_species.setToolTip(species_list_to_string)
 
     def disable_species_selection(self):
         """Method to enable/disabled UI widgets related to the custom species selection"""
         self.ui.pushButton_select_species.setEnabled(False)
         self.ui.label_custom_species.setText("")
+        self.ui.label_custom_species.setToolTip("")
         self.ui.label_custom_species.setEnabled(False)
         self.ui.label_custom_species.setVisible(False)
 
     def select_animal_species(self):
         dlg = DialogSelectAnimalSpecies()
-        dlg.exec()
+        if dlg.exec():
+            species_list_to_string = ", ".join(OperationMode.cur_custom_classification_species)
+            self.ui.label_custom_species.setText(species_list_to_string)
+            self.ui.label_custom_species.setToolTip(species_list_to_string)
