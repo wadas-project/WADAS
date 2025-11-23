@@ -21,11 +21,11 @@
 import os
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QScrollArea, QFrame, QCheckBox, QDialogButtonBox
+from PySide6.QtWidgets import QCheckBox, QDialog, QDialogButtonBox,QFrame, QScrollArea, QVBoxLayout
 
 from wadas.ai.models import txt_animalclasses
-from wadas.domain.operation_mode import OperationMode
 from wadas.domain.ai_model import AiModel
+from wadas.domain.operation_mode import OperationMode
 from wadas.ui.qt.ui_select_animal_species import Ui_DialogSelectAnimalSpecies
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -92,10 +92,7 @@ class DialogSelectAnimalSpecies(QDialog,Ui_DialogSelectAnimalSpecies):
                 checkbox_selected = True
                 break
 
-        if checkbox_selected:
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
-        else:
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(checkbox_selected)
 
     def accept_and_close(self):
         """When Ok is clicked, save Ai model config info before closing."""

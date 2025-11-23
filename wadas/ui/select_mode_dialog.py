@@ -22,11 +22,9 @@ import os
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog
 
-from wadas.ai.models import txt_animalclasses
-from wadas.domain.ai_model import AiModel
 from wadas.domain.operation_mode import OperationMode
-from wadas.ui.select_animal_species import DialogSelectAnimalSpecies
 from wadas.ui.qt.ui_select_mode import Ui_DialogSelectMode
+from wadas.ui.select_animal_species import DialogSelectAnimalSpecies
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -110,8 +108,7 @@ class DialogSelectMode(QDialog, Ui_DialogSelectMode):
         self.ui.label_custom_species.setVisible(False)
 
     def select_animal_species(self):
-        dlg = DialogSelectAnimalSpecies()
-        if dlg.exec():
+        if (DialogSelectAnimalSpecies()).exec():
             species_list_to_string = ", ".join(OperationMode.cur_custom_classification_species)
             self.ui.label_custom_species.setText(species_list_to_string)
             self.ui.label_custom_species.setToolTip(species_list_to_string)
