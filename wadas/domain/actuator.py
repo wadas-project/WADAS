@@ -36,6 +36,7 @@ class Actuator:
     class ActuatorTypes(Enum):
         ROADSIGN = "Road Sign"
         FEEDER = "Feeder"
+        DETERRENT = "Deterrent"
 
     def __init__(self, actuator_id, enabled=False):
         self.cmd_queue = Queue()

@@ -14,7 +14,7 @@ const CameraCard = (props: { camera: Camera, onActuatorsClick: (camera: Camera) 
     const navigate = useNavigate();
 
     const handleDetectionClick = () => {
-        navigate("/detections", {state: {selectedCamera: props.camera}});
+        navigate(`/detections?cameraId=${props.camera.id}&cameraName=${encodeURIComponent(props.camera.name)}`);
     };
 
     return (

@@ -26,7 +26,7 @@ import time
 import cv2
 
 from wadas.domain.actuator import Actuator
-from wadas.domain.camera import Camera, img_queue
+from wadas.domain.camera import Camera, media_queue
 from wadas.domain.utils import get_timestamp
 
 logger = logging.getLogger(__name__)
@@ -153,10 +153,10 @@ class USBCamera(Camera):
                         f"camera_{self.id}_{get_timestamp()}.jpg",
                     )
                     cv2.imwrite(img_path, frame_out)
-                    img_queue.put(
+                    media_queue.put(
                         {
-                            "img": img_path,
-                            "img_id": f"camera_{self.id}_{get_timestamp()}.jpg",
+                            "media_path": img_path,
+                            "media_id": f"camera_{self.id}_{get_timestamp()}.jpg",
                             "camera_id": self.id,
                         }
                     )

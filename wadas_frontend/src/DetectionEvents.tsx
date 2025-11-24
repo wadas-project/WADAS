@@ -8,7 +8,7 @@ import DatePick from "./components/DatePick";
 import {isMobile, tryWithRefreshing} from "./lib/utils";
 import DetectionsScrollableTable from "./components/DetectionsScrollableTable";
 import DetectionsMobileList from "./components/DetectionsMobileList";
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, useSearchParams} from 'react-router-dom';
 import CustomSpinner from "./components/CustomSpinner";
 import {Camera, DetectionEvent, DetectionEventResponse} from "./types/types";
 import {fetchAnimalsNames, fetchCameras, fetchDetectionEvents, fetchExportDetectionEvents} from "./lib/api";
@@ -27,7 +27,7 @@ type AnimalOption = {
 
 const DetectionEvents = () => {
     const pageSize = 20;
-    const location = useLocation();
+    const [searchParams] = useSearchParams();
     const [showFilters, setShowFilters] = useState(false);
     const [prevClickedCamera, setPrevClickedCamera] = useState(null);
     const [optionsCameras, setOptionsCameras] = useState<CameraOption[]>([]);
@@ -134,11 +134,14 @@ const DetectionEvents = () => {
     }
 
     useEffect(() => {
-        if (location.state?.selectedCamera) {
-            const clickedCamera = location.state?.selectedCamera;
-            setPrevClickedCamera(clickedCamera);
-            setSelectedCameras([{value: clickedCamera.id.toString(), label: clickedCamera.name}]);
-            location.state.selectedCamera = null;
+        const cameraId = searchParams.get("cameraId");
+        const cameraName = searchParams.get("cameraName");
+
+        if (cameraId && cameraName && prevClickedCamera === null) {
+            setPrevClickedCamera({ id: Number(cameraId), name: cameraName });
+            setSelectedCameras([{ value: cameraId, label: cameraName }]);
+            // setPrevClickedCamera will trigger useEffect again to correctly build the page
+            return;
         }
 
         const loadFiltersData = async () => {

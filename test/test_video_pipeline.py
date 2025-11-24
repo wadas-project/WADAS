@@ -102,8 +102,11 @@ def test_offline_video_detection_and_classification(init):
 
     # This one is the video of a bear
     VIDEO_URL = "https://videos.pexels.com/video-files/7723475/7723475-hd_1920_1080_25fps.mp4"
-    for classified_animals in ai_pipeline.process_video_offline(VIDEO_URL):
+    tracked_animals, _ = ai_pipeline.process_video_offline(
+        VIDEO_URL, classification=True, save_processed_video=False
+    )
 
+    for classified_animals in tracked_animals:
         assert classified_animals is not None
         if len(classified_animals) > 0:
             assert classified_animals[0]["id"] == 0
@@ -121,11 +124,12 @@ def test_offline_video_detection_and_classification_empty(init):
     assert ai_pipeline.detection_device == "auto"
     assert ai_pipeline.video_fps == 1
     assert ai_pipeline.check_model("MDV5-yolov5", "DFv1.2")
+
     # This one is the video of a waterfall => No animals
     VIDEO_URL = "https://videos.pexels.com/video-files/6981411/6981411-hd_1920_1080_25fps.mp4"
-    animals = []
-    for classified_animals in ai_pipeline.process_video_offline(VIDEO_URL):
-        if classified_animals:
-            animals.append(classified_animals)
+    tracked_animals, _ = ai_pipeline.process_video_offline(VIDEO_URL)
+
+    # Flatten list of tracked animals per frame
+    animals = [animal for frame_animals in tracked_animals for animal in frame_animals]
 
     assert len(animals) == 0

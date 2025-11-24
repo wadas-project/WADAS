@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'configure_telegram.ui'
+## Form generated from reading UI file 'configure_telegramweEGWU.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.8.0
 ##
@@ -16,9 +16,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QCheckBox, QDialog,
-    QDialogButtonBox, QGridLayout, QLabel, QLineEdit,
-    QPlainTextEdit, QPushButton, QSizePolicy, QTabWidget,
-    QVBoxLayout, QWidget)
+    QDialogButtonBox, QGridLayout, QLabel, QPlainTextEdit,
+    QPushButton, QSizePolicy, QTabWidget, QVBoxLayout,
+    QWidget)
 
 class Ui_DialogConfigureTelegram(object):
     def setupUi(self, DialogConfigureTelegram):
@@ -41,37 +41,21 @@ class Ui_DialogConfigureTelegram(object):
         self.gridLayout_sender = QGridLayout(self.gridLayoutWidget)
         self.gridLayout_sender.setObjectName(u"gridLayout_sender")
         self.gridLayout_sender.setContentsMargins(0, 0, 0, 0)
-        self.pushButton_test_message = QPushButton(self.gridLayoutWidget)
-        self.pushButton_test_message.setObjectName(u"pushButton_test_message")
-
-        self.gridLayout_sender.addWidget(self.pushButton_test_message, 3, 1, 1, 1)
-
-        self.label_3 = QLabel(self.gridLayoutWidget)
-        self.label_3.setObjectName(u"label_3")
-
-        self.gridLayout_sender.addWidget(self.label_3, 0, 0, 1, 2)
-
         self.checkBox_enable_images = QCheckBox(self.gridLayoutWidget)
         self.checkBox_enable_images.setObjectName(u"checkBox_enable_images")
 
-        self.gridLayout_sender.addWidget(self.checkBox_enable_images, 2, 0, 1, 2)
+        self.gridLayout_sender.addWidget(self.checkBox_enable_images, 0, 0, 1, 2)
 
         self.plainTextEdit = QPlainTextEdit(self.gridLayoutWidget)
         self.plainTextEdit.setObjectName(u"plainTextEdit")
         self.plainTextEdit.setReadOnly(True)
 
-        self.gridLayout_sender.addWidget(self.plainTextEdit, 4, 1, 1, 1)
+        self.gridLayout_sender.addWidget(self.plainTextEdit, 2, 1, 1, 1)
 
-        self.label = QLabel(self.gridLayoutWidget)
-        self.label.setObjectName(u"label")
+        self.pushButton_test_message = QPushButton(self.gridLayoutWidget)
+        self.pushButton_test_message.setObjectName(u"pushButton_test_message")
 
-        self.gridLayout_sender.addWidget(self.label, 1, 0, 1, 1)
-
-        self.lineEdit_org_code = QLineEdit(self.gridLayoutWidget)
-        self.lineEdit_org_code.setObjectName(u"lineEdit_org_code")
-        self.lineEdit_org_code.setEchoMode(QLineEdit.EchoMode.Password)
-
-        self.gridLayout_sender.addWidget(self.lineEdit_org_code, 1, 1, 1, 1)
+        self.gridLayout_sender.addWidget(self.pushButton_test_message, 1, 1, 1, 1)
 
         self.tabWidget.addTab(self.tab_sender, "")
         self.tab_receivers = QWidget()
@@ -111,10 +95,8 @@ class Ui_DialogConfigureTelegram(object):
 
     def retranslateUi(self, DialogConfigureTelegram):
         DialogConfigureTelegram.setWindowTitle(QCoreApplication.translate("DialogConfigureTelegram", u"Configure Telegram notifications", None))
-        self.pushButton_test_message.setText(QCoreApplication.translate("DialogConfigureTelegram", u"Test Message", None))
-        self.label_3.setText(QCoreApplication.translate("DialogConfigureTelegram", u"To get your organization code please request it at info@wadas.it", None))
         self.checkBox_enable_images.setText(QCoreApplication.translate("DialogConfigureTelegram", u"Enable images in Telegram notification messages", None))
-        self.label.setText(QCoreApplication.translate("DialogConfigureTelegram", u"Organization code:", None))
+        self.pushButton_test_message.setText(QCoreApplication.translate("DialogConfigureTelegram", u"Test Message", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_sender), QCoreApplication.translate("DialogConfigureTelegram", u"Sender", None))
         self.pushButton_add_receiver.setText(QCoreApplication.translate("DialogConfigureTelegram", u"Add Receiver", None))
         self.pushButton_remove_receiver.setText(QCoreApplication.translate("DialogConfigureTelegram", u"Remove Receiver", None))

@@ -329,12 +329,6 @@ class ObjectTracker:
             k["id"]: self.trackers[k["id"]]
             for k in updated_tracks
             if self.trackers[k["id"]][2] <= self.max_missed
-            and not (
-                k["xyxy"][0] <= 5
-                or k["xyxy"][1] <= 5
-                or k["xyxy"][2] >= frame_width - 5
-                or k["xyxy"][3] >= frame_height - 5
-            )
         }
 
         return updated_tracks

@@ -22,16 +22,22 @@ import datetime
 import logging
 import os
 import sys
+from collections import deque
 from datetime import timedelta
+from importlib.metadata import PackageNotFoundError, version
 from logging.handlers import RotatingFileHandler
-from packaging.version import Version
 from pathlib import Path
 import uuid
 
+import requests
+
+import cv2
+from packaging.version import InvalidVersion, Version
 import keyring
+
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QSettings, QThread
-from PySide6.QtGui import QBrush
+from PySide6.QtCore import QThread, QTimer, QSettings
+from PySide6.QtGui import QBrush, QImage, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -40,15 +46,16 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from wadas.domain.database import DataBase
 from wadas._version import __version__
 from wadas.domain.actuator import Actuator
 from wadas.domain.ai_model import AiModel
+from wadas.domain.ai_model_downloader import WADAS_SERVER_URL
 from wadas.domain.animal_detection_mode import AnimalDetectionAndClassificationMode
 from wadas.domain.bear_detection_mode import BearDetectionMode
-from wadas.domain.custom_classification_mode import CustomClassificationMode
 from wadas.domain.camera import cameras, Camera
 from wadas.domain.configuration import load_configuration_from_file, save_configuration_to_file
+from wadas.domain.custom_classification_mode import CustomClassificationMode
+from wadas.domain.database import DataBase
 from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.ftps_server import initialize_fpts_logger
 from wadas.domain.notifier import Notifier
@@ -58,7 +65,6 @@ from wadas.domain.tunnel import Tunnel
 from wadas.domain.tunnel_mode import TunnelMode
 from wadas.domain.utils import initialize_asyncio_logger
 from wadas.ui.about_dialog import AboutDialog
-from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
 from wadas.ui.configure_actuators_dialog import DialogConfigureActuators
 from wadas.ui.configure_ai_model_dialog import ConfigureAiModel
 from wadas.ui.configure_camera_actuator_associations_dialog import (
@@ -74,6 +80,7 @@ from wadas.ui.configure_whatsapp_dialog import DialogConfigureWhatsApp
 from wadas.ui.configure_web_interface import DialogConfigureWebInterface
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.license_dialog import LicenseDialog
+from wadas.ui.model_request_login import DialogModelRequestLogin
 from wadas.ui.select_animal_species import DialogSelectAnimalSpecies
 from wadas.ui.select_mode_dialog import DialogSelectMode
 from wadas.ui.select_test_mode_input import DialogSelectTestModeInput
@@ -123,6 +130,8 @@ class MainWindow(QMainWindow):
         self.default_window_title = f"{self.windowTitle()}  {__version__}"
         self.set_mainwindow_title()
 
+        self.video_frames = deque()
+
         # Connect Actions
         self._connect_actions()
 
@@ -152,6 +161,7 @@ class MainWindow(QMainWindow):
         logger.info("Welcome to WADAS!")
 
         self.show_terms_n_conditions()
+        self.check_wadas_runtime_library_version()
 
     def _connect_actions(self):
         """List all actions to connect to MainWindow"""
@@ -189,6 +199,9 @@ class MainWindow(QMainWindow):
         OperationMode.cur_operation_mode.update_image.connect(self.set_image)
         OperationMode.cur_operation_mode.update_image.connect(self.update_info_widget)
         OperationMode.cur_operation_mode.run_finished.connect(self.on_run_completion)
+        OperationMode.cur_operation_mode.play_video.connect(self.play_video)
+        OperationMode.cur_operation_mode.play_video.connect(self.update_info_widget)
+        OperationMode.cur_operation_mode.error_occurred.connect(self.show_error)
 
         # Connect Signal to update actuator list in widget.
         OperationMode.cur_operation_mode.update_actuator_status.connect(self.update_en_actuator_list)
@@ -229,16 +242,80 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(window_title)
 
     def set_image(self, img):
-        """Set image to show in WADAS. This is used for startup, detected and
-        classified images."""
-        if os.path.isfile(img):
-            image_widget = self.ui.label_image
-            image_widget.setPixmap(QtGui.QPixmap(img))
+        """
+        Set image to show in WADAS.
+        Accepts either a QPixmap or a path to an image file.
+        """
+        image_widget = self.ui.label_image
+
+        try:
+            if isinstance(img, str) and os.path.isfile(img):
+                pixmap = QPixmap(img)
+            elif isinstance(img, QPixmap):
+                pixmap = img
+            else:
+                logger.error("Provided image is neither a valid path nor a QPixmap: %s", img)
+                return
+
+            image_widget.setPixmap(pixmap)
             image_widget.setMinimumSize(1, 1)
             image_widget.setScaledContents(True)
             image_widget.show()
+
+        except Exception as e:
+            logger.error("Failed to set image: %s", e)
+
+    def show_error(self, error: str):
+        """Method to show error messages generated during processing"""
+
+        WADASErrorMessage("Error", error).exec()
+
+    def get_video_frames(self, video_path):
+        """Extract frames from a video file as QPixmaps and return them with the video's FPS."""
+
+
+        if not (video := cv2.VideoCapture(video_path)).isOpened():
+            logger.error("Error opening video file %s. Aborting.", video_path)
+            return deque(), 0
+
+
+        if not (fps := video.get(cv2.CAP_PROP_FPS)):
+            logger.error("Error reading video FPS. Aborting.")
+            video.release()
+            return deque(), 0
+
+        frames = deque()
+        try:
+            while True:
+                ret, frame = video.read()
+                if not ret:
+                    break
+
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = frame.shape
+                bytes_per_line = ch * w
+                qimage = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(qimage)
+                frames.append(pixmap)
+        finally:
+            video.release()
+
+        return frames, fps
+
+    def play_video(self, video_path):
+        self.video_frames, fps  = self.get_video_frames(video_path)
+        logger.debug("Playing video at %s FPS...", fps)
+        self.video_timer = QTimer(self)
+        self.video_timer.timeout.connect(self.show_next_frame)
+        self.video_timer.start(1000 // fps)
+
+    def show_next_frame(self):
+        if self.video_frames:
+            frame = self.video_frames.popleft()
+            self.set_image(frame)
         else:
-            logger.error("Provided image path is not valid. %s", img)
+            self.video_timer.stop()
+            self.video_timer.deleteLater()
 
     def select_mode(self):
         """Slot for mode selection (toolbar button)"""
@@ -377,6 +454,9 @@ class MainWindow(QMainWindow):
         if self.thread:
             self.thread.requestInterruption()
 
+        if self.video_frames:
+            self.video_frames = deque()
+
     def update_toolbar_status(self):
         """Update status of toolbar and related buttons (actions)."""
 
@@ -462,6 +542,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfigure_WA.setEnabled(not running)
         self.ui.actionConfigure_Telegram.setEnabled(not running)
         self.ui.actionConfigure_database.setEnabled(not running)
+        self.ui.actionconfigure_Tunnel.setEnabled(not running)
 
     def update_info_widget(self):
         """Update information widget."""
@@ -498,6 +579,14 @@ class MainWindow(QMainWindow):
             cur_notifier.type.value for notifier, cur_notifier in Notifier.notifiers.items()
             if cur_notifier and cur_notifier.enabled) or "None"
         self.ui.label_notification_method.setText(notifier_lable_text)
+
+        tunnel_exist = bool(Tunnel.tunnels)
+        self.ui.label_enabled_tunnels.setVisible(tunnel_exist)
+        self.ui.listWidget_en_tunnels.setVisible(tunnel_exist)
+        if tunnel_exist:
+            self.ui.listWidget_en_tunnels.clear()
+            for tunnel in Tunnel.tunnels:
+                self.ui.listWidget_en_tunnels.addItem(f"{tunnel.id} ({tunnel.counter})")
 
     def test_model_mode_input_dialog(self):
         """Method to run dialog for insertion of a URL to fetch image from."""
@@ -636,16 +725,16 @@ class MainWindow(QMainWindow):
         """Method to configure tunnel list"""
 
         if (DialogConfigureTunnels()).exec():
+            self.update_info_widget()
             logger.info("Tunnel configured.")
 
     def check_models(self):
         """Method to initialize classification model."""
         if not AiModel.check_model(AiModel.detection_model_version, AiModel.classification_model_version):
             logger.warning("AI module not found. Downloading...")
-            ai_download_dialog = AiModelDownloadDialog(True)
-            if ai_download_dialog.exec():
-                return (ai_download_dialog.download_success and
-                        AiModel.check_model(AiModel.detection_model_version, AiModel.classification_model_version))
+
+            if DialogModelRequestLogin(False).exec():
+                return AiModel.check_model(AiModel.detection_model_version, AiModel.classification_model_version)
             else:
                 logger.error("Ai models files download cancelled by user. Aborting.")
                 return False
@@ -807,13 +896,22 @@ class MainWindow(QMainWindow):
 
     def configure_telegram(self):
         """Method to trigger Telegram configuration dialog"""
+        org_code_key = keyring.get_credential("WADAS_org_code", "")
+        node_id_key = keyring.get_credential("WADAS_node_id", "")
 
-        configure_telegram_dlg = DialogConfigureTelegram()
-        if configure_telegram_dlg.exec():
-            logger.info("Telegram notification configured.")
-            self.setWindowModified(True)
-            self.update_toolbar_status()
-            self.update_info_widget()
+        if not org_code_key or not node_id_key:
+            QMessageBox.warning(
+                self,
+                "Log in or register the node",
+                "You need either to register yourself or log in (if you have credentials) to register the node."
+            )
+        else:
+            configure_telegram_dlg = DialogConfigureTelegram(org_code_key.password, node_id_key.password)
+            if configure_telegram_dlg.exec():
+                logger.info("Telegram notification configured.")
+                self.setWindowModified(True)
+                self.update_toolbar_status()
+                self.update_info_widget()
 
     def configure_database(self):
         """Method to trigger DB configuration dialog"""
@@ -1004,3 +1102,47 @@ Are you sure you want to exit?""",
             logger.warning("No last saved file found or file no longer exists.")
             self.ui.actionRecent_configuration.setEnabled(False)  # Disable if file does not exist
             self.settings.remove("last_saved_config_path")
+
+    def check_wadas_runtime_library_version(self):
+        """Ensure that wadas-runtime library is installed and meets minimum version requirements."""
+
+        try:
+            installed_version = Version(version("wadas-runtime"))
+        except PackageNotFoundError:
+            WADASErrorMessage(
+                "wadas-runtime library missing on the system",
+                "Please install the 'wadas-runtime' library and restart WADAS!"
+            ).exec()
+            self.close()
+            sys.exit()
+
+        try:
+            response = requests.get(f"{WADAS_SERVER_URL}api/v1/runtime_libs/latest", timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            min_version = Version(data.get("min"))
+            last_version = Version(data.get("last"))
+        except (requests.RequestException, ValueError, InvalidVersion, TypeError) as e:
+            QMessageBox.information(
+                self,
+                "wadas-runtime library version check failed",
+                "Unable to retrieve the latest version info of wadas-runtime library from the server.\n"
+                     "Please check your internet connection and try again."
+            )
+            return
+
+        if installed_version < min_version:
+            WADASErrorMessage(
+                "Incompatible wadas-runtime version",
+                f"The installed version of wadas-runtime library ({installed_version}) is too old.\n"
+                f"Please update to at latest version {last_version}."
+            ).exec()
+            self.close()
+            sys.exit()
+        elif installed_version < last_version:
+            QMessageBox.information(
+                self,
+                "Update available",
+                f"A newer version of wadas-runtime library is available ({last_version}).\n"
+                "Please update the library to get latest functionalities and security updates!"
+            )

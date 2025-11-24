@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1150, 810)
+        MainWindow.resize(1142, 791)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -219,6 +219,17 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.label_database)
 
+        self.label_enabled_tunnels = QLabel(self.centralwidget)
+        self.label_enabled_tunnels.setObjectName(u"label_enabled_tunnels")
+        self.label_enabled_tunnels.setFont(font)
+
+        self.verticalLayout.addWidget(self.label_enabled_tunnels)
+
+        self.listWidget_en_tunnels = QListWidget(self.centralwidget)
+        self.listWidget_en_tunnels.setObjectName(u"listWidget_en_tunnels")
+
+        self.verticalLayout.addWidget(self.listWidget_en_tunnels)
+
         self.label = QLabel(self.centralwidget)
         self.label.setObjectName(u"label")
         sizePolicy2.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
@@ -306,7 +317,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1150, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1142, 33))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuHelp = QMenu(self.menubar)
@@ -448,6 +459,7 @@ class Ui_MainWindow(object):
         self.label_notification_method.setText("")
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Database:", None))
         self.label_database.setText("")
+        self.label_enabled_tunnels.setText(QCoreApplication.translate("MainWindow", u"Enabled tunnel(s):", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Enabled Camera(s):", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Enabled Actuator(s)", None))
         self.label_last_detection_title.setText(QCoreApplication.translate("MainWindow", u"Last detection:", None))

@@ -20,6 +20,7 @@
 
 import os
 from pathlib import Path
+import yaml
 
 import openvino as ov
 from PySide6.QtGui import QIcon
@@ -27,8 +28,10 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox
 
 from wadas.ai.models import txt_animalclasses
 from wadas.domain.ai_model import AiModel
-from wadas.ui.ai_model_download_dialog import AiModelDownloadDialog
+
+from wadas.ui.model_request_login import DialogModelRequestLogin
 from wadas.ui.qt.ui_configure_ai_model import Ui_DialogConfigureAi
+from wadas.ui.error_message_dialog import WADASErrorMessage
 
 module_dir_path = os.path.dirname(os.path.abspath(__file__))
 det_models_dir_path = (Path(module_dir_path).parent.parent / "model" / "detection").resolve()
@@ -47,6 +50,7 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
         self.setWindowIcon(QIcon((Path(module_dir_path).parent / "img" / "mainwindow_icon.jpg").resolve().as_posix()))
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.label_errorMEssage.setStyleSheet("color: red")
+        # Detection and Classification Tab
         self.ui.lineEdit_classificationThreshold.setText(str(AiModel.classification_threshold))
         self.ui.lineEdit_detectionThreshold.setText(str(AiModel.detection_threshold))
         self.ui.lineEdit_video_fps.setText(str(AiModel.video_fps))
@@ -55,6 +59,8 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
         self.available_ai_devices.append("auto")
         self.populate_ai_models_version_dropdown()
         self.populate_ai_devices_dropdowns()
+        # Tunnel Mode tab
+        self.ui.lineEdit_det_treshold_tunnel_mode.setText(str(AiModel.tunnel_mode_detection_threshold))
 
         # Slots
         self.ui.buttonBox.accepted.connect(self.accept_and_close)
@@ -83,6 +89,8 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
         for device in self.available_ai_devices:
             self.ui.comboBox_detection_dev.addItem(device)
             self.ui.comboBox_class_dev.addItem(device)
+            self.ui.comboBox_detection_device_tunnel_mode.addItem(device)
+        # Detection and Classification Tab
         if AiModel.detection_device in self.available_ai_devices:
             self.ui.comboBox_detection_dev.setCurrentText(AiModel.detection_device)
         else:
@@ -91,12 +99,18 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
             self.ui.comboBox_class_dev.setCurrentText(AiModel.classification_device)
         else:
             self.ui.comboBox_detection_dev.setCurrentText("auto")
+        # Tunnel Mode Tab
+        if AiModel.tunnel_mode_detection_device in self.available_ai_devices:
+            self.ui.comboBox_detection_device_tunnel_mode.setCurrentText(AiModel.tunnel_mode_detection_device)
+        else:
+            self.ui.comboBox_detection_device_tunnel_mode.setCurrentText("CPU")
 
     def populate_ai_models_version_dropdown(self):
         """Method to populate Ai models versions dropdowns"""
 
         self.ui.comboBox_detection_model_version.clear()
         self.ui.comboBox_classification_model_version.clear()
+        self.ui.comboBox_detection_model_version_tunnel_mode.clear()
 
         if (det_models_dir := Path(det_models_dir_path)).is_dir():
             det_models_directories = (d for d in det_models_dir.iterdir() if d.is_dir())
@@ -104,7 +118,24 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
                 bin_files = [f for f in directory.iterdir() if f.suffix == ".bin"]
                 if bin_files:
                     model_version = bin_files[0].stem  # Remove .bin extension
+
+                    # Check for config.yaml
+                    config_file = directory / "config.yaml"
+                    if config_file.is_file():
+                        try:
+                            with open(config_file, "r") as f:
+                                config = yaml.safe_load(f)
+                            if config.get("deprecated") is True:
+                                # Skip deprecated models
+                                continue
+                            if config.get("tunnel_mode") is True:
+                                self.ui.comboBox_detection_model_version_tunnel_mode.addItem(model_version)
+                        except Exception as e:
+                            WADASErrorMessage("Unable to read from model configuration file",
+                            f"Warning: Could not read config.yaml for {model_version} model: {str(e)}")
+
                     self.ui.comboBox_detection_model_version.addItem(model_version)
+
         self.ui.comboBox_detection_model_version.setCurrentText(AiModel.detection_model_version)
 
         if (class_models_dir := Path(class_models_dir_path)).is_dir():
@@ -113,13 +144,28 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
                 bin_files = [f for f in directory.iterdir() if f.suffix == ".bin"]
                 if bin_files:
                     model_version = bin_files[0].stem  # Remove .bin extension
+
+                    # Check for config.yaml
+                    config_file = directory / "config.yaml"
+                    if config_file.is_file():
+                        try:
+                            with open(config_file, "r") as f:
+                                config = yaml.safe_load(f)
+                            if config.get("deprecated") is True:
+                                # Skip deprecated models
+                                continue
+                        except Exception as e:
+                            WADASErrorMessage("Unable to read from model configuration file",
+                                              f"Warning: Could not read config.yaml for {model_version} model: {str(e)}")
+
                     self.ui.comboBox_classification_model_version.addItem(model_version)
+
         self.ui.comboBox_classification_model_version.setCurrentText(AiModel.classification_model_version)
 
     def on_download_models_clicked(self):
         """Method to trigger the download of Ai Models"""
 
-        ai_model_download_dlg = AiModelDownloadDialog()
+        ai_model_download_dlg = DialogModelRequestLogin()
         if ai_model_download_dlg.exec():
             self.populate_ai_models_version_dropdown()
 
@@ -165,4 +211,7 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
         AiModel.video_fps = int(self.ui.lineEdit_video_fps.text())
         AiModel.detection_model_version = self.ui.comboBox_detection_model_version.currentText()
         AiModel.classification_model_version = self.ui.comboBox_classification_model_version.currentText()
+        AiModel.tunnel_mode_detection_model_version = self.ui.comboBox_detection_model_version_tunnel_mode.currentText()
+        AiModel.tunnel_mode_detection_device = self.ui.comboBox_detection_device_tunnel_mode.currentText()
+        AiModel.tunnel_mode_detection_threshold = float(self.ui.lineEdit_det_treshold_tunnel_mode.text())
         self.accept()

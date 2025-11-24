@@ -19,9 +19,12 @@
 
 import logging
 import os
+from collections import defaultdict
+from pathlib import Path
 
 import cv2
 import numpy as np
+import supervision as sv
 from PIL import Image, ImageFile, UnidentifiedImageError
 from PytorchWildlife import utils as pw_utils
 
@@ -30,6 +33,7 @@ from wadas.ai.object_tracker import ObjectTracker
 
 logger = logging.getLogger(__name__)
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+module_dir_path = Path(__file__).resolve().parent
 
 
 class AiModel:
@@ -44,6 +48,9 @@ class AiModel:
     distributed_inference = False
     detection_model_version = "MDV5-yolov5"
     classification_model_version = "DFv1.2"
+    tunnel_mode_detection_device = "cpu"
+    tunnel_mode_detection_threshold = 0.5
+    tunnel_mode_detection_model_version = "MDV6b-yolov9c"
 
     def __init__(self):
         # Initializing the MegaDetectorV5 model for image detection
@@ -153,7 +160,6 @@ class AiModel:
         # Initialize frame counter
         frame_count = 0
         while True:
-
             ret, frame = video.read()
             if not ret:
                 break
@@ -170,7 +176,49 @@ class AiModel:
             yield frame, frame_count
             frame_count += 1
 
-    def process_video_offline(self, video_path):
+    def save_preview_video(self, frames, output_path):
+        """Save a sequence of PIL.Image frames as a video using OpenCV."""
+
+        if not frames:
+            raise ValueError("No frames to write to video.")
+
+        first = np.array(frames[0].convert("RGB"))
+        height, width = first.shape[:2]
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(str(output_path), fourcc, self.video_fps, (width, height))
+
+        for frame in frames:
+            rgb_array = np.array(frame.convert("RGB"))
+            bgr_array = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGR)
+            out.write(bgr_array)
+
+        out.release()
+
+    def classification_from_video_tracking(self, tracked_animals):
+        """This method returns classification results from animal tracking out of video framing"""
+
+        # Compute average accuracy per animal id (class_name, id)
+        accuracy_data = defaultdict(list)
+
+        for frame_tracked_animals in tracked_animals:
+            for frame_tracked_animal in frame_tracked_animals:
+                class_name, accuracy = frame_tracked_animal["classification"]
+                animal_id = frame_tracked_animal["id"]
+                key = (class_name, animal_id)
+                accuracy_data[key].append(accuracy)
+
+        classified_animals = [
+            {
+                "class_probs": {},
+                "classification": [class_name, sum(accuracies) / len(accuracies)],
+                "id": animal_id,
+                "xyxy": [],
+            }
+            for (class_name, animal_id), accuracies in accuracy_data.items()
+        ]
+        return classified_animals
+
+    def process_video_offline(self, video_path, classification=True, save_processed_video=False):
         """Method to run detection model on provided video."""
 
         logger.debug("Selected detection device: %s", AiModel.detection_device)
@@ -184,17 +232,52 @@ class AiModel:
         # Run the detection model on the video frames
         detection_lists = self.detection_pipeline.run_detection(frames, AiModel.detection_threshold)
 
-        # Classify detected animals on all frames
-        classification_lists = self.detection_pipeline.classify(
-            frames, detection_lists, AiModel.classification_threshold
-        )
+        preview_frames = []
+        output_video_path = ""
+        if classification:
+            logger.info("Running classification on video %s ...", video_path)
+            # Classify detected animals on all frames
+            classification_lists = self.detection_pipeline.classify(
+                frames, detection_lists, AiModel.classification_threshold
+            )
 
-        for frame, classified_animals in zip(frames, classification_lists):
-            array = np.array(frame)
-            tracked_animal = tracker.update(classified_animals, array.shape[:2])
-            tracked_animals.append(tracked_animal)
+            for frame, classified_animals in zip(frames, classification_lists):
+                array = np.array(frame)
+                tracked_animal = tracker.update(classified_animals, array.shape[:2])
+                tracked_animals.append(tracked_animal)
 
-        return tracked_animals
+                if save_processed_video:
+                    classified_frame = self.build_classification_square(
+                        frame, classified_animals, "", True
+                    )
+                    # If frame does not contain classification keep original frame
+                    # to build output video
+                    preview_frames.append(classified_frame if classified_frame else frame)
+
+            if preview_frames:
+                logger.info("Saving classification video...")
+                output_video_path = (
+                    Path("classification_output") / f"{Path(video_path).stem}_classified.mp4"
+                )
+        else:
+            # Save detection frames
+            if len(detection_lists) and save_processed_video:
+                for frame, detection_results in zip(frames, detection_lists):
+                    detection_frame = self.build_detection_square(frame, detection_results)
+                    # If frame does not contain classification keep original frame
+                    # to build output video
+                    preview_frames.append(detection_frame if detection_frame is not None else frame)
+
+                if preview_frames:
+                    logger.info("Saving detection video...")
+                    output_video_path = (
+                        Path("detection_output") / f"{Path(video_path).stem}_detected.mp4"
+                    )
+
+        if preview_frames and save_processed_video:
+            self.save_preview_video(preview_frames, output_video_path)
+
+        return tracked_animals, str(output_video_path)
 
     def process_video(self, video_path, save_detection_image: bool):
         """Method to run detection model on provided video."""
@@ -228,7 +311,7 @@ class AiModel:
             else:
                 logger.info("No detected animals for frame %s. Skipping image.", frame_count)
 
-    def classify(self, img_path, results):
+    def classify(self, img_path, results, save_classification_crop=False):
         """Method to perform classification on detection result(s)."""
 
         logger.debug("Selected classification device: %s", AiModel.classification_device)
@@ -263,24 +346,30 @@ class AiModel:
         ):
             logger.debug("No classified animals, skipping img crops saving.")
         else:
-            for classified_animal in classified_animals:
-                # Cropping detection result(s) from original image leveraging detected boxes
-                cropped_image = img.crop(classified_animal["xyxy"])
-                cropped_image_path = os.path.join(
-                    "classification_output", f"{classified_animal['id']}_cropped_image.jpg"
-                )
-                cropped_image.save(cropped_image_path)
-                logger.debug("Saved crop of image at %s.", cropped_image_path)
+            if save_classification_crop:
+                # Save classification image crops for debug purposes
+                for classified_animal in classified_animals:
+                    # Cropping detection result(s) from original image leveraging detected boxes
+                    cropped_image = img.crop(classified_animal["xyxy"])
+                    cropped_image_path = (
+                        module_dir_path.parent.parent
+                        / "classification_output"
+                        / f"{classified_animal['id']}_cropped_image.jpg"
+                    )
+                    cropped_image.save(cropped_image_path)
+                    logger.debug("Saved crop of image at %s.", cropped_image_path)
 
             classified_img_path = self.build_classification_square(
-                img, classified_animals, img_path
+                img, classified_animals, Path(img_path).stem
             )
         return classified_img_path, classified_animals
 
-    def build_classification_square(self, img, classified_animals, img_path):
+    def build_classification_square(self, img, classified_animals, img_name, video_frame=False):
         """Build square on classified animals."""
 
         classified_image_path = ""
+        classified_image = None
+
         # Build classification square
         orig_image = np.array(img)
         for animal in classified_animals:
@@ -290,7 +379,7 @@ class AiModel:
             x2 = int(animal["xyxy"][2])
             y2 = int(animal["xyxy"][3])
             color = (255, 0, 0)
-            classified_image = cv2.rectangle(orig_image, (x1, y1), (x2, y2), color, 2)
+            classified_image_array = cv2.rectangle(orig_image, (x1, y1), (x2, y2), color, 2)
 
             # Round precision on classification score
             animal["classification"][1] = round(animal["classification"][1].item(), 2)
@@ -318,8 +407,8 @@ class AiModel:
             text_background_x2 = x1 + 2 * text_padding + text_width
             text_background_y2 = y1
 
-            classified_image = cv2.rectangle(
-                classified_image,
+            classified_image_array = cv2.rectangle(
+                classified_image_array,
                 (text_background_x1, text_background_y1),
                 (text_background_x2, text_background_y2),
                 color,
@@ -328,7 +417,7 @@ class AiModel:
 
             # Add label to classification rectangle
             cv2.putText(
-                classified_image,
+                classified_image_array,
                 text,
                 (text_x, text_y),
                 font,
@@ -337,11 +426,47 @@ class AiModel:
                 text_thickness,
                 cv2.LINE_AA,
             )
-            cimg = Image.fromarray(classified_image)
+            classified_image = Image.fromarray(classified_image_array)
 
-            # Save classified image
-            detected_img_name = os.path.basename(img_path)
-            classified_img_name = "classified_" + detected_img_name
-            classified_image_path = os.path.join("classification_output", classified_img_name)
-            cimg.save(classified_image_path)
-        return classified_image_path
+        # Save classified image
+        if video_frame:
+            return classified_image
+        else:
+            classified_image_path = (
+                module_dir_path.parent.parent
+                / "classification_output"
+                / f"classified_{img_name}.jpg"
+            ).resolve()
+            classified_image.save(classified_image_path)
+            return str(classified_image_path)
+
+    def build_detection_square(self, frame, detection_results):
+        """
+        Return detected images with bounding boxes and labels annotated.
+        """
+        box_annotator = sv.BoxAnnotator(thickness=4)
+        lab_annotator = sv.LabelAnnotator(text_color=sv.Color.BLACK, text_thickness=4, text_scale=2)
+
+        image_np = np.array(frame)
+
+        if isinstance(detection_results, list):
+            for entry in detection_results:
+                image_np = lab_annotator.annotate(
+                    scene=box_annotator.annotate(
+                        scene=image_np,
+                        detections=entry["detections"],
+                    ),
+                    detections=entry["detections"],
+                    labels=entry["labels"],
+                )
+        else:
+            image_np = lab_annotator.annotate(
+                scene=box_annotator.annotate(
+                    scene=image_np,
+                    detections=detection_results["detections"],
+                ),
+                detections=detection_results["detections"],
+                labels=detection_results["labels"],
+            )
+
+        return Image.fromarray(image_np)

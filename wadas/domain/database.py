@@ -193,7 +193,6 @@ class DataBase(ABC):
         :return: The current database instance.
         """
         if DataBase.wadas_db is None:
-            logger.debug("The database has not been initialized. Call 'initialize' first.")
             return None
         return DataBase.wadas_db
 
@@ -720,14 +719,16 @@ class DataBase(ABC):
                 command=next(iter(command)),
             )
         elif isinstance(domain_object, DetectionEvent):
+            # Count detections before assignment as video classification does not provide this value
+            detections = domain_object.detected_animals.get("detections")
+            num_detected = len(detections.xyxy) if detections is not None else 0
+
             return ORMDetectionEvent(
                 camera_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 original_image=domain_object.original_image,
                 detection_img_path=domain_object.detection_img_path,
-                detected_animals=len(
-                    domain_object.detected_animals["detections"].xyxy
-                ),  # detected_animals count
+                detected_animals=num_detected,  # detected_animals count
                 classification=domain_object.classification,
                 classification_img_path=domain_object.classification_img_path,
             )

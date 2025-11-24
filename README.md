@@ -1,20 +1,21 @@
 # WADAS
-*Wild Animals Detection and Alert System* (WADAS) is a projet kicked off by me, volunteering for [Salviamo L'Orso](https://www.salviamolorso.it/en/) (SLO) association, and the [University of L'Aquila](https://www.univaq.it/) with the intent of creating a research project for the AI-based detection and alert of wildlife in proximity of dangerous areas (e.g., railways tunnels, road crossings) or inhabited centers (villages, farms, etc.).
+*Wild Animals Detection and Alert System* (WADAS) is a project kicked off by Stefano Dell'Osa, volunteer for [Salviamo L'Orso](https://www.salviamolorso.it/en/) (SLO) association, and the [University of L'Aquila](https://www.univaq.it/) with the intent of creating a research project for the AI-based detection and alert of wildlife in proximity of dangerous areas (e.g., railways tunnels, road crossings) or inhabited centers (villages, farms, etc.).
 
 The intent is to produce a software application acting as detection and alert system for wildlife with the aim of preventing wild animals to perish in car (or train) accidents and help improve the coexistence between wildlife and human communities. Moreover, the project defines a set requirements and implementation basis for system interaction and adoption as final product (e.g. mobile App, integration with maps, backend, etc.).
 
-The project is to be intended as a non-profitable and open-source one. This to facilitate contribution and reusage to anyone that may want to help, improve and implement same technology all over the world.
+The project is to be intended as a non-profitable and open-source one. This to facilitate contribution and usage to anyone that may want to help, improve and implement same technology all over the world.
 
 The project might leverage AI and other (open source or free to use) technologies.
 
-Evolution of this technology will aim to detect and idenify the Marsican brown bear among wildife, to enable ad-hoc monitoring and notifications for the authorities which works everyday to protect this (and many other) species.
+Evolution of this technology will aim to detect and identify the Marsican brown bear among wildlife, to enable ad-hoc monitoring and notifications for the authorities which works every day to protect this (and many other) species.
 
 See the project [Wiki](https://github.com/stefanodellosa-personal/WADAS/wiki) and our website [wadas.it](https://www.wadas.it/en/home-en/) for more details.
 
-**NOTE**: the owner discourages and forbids any usage of the application for scopes different than animal protection and conservation. Any violation of the intended use will be pursued by law.
+**NOTE**: the owner discourages and forbids any usage of the application for scopes different from animal protection and conservation. Any violation of the intended use will be pursued by law.
 
 ### AI models
-WADAS uses pre-compiled models available on [Hugging Face](https://huggingface.co/wadas-it) by submitting an access request. They are freely distrubuted as soon as Terms and Conditions of use are accepted.
+WADAS uses pre-compiled models available by submitting an access request through WADAS application. They are freely distributed as soon as Terms and Conditions of use are accepted.<br/>
+The reason why we ask users to apply for access is to verify that WADAS is used in accordance with terms and conditions. <br/>Data provided will not be shared with 3rd parties and used in accordance with General Data Protection Regulation (GDPR) — Regulation (EU) 2016/679.
 
 ### Contact us
 You can get in touch with us by leveragin the dedicated website form at https://www.wadas.it/en/contact-us/
