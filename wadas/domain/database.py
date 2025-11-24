@@ -294,18 +294,14 @@ class DataBase(ABC):
             except SQLAlchemyError:
                 # Rollback the transaction in case of an error
                 session.rollback()
-                logger.exception(
-                    "SQLAlchemy error occurred while running the query: %s.", str(stmt)
-                )
+                logger.exception("SQLAlchemy error occurred while running the query: %s.", stmt)
             except InterfaceError:
                 session.rollback()
                 logger.error("Database connection lost. Query operation failed.")
             except Exception:
                 # Handle other unexpected errors
                 session.rollback()
-                logger.exception(
-                    "SQLAlchemy error occurred while running the query: %s.", str(stmt)
-                )
+                logger.exception("SQLAlchemy error occurred while running the query: %s.", stmt)
             finally:
                 session.close()
         else:
@@ -369,7 +365,7 @@ class DataBase(ABC):
                         )
                         return
 
-                orm_object = DataBase.domain_to_orm(domain_object, foreign_key)
+                orm_object = cls.domain_to_orm(domain_object, foreign_key)
                 session.add(orm_object)
 
                 # If instance is a camera, handle relationship with actuators
@@ -908,7 +904,7 @@ class DataBase(ABC):
     def get_users(cls):
         """Method to retrieve users from db"""
         try:
-            if session := DataBase.create_session():
+            if session := cls.create_session():
                 stmt = select(ORMUser.username, ORMUser.email, ORMUser.role)
                 return session.execute(stmt)
             else:
@@ -928,7 +924,7 @@ class DataBase(ABC):
         """Method to retrieve user email and role from db"""
 
         try:
-            if session := DataBase.create_session():
+            if session := cls.create_session():
                 stmt = select(ORMUser.email, ORMUser.role).where(ORMUser.username == username)
                 return session.execute(stmt).fetchone()
             else:
@@ -953,7 +949,7 @@ class DataBase(ABC):
         """Method to update the email of a user in db"""
 
         try:
-            if session := DataBase.create_session():
+            if session := cls.create_session():
                 # Update user email
                 stmt = update(ORMUser).where(ORMUser.username == username).values(email=email)
 
@@ -982,7 +978,7 @@ class DataBase(ABC):
         """Method to update the role of a user in db"""
 
         try:
-            if session := DataBase.create_session():
+            if session := cls.create_session():
                 # Update user role
                 stmt = update(ORMUser).where(ORMUser.username == username).values(role=role)
 
@@ -1011,7 +1007,7 @@ class DataBase(ABC):
         """Method to update the password of a user in db"""
 
         try:
-            if session := DataBase.create_session():
+            if session := cls.create_session():
                 # Update user password
                 stmt = (
                     update(ORMUser)
@@ -1044,7 +1040,7 @@ class DataBase(ABC):
         """Method to delete a given user from db."""
 
         try:
-            if session := DataBase.create_session():
+            if session := cls.create_session():
                 stmt = delete(ORMUser).where(ORMUser.username == username)
                 result = session.execute(stmt)
 
