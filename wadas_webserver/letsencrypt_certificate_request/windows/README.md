@@ -12,9 +12,11 @@
 4. Enable Powershell script execution.
 	- open a Powershell console as Administrator.
 	- run `set-executionpolicy remotesigned`
+    - select `[Y] Yes`
 5. Run `.\cert_request.ps1` from a Powershell console, passing the following parameters:
     - `domain`: the domain you want to generate a certificate for (e.g. `node1.wadas.it`).
     - `pemfilespath`: path to a folder you want to store the generated certificate.
+    - e.g. `.\cert_request.ps1 -domain node2.wadas.it -pemfilespath C:\Users\user\Downloads\pem`
 6. Once the process is completed, copy the following files (located into the specified `pemfilespath` directory) into `WADAS_ROOT/wadas_webserver/web_cert`, renaming them in `cert.pem` and `key.pem`:
     - `DOMAIN-crt.pem` -> `cert.pem`
     - `DOMAIN-key.pem` -> `key.pem`
