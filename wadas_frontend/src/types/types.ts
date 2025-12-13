@@ -4,6 +4,7 @@ export interface Actuator {
     id: number;
     name: string;
     type: string;
+    last_update: string | null;
 }
 
 export interface Camera {
@@ -68,3 +69,17 @@ export interface ActuationEventResponse {
     count: number;
     data: ActuationEvent[];
 }
+
+export interface ActuatorDetailedResponse {
+    data: ActuatorDetailed[];
+}
+
+export interface ActuatorDetailed  {
+    actuator_id: string;
+    type: string;
+    last_update: string | null;
+    log: string | null;
+    temperature: number | null;
+    humidity: number | null;
+    battery_status: number | null;
+};
