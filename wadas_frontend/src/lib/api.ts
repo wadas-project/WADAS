@@ -1,6 +1,9 @@
 import {baseUrl} from "../config";
 import {
     ActuationEventResponse,
+    ActuatorDetailed,
+    ActuatorDetailedResponse,
+    ActuatorsResponse,
     ActuatorTypesResponse,
     AnimalsResponse,
     CamerasResponse,
@@ -53,6 +56,19 @@ export async function fetchActuatorTypes(): Promise<ActuatorTypesResponse> {
 
 export async function fetchCommands(): Promise<CommandsResponse> {
     return await apiGET(baseUrl.concat("api/v1/actuation_commands"), (response) => {
+        return response.json();
+    })
+}
+
+
+export async function fetchActuators(): Promise<ActuatorsResponse> {
+    return await apiGET(baseUrl.concat("api/v1/actuators"), (response) => {
+        return response.json();
+    })
+}
+
+export async function fetchActuatorDetail(id : string) : Promise<ActuatorDetailed> {
+    return await apiGET(baseUrl.concat("api/v1/actuators/" + id +"/detail"), (response) => {
         return response.json();
     })
 }

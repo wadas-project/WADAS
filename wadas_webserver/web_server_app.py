@@ -22,6 +22,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Annotated
+from xmlrpc.client import DateTime
 
 import bcrypt
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
@@ -29,6 +30,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from jose import JWTError, jwt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
+from datetime import datetime
 
 from wadas.domain.actuator import Actuator, Command
 from wadas_webserver.database import Database
@@ -312,21 +314,6 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
 frontend_path = Path(__file__).parent / "frontend"
 os.makedirs(frontend_path, exist_ok=True)
 
-
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    static_file = frontend_path / full_path
-    if static_file.exists() and static_file.is_file():
-        return FileResponse(static_file)
-
-    # serve index.html for every path to allow React to handle the routes
-    index_path = frontend_path / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-
-    return FileResponse(index_path)
-
-
 # Section related to API endpoints that requires WADAS to be up and running.
 
 
@@ -335,54 +322,70 @@ async def get_actuators(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
     """Return the list of existing actuators (admin only)"""
-    user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    try:
+        user = verify_token(x_access_token)
+        if user.role != "Admin":
+            raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    # Get actuators from domain class
-    db_actuators = Database.instance.get_actuators()
+        # Get actuators from domain class
+        db_actuators = Database.instance.get_actuators()
 
-    # Fetch only Actuator's required fields
-    result = []
-    for db_act in db_actuators:
-        actuator = Actuator.actuators.get(db_act.actuator_id)
-        if actuator:
-            result.append(
-                ActuatorStatus(
-                    id=actuator.id, type=actuator.type.value, last_update=actuator.last_update
+        # Fetch only Actuator's required fields
+        result = []
+
+        for db_act in db_actuators:
+            actuator = Actuator.actuators.get(db_act.name)
+            if actuator:
+                result.append(
+                    ActuatorStatus(
+                        id=actuator.id, type=actuator.type.value, last_update=actuator.last_update or datetime.now()
+                    )
                 )
-            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unable to queue log request: {e}")
 
     return {"data": result}
-
 
 @app.get("/api/v1/actuators/{actuator_id}/detail")
 async def get_actuator_detail(
     actuator_id: str,
     x_access_token: Annotated[str | None, Header()] = None,
 ):
-    """Return detailed info of a given actuator (admin only)"""
     user = verify_token(x_access_token)
     if user.role != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    # Retrieve the actuator from the in-memory registry
     actuator = Actuator.actuators.get(actuator_id)
     if actuator is None:
-        raise HTTPException(status_code=404, detail=f"Actuator '{actuator_id}' not found")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Actuator '{actuator_id}' not found",
+        )
 
-    battery_status = Database.get_last_battery_status(actuator_id)
-    temperature, humidity = Database.get_last_temperature_status(actuator_id)
+    try:
 
-    return ActuatorDetailed(
-        actuator_id=actuator.id,
-        type=actuator.type.value,
-        last_update=actuator.last_update,
-        log=actuator.log,
-        temperature=temperature,
-        humidity=humidity,
-        battery_status=battery_status,
-    )
+        battery_status = Database.instance.get_last_battery_status(actuator_id)
+        temp_data = Database.instance.get_last_temperature_status(actuator_id)
+        temperature, humidity = temp_data if temp_data else (None, None)
+
+        return ActuatorDetailed(
+            actuator_id=actuator.id,
+            type=actuator.type.value,
+            last_update=actuator.last_update,
+            log=actuator.log,
+            temperature=temperature,
+            humidity=humidity,
+            battery_status=battery_status,
+        )
+
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
 
 
 @app.post("/api/v1/actuators/{actuator_id}/log", response_model=DataResponse)
@@ -499,3 +502,16 @@ async def get_actuator_last_update(
     }
 
     return DataResponse(data=status_data)
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    static_file = frontend_path / full_path
+    if static_file.exists() and static_file.is_file():
+        return FileResponse(static_file)
+
+    # serve index.html for every path to allow React to handle the routes
+    index_path = frontend_path / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
+    return FileResponse(index_path)
