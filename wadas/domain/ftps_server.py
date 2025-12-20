@@ -82,31 +82,30 @@ class TLS_FTP_WADAS_Handler(TLS_FTPHandler):
     def on_logout(self, username):
         logger.info("%s camera logged out.", username)
 
-    def on_file_received(self, file):
-        logger.info("Received %s file from FTPS camera %s.", file, self.username)
+    def on_file_received(self, received_file):
+        logger.info("Received %s file from FTPS camera %s.", received_file, self.username)
 
         # check if the received file match one of the allowed extensions
         # (the check relies on an inspection of the file content)
-        ftype = filetype.guess(file)
 
-        if ftype:
+        if ftype := filetype.guess(received_file):
             file_ext = ftype.extension
             logger.debug("Extension of received file: %s", file_ext)
 
             if f".{ftype.extension}" in self.ALLOWED_EXTS:
                 media_queue.put(
                     {
-                        "media_path": file,
-                        "media_id": pathlib.PurePath(file).parent.name,
+                        "media_path": received_file,
+                        "media_id": pathlib.PurePath(received_file).parent.name,
                         "camera_id": self.username,
                     }
                 )
             else:
-                logger.warning("Unsupported file %s. Removing file.", file)
-                os.remove(file)
+                logger.warning("Unsupported file %s. Removing file.", received_file)
+                os.remove(received_file)
         else:
-            logger.warning("Unable to determine file type for %s. Removing file.", file)
-            os.remove(file)
+            logger.warning("Unable to determine file type for %s. Removing file.", received_file)
+            os.remove(received_file)
 
     def on_incomplete_file_received(self, file):
         logger.info("Partial file received. Removing %s", file)
