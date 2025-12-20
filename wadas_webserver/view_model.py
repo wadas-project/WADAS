@@ -121,7 +121,7 @@ class ActuatorDetailed(BaseModel):
     log: str | None
     temperature: float | None
     humidity: float | None
-    battery_status: float| None
+    battery_status: float | None
 
 
 class ActuatorStatus(BaseModel):

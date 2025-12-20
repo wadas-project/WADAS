@@ -20,9 +20,9 @@
 import json
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
-from xmlrpc.client import DateTime
 
 import bcrypt
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
@@ -30,7 +30,6 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from jose import JWTError, jwt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
-from datetime import datetime
 
 from wadas.domain.actuator import Actuator, Command
 from wadas_webserver.database import Database
@@ -338,7 +337,9 @@ async def get_actuators(
             if actuator:
                 result.append(
                     ActuatorStatus(
-                        id=actuator.id, type=actuator.type.value, last_update=actuator.last_update or datetime.now()
+                        id=actuator.id,
+                        type=actuator.type.value,
+                        last_update=actuator.last_update or datetime.now(),
                     )
                 )
 
@@ -346,6 +347,7 @@ async def get_actuators(
         raise HTTPException(status_code=500, detail=f"Unable to queue log request: {e}")
 
     return {"data": result}
+
 
 @app.get("/api/v1/actuators/{actuator_id}/detail")
 async def get_actuator_detail(
@@ -379,13 +381,11 @@ async def get_actuator_detail(
             battery_status=battery_status,
         )
 
-
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=str(e),
         )
-
 
 
 @app.post("/api/v1/actuators/{actuator_id}/log", response_model=DataResponse)
@@ -502,6 +502,7 @@ async def get_actuator_last_update(
     }
 
     return DataResponse(data=status_data)
+
 
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
