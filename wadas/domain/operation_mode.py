@@ -57,7 +57,7 @@ class OperationMode(QObject):
     # Currently selected operation mode
     cur_operation_mode = None
     cur_operation_mode_type = None  # We need this separately as object is deleted after op_mode run
-    cur_custom_classification_species = None
+    cur_custom_classification_species = []
 
     # Signals
     update_image = Signal(object)
@@ -85,6 +85,7 @@ class OperationMode(QObject):
         self.actuators_server_thread = None
         self.actuators_view_thread = None
         self.enable_classification = False
+        self.is_notifier_enabled = Notifier.notifier_enabled()
 
     def init_model(self):
         """Method to run the selected WADAS operation mode"""
@@ -121,7 +122,7 @@ class OperationMode(QObject):
                     self.ftp_thread = FTPsServer.ftps_server.run()
         logger.info("Ready for video stream from Camera(s)...")
 
-    def _detect(self, cur_media, classify=False):
+    def _detect(self, cur_media):
         """Method to run the animal detection process on a specific image"""
 
         if is_image(cur_media["media_path"]):
@@ -129,18 +130,19 @@ class OperationMode(QObject):
 
             if results and detected_img_path:
                 detection_event = DetectionEvent(
-                    cur_media["camera_id"],
-                    get_precise_timestamp(),
-                    cur_media["media_path"],
-                    detected_img_path,
-                    results,
-                    self.enable_classification,
+                    camera_id=cur_media["camera_id"],
+                    time_stamp=get_precise_timestamp(),
+                    original_media=cur_media["media_path"],
+                    detection_media_path=detected_img_path,
+                    detected_animals=results,
+                    classification=self.enable_classification,
                 )
                 self.last_detection = detected_img_path
                 # Insert detection event into db, if enabled
                 if db := DataBase.get_enabled_db():
                     db.insert_into_db(detection_event)
 
+                logger.info("Animal(s) detected!")
                 if self.enable_classification:
                     # Classify animal
                     self._classify(detection_event)
@@ -150,8 +152,11 @@ class OperationMode(QObject):
                 return None
         else:
             # Video processing
-            tracked_animals, video_path = self.ai_model.process_video_offline(
-                cur_media["media_path"], self.enable_classification, save_processed_video=True
+            tracked_animals, video_path, snapshot = self.ai_model.process_video_offline(
+                video_path=cur_media["media_path"],
+                classification=self.enable_classification,
+                save_processed_video=True,
+                save_snapshot=self.is_notifier_enabled,
             )
             if video_path:
                 detection_path = video_path if not self.enable_classification else ""
@@ -170,18 +175,19 @@ class OperationMode(QObject):
                 )
 
                 detection_event = DetectionEvent(
-                    cur_media["camera_id"],
-                    get_precise_timestamp(),
-                    cur_media["media_path"],
-                    detection_path,
-                    {
+                    camera_id=cur_media["camera_id"],
+                    time_stamp=get_precise_timestamp(),
+                    original_media=cur_media["media_path"],
+                    detection_media_path=detection_path,
+                    detected_animals={
                         "detections": None,
                         "img_id": "",
                         "labels": [],
                     },  # TODO: evaluate if store actual detection results in video processing
-                    self.enable_classification,
-                    classification_path,
-                    classified_animals,
+                    classification=self.enable_classification,
+                    classification_media_path=classification_path,
+                    classified_animals=classified_animals,
+                    preview_image=snapshot,
                 )
                 self.last_detection = video_path
                 self._format_classified_animals_string(classified_animals)
@@ -223,12 +229,13 @@ class OperationMode(QObject):
                 self.last_detection = classified_img_path
                 self._format_classified_animals_string(classified_animals)
                 detection_event.classified_animals = classified_animals
-                detection_event.classification_img_path = classified_img_path
+                detection_event.classification_media_path = classified_img_path
                 # Update detection event into db, if enabled
                 if db := DataBase.get_enabled_db():
                     db.update_detection_event(detection_event)
+                logger.info("Classified animal(s): %s", self.last_classified_animals_str)
             else:
-                logger.debug("No classified animals or classification results below threshold.")
+                logger.info("No classified animals or classification results below threshold.")
 
     def _show_processed_results(self, detection_event):
         """Method to show Ai inference results in WADAS UI"""
@@ -236,20 +243,20 @@ class OperationMode(QObject):
         if detection_event:
             if self.enable_classification:
                 # Classification is enabled
-                if detection_event.classification_img_path:
+                if detection_event.classification_media_path:
                     # Trigger image update in WADAS mainwindow with classification result
-                    if is_image(detection_event.classification_img_path):
-                        self.update_image.emit(detection_event.classification_img_path)
+                    if is_image(detection_event.classification_media_path):
+                        self.update_image.emit(detection_event.classification_media_path)
                     else:
-                        self.play_video.emit(detection_event.classification_img_path)
+                        self.play_video.emit(detection_event.classification_media_path)
                 else:
                     logger.info("No animal classified.")
             else:
                 # Trigger image update in WADAS mainwindow with detection result
-                if is_image(detection_event.detection_img_path):
-                    self.update_image.emit(detection_event.detection_img_path)
+                if is_image(detection_event.detection_media_path):
+                    self.update_image.emit(detection_event.detection_media_path)
                 else:
-                    self.play_video.emit(detection_event.detection_img_path)
+                    self.play_video.emit(detection_event.detection_media_path)
             self.update_info.emit()
         else:
             logger.info("No animal detected.")
@@ -290,10 +297,10 @@ class OperationMode(QObject):
         else:
             self.execution_completed()
 
-    def send_notification(self, detection_event: DetectionEvent, message, preview_image=None):
+    def send_notification(self, detection_event: DetectionEvent, message):
         """Method to send notification(s) trough Notifier class (and subclasses)"""
 
-        Notifier.send_notifications(detection_event, message, preview_image)
+        Notifier.send_notifications(detection_event, message)
 
     def actuate(self, detection_event: DetectionEvent):
         """Method to trigger actuators associated to the camera, when enabled"""
@@ -339,17 +346,17 @@ class OperationMode(QObject):
             self.delete_media(detection_event.original_image)
         if (
             OperationMode.enforce_privacy_remove_detection_img
-            and os.path.isfile(detection_event.detection_img_path)
+            and os.path.isfile(detection_event.detection_media_path)
             and self.enable_classification  # Detection img is deleted only in class mode.
         ):
             logger.debug("Removing detection image due to privacy enforcement policy.")
-            self.delete_media(detection_event.detection_img_path)
+            self.delete_media(detection_event.detection_media_path)
         if (
             self.enable_classification
             and OperationMode.enforce_privacy_remove_classification_img
-            and detection_event.classification_img_path
+            and detection_event.classification_media_path
         ):
-            self.delete_media(detection_event.classification_img_path)
+            self.delete_media(detection_event.classification_media_path)
             logger.debug("Removing classification image due to privacy enforcement policy.")
 
     def execution_completed(self):

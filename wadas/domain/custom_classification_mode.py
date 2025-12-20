@@ -20,8 +20,6 @@
 import logging
 from queue import Empty
 
-from wadas.ai.models import txt_animalclasses
-from wadas.domain.ai_model import AiModel
 from wadas.domain.animal_detection_mode import AnimalDetectionAndClassificationMode
 from wadas.domain.camera import media_queue
 from wadas.domain.operation_mode import OperationMode
@@ -33,24 +31,11 @@ logger = logging.getLogger(__name__)
 class CustomClassificationMode(AnimalDetectionAndClassificationMode):
     """Custom Classification Mode class."""
 
-    def __init__(self, custom_target_species=None):
+    def __init__(self, custom_target_species=OperationMode.cur_custom_classification_species):
         super().__init__()
         self.process_queue = True
         self.type = OperationMode.OperationModeTypes.CustomSpeciesClassificationMode
         self.custom_target_species = custom_target_species
-
-    def set_animal_species(self, target_animal_label):
-        """Method to select animal to classify according to Ai model availability"""
-        if (
-            target_animal_label
-            in txt_animalclasses[AiModel.classification_model_version][AiModel.language]
-        ):
-            self.custom_target_species = target_animal_label
-            logger.debug("%s species selected.", target_animal_label)
-            return True
-        else:
-            logger.error("The specified animal species is not handled by WADAS")
-            return False
 
     def run(self):
         """WADAS custom classification mode"""
@@ -76,10 +61,10 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
 
                 self.check_for_termination_requests()
                 if detection_event and self.enable_classification:
-                    if detection_event.classification_img_path:
-                        # Send notification and trigger actuators if the target animal is found
+                    if detection_event.classification_media_path:
+                        # Send notification and trigger actuators if any target animal is found
                         if any(
-                            classified_animal["classification"][0] == self.custom_target_species
+                            classified_animal["classification"][0] in self.custom_target_species
                             for classified_animal in detection_event.classified_animals
                         ):
                             # Notification
@@ -97,9 +82,9 @@ class CustomClassificationMode(AnimalDetectionAndClassificationMode):
                             self._show_processed_results(detection_event)
                         else:
                             logger.info(
-                                "Target animal '%s' not found, found '%s' instead. "
+                                "Target animals '%s' not found, found '%s' instead. "
                                 "Skipping notification.",
-                                self.custom_target_species,
+                                ", ".join(self.custom_target_species),
                                 self.last_classified_animals_str,
                             )
 

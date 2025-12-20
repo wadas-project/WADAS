@@ -933,7 +933,6 @@ class MainWindow(QMainWindow):
         """Method to trigger DB configuration dialog"""
 
         if (configure_db_dialog := ConfigureDBDialog(self.uuid)).exec():
-            logger.info("Database configured.")
             if configure_db_dialog.db_created and DataBase.get_enabled_db() and self.configuration_file_name:
                 # Force project save to guarantee consistency
                 logger.info(

@@ -45,7 +45,7 @@ class EmailNotifier(Notifier):
         self.smtp_port = smtp_port
         self.recipients_email = recipients_email
 
-    def send_email(self, detection_event, message="", preview_image=None):
+    def send_email(self, detection_event, message=""):
         """Method to build email and send it."""
 
         credentials = keyring.get_credential("WADAS_email", self.sender_email)
@@ -67,9 +67,9 @@ class EmailNotifier(Notifier):
 
         # Select image to attach to the notification: classification (if enabled) or detection image
         img_path = (
-            detection_event.classification_img_path
+            detection_event.classification_media_path
             if detection_event.classification
-            else detection_event.detection_img_path
+            else detection_event.detection_media_path
         )
 
         # Attach image, skip video
@@ -80,7 +80,7 @@ class EmailNotifier(Notifier):
                 <body>
                     <p>Hi,<br>
                     {message}<br>
-                    Animal detected from camera {detection_event.camera_id}:
+                    Animal detected from camera {detection_event.camera_id}:<br>
                     <img src="cid:image1"><br>
                     </p><br>
                 </body>
@@ -97,14 +97,14 @@ class EmailNotifier(Notifier):
                 msg_img.add_header("Content-ID", "<image1>")
                 # Attach the image to the message
                 email_message.attach(msg_img)
-        elif is_video(img_path) and preview_image:
+        elif is_video(img_path) and detection_event.preview_image:
             # HTML content with a preview image embedded
             html = f"""\
             <html>
                 <body>
                     <p>Hi,<br>
                     {message}<br>
-                    Animal detected from camera {detection_event.camera_id}:
+                    Animal detected from camera {detection_event.camera_id}:<br>
                     <img src="cid:image1"><br>
                     NOTE: this is a preview image. Connect to WADAS web interface
                      to access full video.
@@ -116,7 +116,7 @@ class EmailNotifier(Notifier):
             email_message.attach(MIMEText(html, "html"))
 
             # Open the image file in binary mode
-            with open(preview_image, "rb") as img:
+            with open(detection_event.preview_image, "rb") as img:
                 # Attach the image file
                 msg_img = MIMEImage(img.read(), name=os.path.basename(img_path))
                 # Define the Content-ID header to use in the HTML body
@@ -154,9 +154,9 @@ class EmailNotifier(Notifier):
             smtp_server.quit()
         logger.info("Email notification for %s sent!", img_path)
 
-    def send_notification(self, detection_event: DetectionEvent, message="", preview_image=None):
+    def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method specific for Email notifier."""
-        self.send_email(detection_event, message, preview_image)
+        self.send_email(detection_event, message)
 
     def is_configured(self):
         """Method that returns configuration status as bool value."""
