@@ -17,5 +17,5 @@
 # Date: 2024-08-14
 # Description: module to keep track of WADAS version
 
-__version__ = "v0.9.13"
+__version__ = "v1.0.0.a4"
 __dbversion__ = __version__
