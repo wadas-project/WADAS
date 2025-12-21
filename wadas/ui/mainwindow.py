@@ -36,14 +36,14 @@ from packaging.version import InvalidVersion, Version
 import keyring
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QThread, QTimer, QSettings
+from PySide6.QtCore import QThread, QTimer, QSettings, Qt
 from PySide6.QtGui import QBrush, QImage, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QLabel,
     QMainWindow,
-    QMessageBox,
+    QMessageBox, QListWidgetItem,
 )
 
 from wadas._version import __version__
@@ -135,6 +135,9 @@ class MainWindow(QMainWindow):
 
         # Connect Actions
         self._connect_actions()
+
+        # Connect slots
+        self.ui.pushButton_clean_tunnel_counter.clicked.connect(self.on_clear_tunnel_counter_clicked)
 
         # Create required folders
         os.makedirs("log", exist_ok=True)
@@ -523,6 +526,39 @@ class MainWindow(QMainWindow):
                      Notifier.notifiers[notifier].type == Notifier.NotifierTypes.WHATSAPP and
                      Notifier.notifiers[notifier].enabled) for notifier in Notifier.notifiers))
 
+    def on_tunnel_selected(self):
+        """Method to update clear counter button on tunnel selection"""
+
+        self.ui.pushButton_clean_tunnel_counter.setEnabled(True)
+
+    def on_clear_tunnel_counter_clicked(self):
+        """Method to clear counter for selected tunnel"""
+
+        selected_item = self.ui.listWidget_en_tunnels.currentItem()
+        if selected_item:
+                selected_tunnel_id = selected_item.data(Qt.UserRole)
+                tunnel = next((t for t in Tunnel.tunnels if t.id == selected_tunnel_id), None)
+
+                if tunnel:
+                    reply = QMessageBox.question(
+                        self,
+                        f"Tunnel {selected_tunnel_id} counter reset",
+                        f"Are you sure you want to reset Tunnel {selected_tunnel_id} counter?",
+                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.No
+                    )
+                    if reply == QMessageBox.Yes:
+                        tunnel.counter = 0
+                        logger.info("Counter reset for tunnel %s", tunnel.id)
+                        self.ui.pushButton_clean_tunnel_counter.setEnabled(False)
+                        self.update_info_widget()
+                    else:
+                        logger.info("Tunnel %s counter reset aborted by user.", selected_tunnel_id)
+                else:
+                    logger.error("No valid Tunnel ID provided while clearing counter.")
+        else:
+            logger.error("No selected tunnel, aborting counter reset.")
+
     def update_toolbar_status_on_run(self, running):
         """Update toolbar status while running model."""
 
@@ -550,11 +586,13 @@ class MainWindow(QMainWindow):
     def update_info_widget(self):
         """Update information widget."""
 
+        show_tunnel_mode_widgets = False
         if OperationMode.cur_operation_mode_type:
             self.ui.label_op_mode.setText(OperationMode.cur_operation_mode_type.value)
             match OperationMode.cur_operation_mode_type:
                 case OperationMode.OperationModeTypes.TunnelMode:
                     classification_en_txt = "No"
+                    show_tunnel_mode_widgets = True
                 case OperationMode.OperationModeTypes.AnimalDetectionMode:
                     classification_en_txt = "No"
                 case OperationMode.OperationModeTypes.CustomSpeciesClassificationMode:
@@ -583,13 +621,17 @@ class MainWindow(QMainWindow):
             if cur_notifier and cur_notifier.enabled) or "None"
         self.ui.label_notification_method.setText(notifier_lable_text)
 
-        tunnel_exist = bool(Tunnel.tunnels)
-        self.ui.label_enabled_tunnels.setVisible(tunnel_exist)
-        self.ui.listWidget_en_tunnels.setVisible(tunnel_exist)
-        if tunnel_exist:
+        self.ui.label_enabled_tunnels.setVisible(show_tunnel_mode_widgets)
+        self.ui.listWidget_en_tunnels.setVisible(show_tunnel_mode_widgets)
+        self.ui.pushButton_clean_tunnel_counter.setVisible(show_tunnel_mode_widgets)
+        if show_tunnel_mode_widgets:
             self.ui.listWidget_en_tunnels.clear()
             for tunnel in Tunnel.tunnels:
-                self.ui.listWidget_en_tunnels.addItem(f"{tunnel.id} ({tunnel.counter})")
+                item = QListWidgetItem(f"{tunnel.id} ({tunnel.counter})")
+                item.setData(Qt.UserRole, tunnel.id)
+                self.ui.listWidget_en_tunnels.addItem(item)
+            self.ui.listWidget_en_tunnels.currentItemChanged.connect(self.on_tunnel_selected)
+        self.ui.pushButton_clean_tunnel_counter.setEnabled(False)
 
     def test_model_mode_input_dialog(self):
         """Method to run dialog for insertion of a URL to fetch image from."""
