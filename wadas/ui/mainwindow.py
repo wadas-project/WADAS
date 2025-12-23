@@ -36,14 +36,15 @@ from packaging.version import InvalidVersion, Version
 import keyring
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QThread, QTimer, QSettings, Qt
+from PySide6.QtCore import  Qt, QThread, QTimer, QSettings
 from PySide6.QtGui import QBrush, QImage, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QLabel,
+    QListWidgetItem,
     QMainWindow,
-    QMessageBox, QListWidgetItem,
+    QMessageBox,
 )
 
 from wadas._version import __version__
