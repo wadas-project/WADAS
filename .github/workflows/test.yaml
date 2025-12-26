@@ -34,4 +34,11 @@ jobs:
         huggingface-cli login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
     - name: Run tests
       run: |
-        python -m pytest test -sv
+        python -m pytest test -sv --cov=. --cov-report=html
+        # To enforce minimum coverage, uncomment the following line:
+        # python -m pytest test -sv --cov=. --cov-report=html --cov-fail-under=80
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: htmlcov/
