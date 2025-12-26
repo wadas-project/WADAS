@@ -36,6 +36,7 @@ dependencies:
       - PytorchWildlife==1.2.0
       - ultralytics==8.3.91
       - pytest==8.3.3
+      - pytest-qt
       - openvino==2025.1.0
       - ray==2.43.0
       - wadas-runtime==0.2.6
