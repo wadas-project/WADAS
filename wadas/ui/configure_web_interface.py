@@ -163,8 +163,6 @@ class DialogConfigureWebInterface(QDialog):
                 role_cb = self.findChild(QComboBox, f"comboBox_role_{i}")
                 role_txt = role if role in self.roles else "Viewer"
                 role_cb.setCurrentText(role_txt)
-
-                self.validate()
         else:
             self.findChild(QLineEdit, "lineEdit_user_0").setEnabled(False)
             self.findChild(QLineEdit, "lineEdit_password_0").setEnabled(False)
