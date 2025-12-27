@@ -35,12 +35,12 @@ jobs:
     - name: Install QT dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libegl1
+        sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libegl1 libxcb-cursor0 xvfb
     - name: Run tests
       run: |
-        python -m pytest test -sv --cov=. --cov-report=html
+        xvfb-run python -m pytest test -sv --cov=. --cov-report=html
         # To enforce minimum coverage, uncomment the following line:
-        # python -m pytest test -sv --cov=. --cov-report=html --cov-fail-under=80
+        # xvfb-run python -m pytest test -sv --cov=. --cov-report=html --cov-fail-under=80
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
       with:
