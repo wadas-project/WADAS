@@ -32,6 +32,10 @@ jobs:
     - name: Login to Hugging Face
       run: |
         huggingface-cli login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
+    - name: Install QT dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libegl1
     - name: Run tests
       run: |
         python -m pytest test -sv --cov=. --cov-report=html
