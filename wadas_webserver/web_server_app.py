@@ -325,15 +325,15 @@ async def get_actuators(
         db_actuators = Database.instance.get_actuators()
 
         # Fetch only Actuator's required fields
-          result = [
-                 ActuatorStatus(
-                     id=actuator.id,
-                     type=actuator.type.value,
-                     last_update=actuator.last_update or datetime.now(),
-                 )
-                for db_act in db_actuators
-                if actuator := actuator = Actuator.actuators.get(db_act.name)
-            ]       
+        result = [
+            ActuatorStatus(
+                id=actuator.id,
+                type=actuator.type.value,
+                last_update=actuator.last_update or datetime.now(),
+            )
+            for db_act in db_actuators
+            if (actuator := Actuator.actuators.get(db_act.name))
+        ]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unable to queue log request: {e}")
