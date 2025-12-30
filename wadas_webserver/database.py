@@ -330,4 +330,4 @@ class Database:
                 .filter(and_(DB_Actuator.deletion_date.is_(None), DB_Actuator.enabled.is_(True)))
                 .all()
             )
-            return [Mapper.map_db_actuator_to_actuator(x) for x in result]
+            return any(Mapper.map_db_actuator_to_actuator(x) for x in result)

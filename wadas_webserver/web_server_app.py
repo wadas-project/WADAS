@@ -308,11 +308,6 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
         lines = f.readlines()[-200:]  # last 200 log rows
     return JSONResponse(content={"data": [line.strip() for line in lines]})
 
-
-# Static pages mounted under the site root
-frontend_path = Path(__file__).parent / "frontend"
-os.makedirs(frontend_path, exist_ok=True)
-
 # Section related to API endpoints that requires WADAS to be up and running.
 
 
@@ -330,18 +325,15 @@ async def get_actuators(
         db_actuators = Database.instance.get_actuators()
 
         # Fetch only Actuator's required fields
-        result = []
-
-        for db_act in db_actuators:
-            actuator = Actuator.actuators.get(db_act.name)
-            if actuator:
-                result.append(
-                    ActuatorStatus(
-                        id=actuator.id,
-                        type=actuator.type.value,
-                        last_update=actuator.last_update or datetime.now(),
-                    )
-                )
+          result = [
+                 ActuatorStatus(
+                     id=actuator.id,
+                     type=actuator.type.value,
+                     last_update=actuator.last_update or datetime.now(),
+                 )
+                for db_act in db_actuators
+                if actuator := actuator = Actuator.actuators.get(db_act.name)
+            ]       
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unable to queue log request: {e}")
@@ -369,7 +361,7 @@ async def get_actuator_detail(
 
         battery_status = Database.instance.get_last_battery_status(actuator_id)
         temp_data = Database.instance.get_last_temperature_status(actuator_id)
-        temperature, humidity = temp_data if temp_data else (None, None)
+        temperature, humidity = temp_data or (None, None)
 
         return ActuatorDetailed(
             actuator_id=actuator.id,
@@ -503,11 +495,14 @@ async def get_actuator_last_update(
 
     return DataResponse(data=status_data)
 
+# Static pages mounted under the site root
+frontend_path = Path(__file__).parent / "frontend"
+os.makedirs(frontend_path, exist_ok=True)
 
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
     static_file = frontend_path / full_path
-    if static_file.exists() and static_file.is_file():
+    if static_file.is_file():
         return FileResponse(static_file)
 
     # serve index.html for every path to allow React to handle the routes
