@@ -120,3 +120,37 @@ def send_data_on_local_socket(port, command):
         return data
     finally:
         client_socket.close()
+
+
+def is_pem_key(pem_key_file):
+    """Method to validate pem key file content looking for key template pattern(s)"""
+
+    with open(pem_key_file, "rb") as key_file:
+        data = key_file.read()
+
+    # Check for private key markers
+    private_key_markers = [
+        b"-----BEGIN PRIVATE KEY-----",
+        b"-----BEGIN RSA PRIVATE KEY-----",
+        b"-----BEGIN EC PRIVATE KEY-----",
+        b"-----BEGIN DSA PRIVATE KEY-----",
+        b"-----BEGIN ENCRYPTED PRIVATE KEY-----",
+    ]
+
+    if not any(marker in data for marker in private_key_markers):
+        return False
+    else:
+        return True
+
+
+def is_pem_certificate(pem_certificate_file):
+    """Method to validate pem certificate file content looking for key template pattern(s)"""
+
+    with open(pem_certificate_file, "rb") as certificate_file:
+        data = certificate_file.read()
+
+        # Check for certificate pattern
+    if b"-----BEGIN CERTIFICATE-----" not in data:
+        return False
+    else:
+        return True
