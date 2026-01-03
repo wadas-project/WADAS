@@ -26,6 +26,8 @@ from wadas.domain.deterrent_actuator import DeterrentActuator
 from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer, initialize_fastapi_logger
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.roadsign_actuator import RoadSignActuator
+from wadas.domain.utils import is_pem_certificate, is_pem_key
+from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_configure_actuators import Ui_DialogConfigureActuators
 from wadas.ui.qtextedit_logger import QTextEditLogger
 
@@ -254,6 +256,12 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
             self, "Open SSL key file", os.getcwd(), "Pem File (*.pem)"
         )
         self.ui.label_key_file.setText(str(file_name[0]))
+
+        # Verify key file
+        if not is_pem_key(file_name[0]):
+            WADASErrorMessage("Invalid key file provided",
+                              f"Error while loading key file. Please make sure selected file is a valid one.").exec()
+
         self.validate()
 
     def select_certificate_file(self):
@@ -263,6 +271,11 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
             self, "Open SSL certificate file", os.getcwd(), "Pem File (*.pem)"
         )
         self.ui.label_cert_file.setText(str(file_name[0]))
+
+        if not is_pem_certificate(file_name[0]):
+            WADASErrorMessage("Invalid certificate file provided",
+                              f"Error while loading certificate file. Please make sure selected file is a valid one").exec()
+
         self.validate()
 
     def get_actuator_id(self, row):
