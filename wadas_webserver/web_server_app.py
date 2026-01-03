@@ -308,6 +308,7 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
         lines = f.readlines()[-200:]  # last 200 log rows
     return JSONResponse(content={"data": [line.strip() for line in lines]})
 
+
 # Section related to API endpoints that requires WADAS to be up and running.
 
 
@@ -495,9 +496,11 @@ async def get_actuator_last_update(
 
     return DataResponse(data=status_data)
 
+
 # Static pages mounted under the site root
 frontend_path = Path(__file__).parent / "frontend"
 os.makedirs(frontend_path, exist_ok=True)
+
 
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
