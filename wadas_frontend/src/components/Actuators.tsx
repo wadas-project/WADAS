@@ -45,7 +45,7 @@ const Actuators = () => {
                 ) : error ? (
                     <Alert variant="danger">{error}</Alert>
                 ) : actuators !== null && actuators !== undefined && actuators.length === 0 ? (
-                    <Alert variant="warning" className="text-center">No Enabled Camera found</Alert>
+                    <Alert variant="warning" className="text-center">No Enabled Actuators found</Alert>
                 ) : (
                     <Row>
                         {actuators.map((actuator, index) => (

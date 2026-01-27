@@ -330,7 +330,7 @@ async def get_actuators(
             ActuatorStatus(
                 id=actuator.id,
                 type=actuator.type.value,
-                last_update=actuator.last_update or datetime.now(),
+                last_update=actuator.last_update,
             )
             for db_act in db_actuators
             if (actuator := Actuator.actuators.get(db_act.name))

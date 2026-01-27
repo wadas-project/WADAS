@@ -7,18 +7,35 @@ import CustomNavbar from "./components/CustomNavbar";
 import CustomSpinner from "./components/CustomSpinner";
 
 import { tryWithRefreshing } from "./lib/utils";
-import { fetchActuatorDetail } from "./lib/api";
-import { ActuatorDetailed } from "./types/types";
+import { fetchActuatorDetail, postActuatorTest,fetchActuatorLogs } from "./lib/api";
+import { ActuatorDetailed, ActuatorLogsResponse } from "./types/types";
 
 const ActuatorDetail = () => {
     const { actuatorId } = useParams<{ actuatorId: string }>();
     const navigate = useNavigate();
 
     const [actuator, setActuator] = useState<ActuatorDetailed | null>(null);
+    const [actuatorLogs, setActuatorLogs] = useState<string[]|null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+
+    const handleTest = async (actuatorId: string): Promise<void> => {
+        await tryWithRefreshing(() =>
+            postActuatorTest(actuatorId)
+        );
+    };
+   const handleRefreshLogs = async (actuatorId: string): Promise<void> => {
+        const response = await tryWithRefreshing(() =>
+            fetchActuatorLogs(actuatorId)
+        );
+        
+          setActuatorLogs(response.data)
+              
+    };
     useEffect(() => {
+
+
         const loadPage = async () => {
             try {
                 if (!actuatorId) {
@@ -32,6 +49,7 @@ const ActuatorDetail = () => {
                 );
 
                 setActuator(response);
+                setActuatorLogs(response.log ? response.log.split("\n") : []);
                 setLoading(false);
 
             } catch (e: any) {
@@ -46,6 +64,8 @@ const ActuatorDetail = () => {
 
         loadPage();
     }, [actuatorId]);
+
+
 
     return (
         <div className="padded-div">
@@ -88,9 +108,9 @@ const ActuatorDetail = () => {
                             <Col>
                                 <h6>Commands</h6>
                                 <div className="border p-3 d-flex gap-3">
-                                    <Button variant="primary">Test</Button>
-                                    <Button variant="primary">Reboot</Button>
-                                    <Button variant="secondary">Refresh log</Button>
+                                    <Button variant="info" onClick={() => handleTest(actuator.actuator_id)}>Test</Button>
+                                    {/* <Button variant="primary" >Reboot</Button> */}
+                                    <Button variant="info" onClick={() => handleRefreshLogs(actuator.actuator_id)}>Refresh log</Button>
                                 </div>
                             </Col>
                         </Row>

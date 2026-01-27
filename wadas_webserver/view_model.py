@@ -127,7 +127,7 @@ class ActuatorDetailed(BaseModel):
 class ActuatorStatus(BaseModel):
     id: str
     type: str
-    last_update: datetime
+    last_update: datetime | None
 
 
 class ActuatorTemperatureStatus(BaseModel):

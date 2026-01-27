@@ -1,8 +1,9 @@
-import {baseUrl} from "../config";
+import { baseUrl } from "../config";
 import {
     ActuationEventResponse,
     ActuatorDetailed,
     ActuatorDetailedResponse,
+    ActuatorLogsResponse,
     ActuatorsResponse,
     ActuatorTypesResponse,
     AnimalsResponse,
@@ -10,7 +11,7 @@ import {
     CommandsResponse,
     DetectionEventResponse
 } from "../types/types";
-import {DateTime} from "luxon";
+import { DateTime } from "luxon";
 
 
 async function apiGET(url: string, onReceived: (response: Response) => Object): Promise<any> {
@@ -20,6 +21,30 @@ async function apiGET(url: string, onReceived: (response: Response) => Object): 
     }
     const response = await fetch(url, {
         method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "x-access-token": token
+        }
+    });
+    if (response.ok) {
+        return onReceived(response);
+    } else {
+        if (response.status === 401) {
+            throw new Error("Unauthorized");
+        } else {
+            throw new Error(`Error Code: ${response.status}.`);
+        }
+    }
+}
+
+
+async function apiPOST(url: string, onReceived: (response: Response) => Object): Promise<any> {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        throw new Error("Token not found");
+    }
+    const response = await fetch(url, {
+        method: "POST",
         headers: {
             "Content-Type": "application/json",
             "x-access-token": token
@@ -67,16 +92,16 @@ export async function fetchActuators(): Promise<ActuatorsResponse> {
     })
 }
 
-export async function fetchActuatorDetail(id : string) : Promise<ActuatorDetailed> {
-    return await apiGET(baseUrl.concat("api/v1/actuators/" + id +"/detail"), (response) => {
+export async function fetchActuatorDetail(id: string): Promise<ActuatorDetailed> {
+    return await apiGET(baseUrl.concat("api/v1/actuators/" + id + "/detail"), (response) => {
         return response.json();
     })
 }
 
 function buildDetectionEventsParamString(filterCameras: string[],
-                                         filterAnimals: string[],
-                                         startDate: Date | null,
-                                         endDate: Date | null): URLSearchParams {
+    filterAnimals: string[],
+    startDate: Date | null,
+    endDate: Date | null): URLSearchParams {
 
     let params = new URLSearchParams();
     if (filterCameras) {
@@ -132,10 +157,10 @@ export async function fetchDetectionEvents(
 }
 
 function buildActuationEventsParamString(detectionId: number | null = null,
-                                         filterTypes: string[] = [],
-                                         filterCommands: string[] = [],
-                                         startDate: Date | null = null,
-                                         endDate: Date | null = null): URLSearchParams {
+    filterTypes: string[] = [],
+    filterCommands: string[] = [],
+    startDate: Date | null = null,
+    endDate: Date | null = null): URLSearchParams {
 
     let params = new URLSearchParams();
 
@@ -253,4 +278,16 @@ export async function fetchLogs(): Promise<string[]> {
     });
 }
 
+
+export async function postActuatorTest(actuatorId: string): Promise<string[]> {
+    return await apiPOST(baseUrl.concat("api/v1/actuators/" + actuatorId + "/test"), (response: any) => {
+        return response.json();
+    });
+}
+
+ export async function   fetchActuatorLogs(actuatorId : string): Promise<ActuatorLogsResponse> {
+    return await apiPOST(baseUrl.concat("api/v1/actuators/"+actuatorId+"/log"), (response : any) => {
+        return response.json();
+    });
+}
 

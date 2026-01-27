@@ -83,3 +83,7 @@ export interface ActuatorDetailed  {
     humidity: number | null;
     battery_status: number | null;
 };
+
+export interface ActuatorLogsResponse {
+    data: string[];
+}
