@@ -29,9 +29,9 @@ const ActuatorDetail = () => {
         const response = await tryWithRefreshing(() =>
             fetchActuatorLogs(actuatorId)
         );
-        
+
           setActuatorLogs(response.data)
-              
+
     };
     useEffect(() => {
 
