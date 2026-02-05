@@ -26,6 +26,10 @@ import socket
 import uuid
 from logging.handlers import RotatingFileHandler
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 
 def get_timestamp():
     """Method to prepare timestamp string to apply to images naming"""
@@ -120,3 +124,35 @@ def send_data_on_local_socket(port, command):
         return data
     finally:
         client_socket.close()
+
+
+def is_pem_key(
+    pem_key_file: str,
+    password: bytes | None = None,
+) -> bool:
+    """Method to validate pem key file content."""
+
+    try:
+        with open(pem_key_file, "rb") as f:
+            serialization.load_pem_private_key(
+                f.read(),
+                password=password,
+                backend=default_backend(),
+            )
+        return True
+    except Exception:
+        return False
+
+
+def is_pem_certificate(pem_certificate_file) -> bool:
+    """Method to validate pem certificate file content."""
+
+    try:
+        with open(pem_certificate_file, "rb") as f:
+            x509.load_pem_x509_certificate(
+                f.read(),
+                backend=default_backend(),
+            )
+        return True
+    except Exception:
+        return False

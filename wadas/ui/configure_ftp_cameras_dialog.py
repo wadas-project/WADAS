@@ -42,6 +42,8 @@ from wadas.domain.camera import Camera, cameras
 from wadas.domain.database import DataBase
 from wadas.domain.ftp_camera import FTPCamera
 from wadas.domain.ftps_server import FTPsServer
+from wadas.domain.utils import is_pem_certificate, is_pem_key
+from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_configure_ftp_cameras import Ui_DialogFTPCameras
 from wadas.ui.qtextedit_logger import QTextEditLogger
 
@@ -328,6 +330,12 @@ class DialogFTPCameras(QDialog, Ui_DialogFTPCameras):
             self, "Open SSL key file", os.getcwd(), "Pem File (*.pem)"
         )
         self.ui.label_key_file_path.setText(str(file_name[0]))
+
+        # Verify key file
+        if not is_pem_key(file_name[0]):
+            WADASErrorMessage("Invalid key file provided",
+                              f"Error while loading key file. Please make sure selected file is a valid one.").exec()
+
         self.validate()
 
     def select_certificate_file(self):
@@ -337,6 +345,11 @@ class DialogFTPCameras(QDialog, Ui_DialogFTPCameras):
             self, "Open SSL certificate file", os.getcwd(), "Pem File (*.pem)"
         )
         self.ui.label_certificate_file_path.setText(str(file_name[0]))
+
+        if not is_pem_certificate(file_name[0]):
+            WADASErrorMessage("Invalid certificate file provided",
+                              f"Error while loading certificate file. Please make sure selected file is a valid one").exec()
+
         self.validate()
 
     def select_ftp_folder(self):
