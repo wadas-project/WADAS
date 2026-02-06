@@ -321,3 +321,13 @@ class Database:
                 return None  # no battery records found for this actuator
 
             return result.voltage
+
+    def get_actuators(self) -> List[Actuator]:
+        """Method to get all the enabled actuators"""
+        with self.get_session() as session:
+            result = (
+                session.query(DB_Actuator)
+                .filter(and_(DB_Actuator.deletion_date.is_(None), DB_Actuator.enabled.is_(True)))
+                .all()
+            )
+            return [Mapper.map_db_actuator_to_actuator(x) for x in result]
