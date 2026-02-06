@@ -31,7 +31,7 @@ jobs:
         conda list
     - name: Login to Hugging Face
       run: |
-        huggingface-cli login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
+        hf auth login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
     - name: Run tests
       run: |
         python -m pytest test -sv --cov=. --cov-report=html
