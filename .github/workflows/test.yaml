@@ -31,12 +31,17 @@ jobs:
         conda list
     - name: Login to Hugging Face
       run: |
+        huggingface-cli login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
+    - name: Install QT dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libegl1 libxcb-cursor0 xvfb
         hf auth login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
     - name: Run tests
       run: |
-        python -m pytest test -sv --cov=. --cov-report=html
+        xvfb-run python -m pytest test -sv --cov=. --cov-report=html
         # To enforce minimum coverage, uncomment the following line:
-        # python -m pytest test -sv --cov=. --cov-report=html --cov-fail-under=80
+        # xvfb-run python -m pytest test -sv --cov=. --cov-report=html --cov-fail-under=80
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
       with:
