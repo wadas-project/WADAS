@@ -52,6 +52,9 @@ class DialogConfigureCameraToActuatorAssociations(QDialog, Ui_DialogCameraActuat
         # Set the model to the QTreeView
         self.ui.treeView.setModel(self.model)
 
+        # Expand all items by default
+        self.ui.treeView.expandAll()
+
         # Signal
         self.ui.treeView.doubleClicked.connect(self.handle_double_click)
         self.ui.pushButton_close.clicked.connect(self.accept_and_close)
@@ -72,6 +75,7 @@ class DialogConfigureCameraToActuatorAssociations(QDialog, Ui_DialogCameraActuat
                 dialog.exec()
                 # Refresh the camera item in the tree view after editing actuators
                 self.populate_model()
+                self.ui.treeView.expandAll()
 
     def populate_model(self):
 

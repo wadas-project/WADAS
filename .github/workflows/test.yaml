@@ -36,6 +36,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libegl1 libxcb-cursor0 xvfb
+        hf auth login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
     - name: Run tests
       run: |
         xvfb-run python -m pytest test -sv --cov=. --cov-report=html
