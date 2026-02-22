@@ -29,6 +29,8 @@ jobs:
     - run: |
         conda info
         conda list
+    - name: Fix setuptools
+      run: pip install --force-reinstall setuptools>=65
     - name: Login to Hugging Face
       run: |
         hf auth login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
