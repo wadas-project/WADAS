@@ -31,6 +31,7 @@ dependencies:
   - pyopenssl=24.2.1
   - setuptools>=65
   - pip:
+      - setuptools>=65
       - cv2-enumerate-cameras==1.1.15
       - intel-npu-acceleration-library==1.4.0
       - pyside6==6.8.0.2
