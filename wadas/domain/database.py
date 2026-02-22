@@ -499,6 +499,14 @@ class DataBase(ABC):
                         """
                     )
                 )
+            elif cur_db_version <= "v1.0.0.a5":
+                DataBase.run_query(
+                    text("ALTER TABLE actuator_battery_status ADD COLUMN temperature FLOAT NULL;")
+                )
+                DataBase.run_query(
+                    text("ALTER TABLE actuator_battery_status ADD COLUMN humidity FLOAT NULL;")
+                )
+
             DataBase.run_query(text(f"UPDATE db_metadata SET version='{__dbversion__}';"))
             logger.info("Database updated from %s to %s", cur_db_version, __dbversion__)
         except Exception:
@@ -950,6 +958,8 @@ class DataBase(ABC):
                 actuator_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 voltage=domain_object.voltage,
+                temperature=domain_object.temperature,
+                humidity=domain_object.humidity,
             )
         elif isinstance(domain_object, ActuatorTemperatureStatus):
             return ORMActuatorTemperature(
