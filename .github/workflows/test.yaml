@@ -28,6 +28,7 @@ jobs:
     - name: Login to Hugging Face
       run: |
         source .venv/bin/activate
+        pip install huggingface_hub[cli]
         hf auth login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
     - name: Run tests
       run: |
