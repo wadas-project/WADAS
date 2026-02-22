@@ -210,7 +210,11 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
     )
     actuator.battery_status = battery_status
     logger.info(
-        "Received actuator %s battery status: %s", actuator_id, voltage, temperature, humidity
+        "Received actuator %s battery status: %s V, temperature: %s °, humidity: %s %%",
+        actuator_id,
+        voltage,
+        temperature,
+        humidity,
     )
 
     # Persist in DB
