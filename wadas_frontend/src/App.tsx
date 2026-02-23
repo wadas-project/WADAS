@@ -5,6 +5,8 @@ import Cameras from "./Cameras";
 import DetectionEvents from "./DetectionEvents";
 import ActuationEvents from "./ActuationEvents";
 import Logs from "./Logs";
+import Actuators from "./components/Actuators";
+import ActuatorDetail from "./ActuatorDetail";
 
 function App() {
     return (
@@ -15,6 +17,8 @@ function App() {
                 <Route path="/detections" element={<DetectionEvents />} />
                 <Route path="/actuations" element={<ActuationEvents />} />
                 <Route path="/logs" element={<Logs />} />
+                <Route path="/actuators" element={<Actuators />} />
+                <Route path="/actuator/:actuatorId" element={<ActuatorDetail />} />
             </Routes>
         </Router>
     );
