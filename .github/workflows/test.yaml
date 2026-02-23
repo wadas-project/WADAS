@@ -11,29 +11,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
-    - name: Install conda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        activate-environment: WADAS
-        environment-file: wadas/conda_env_setup.yml
-        auto-activate-base: false
-    - run: |
-        conda info
-        conda list
+    - name: Install system dependencies
+      run: sudo apt-get install -y libmariadb-dev
+    - name: Create venv and install dependencies
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
     - name: Login to Hugging Face
       run: |
-        hf auth login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }} --add-to-git-credential
+        source .venv/bin/activate
+        pip install huggingface_hub[cli]
+        huggingface-cli login --token ${{ secrets.WADAS_OFFICIAL_HUGGINGF_AUTH }}
     - name: Run tests
       run: |
+        source .venv/bin/activate
         python -m pytest test -sv --cov=. --cov-report=html
         # To enforce minimum coverage, uncomment the following line:
         # python -m pytest test -sv --cov=. --cov-report=html --cov-fail-under=80
