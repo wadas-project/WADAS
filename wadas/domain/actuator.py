@@ -76,6 +76,8 @@ class Command:
 class ActuatorBatteryStatus:
     actuator_id: str
     voltage: float
+    temperature: float
+    humidity: float
     time_stamp: datetime.datetime = field(default_factory=datetime.datetime.now)
 
     def to_json(self) -> str:
@@ -84,6 +86,8 @@ class ActuatorBatteryStatus:
                 "actuator_id": self.actuator_id,
                 "voltage": self.voltage,
                 "time_stamp": self.time_stamp.isoformat(),
+                "temperature": self.temperature,
+                "humidity": self.humidity,
             }
         )
 
