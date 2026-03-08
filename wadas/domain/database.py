@@ -1586,9 +1586,7 @@ class MariaDBDataBase(DataBase):
         if not self.database_name and not create:
             raise ValueError("Database name is required for MariaDB.")
 
-        base_string = (
-            f"mariadb+mariadbconnector://{self.username}:{password}@{self.host}:{self.port}"
-        )
+        base_string = f"mariadb+pymysql://{self.username}:{password}@{self.host}:{self.port}"
         return base_string if create else f"{base_string}/{self.database_name}"
 
     def create_database(self):
