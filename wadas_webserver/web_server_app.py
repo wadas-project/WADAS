@@ -217,11 +217,14 @@ async def download_image(
 
 
 @app.get("/api/v1/detections/test_video")
-async def test_stream_video(request: Request):
+async def test_stream_video(
+    request: Request,
+    x_access_token: Annotated[str | None, Header()] = None,
+):
     """Method used to download the image (detection or classification)
     associated to the detection event
     """
-    # verify_token(x_access_token)
+    verify_token(x_access_token)
     video_path = Path(ServerConfig.WADAS_ROOT_DIR) / "video_test" / "video.mp4"
 
     if not video_path.exists():
@@ -284,7 +287,7 @@ async def export_filtered_actuations(
     """Method to download a csv file containing the actuation events filtered
     by specified filters
     """
-    # verify_token(x_access_token)
+    verify_token(x_access_token)
     content = Database.instance.export_actuation_events_as_csv(actuation_filter)
     return Response(
         content=content,
@@ -315,9 +318,16 @@ os.makedirs(frontend_path, exist_ok=True)
 
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
-    static_file = frontend_path / full_path
-    if static_file.exists() and static_file.is_file():
-        return FileResponse(static_file)
+    resolved_frontend_path = frontend_path.resolve()
+    requested_path = (frontend_path / full_path).resolve()
+
+    try:
+        requested_path.relative_to(resolved_frontend_path)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if requested_path.exists() and requested_path.is_file():
+        return FileResponse(requested_path)
 
     # serve index.html for every path to allow React to handle the routes
     index_path = frontend_path / "index.html"
