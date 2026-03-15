@@ -56,7 +56,19 @@ class Database:
 
     def __init__(self, connection_string):
         self.connection_string = connection_string
-        self.engine = create_engine(self.get_connection_string())
+        is_sqlite = connection_string.startswith("sqlite")
+        self.engine = (
+            create_engine(self.get_connection_string())
+            if is_sqlite
+            else create_engine(
+                self.get_connection_string(),
+                pool_recycle=300,  # Recycle connections every 5 min (below MariaDB/MySQL wait_timeout)
+                pool_pre_ping=True,  # Validate connection before use
+                pool_size=5,  # Persistent connections kept in pool
+                max_overflow=10,  # Extra temporary connections allowed under load
+                pool_timeout=30,  # Max seconds to wait for a connection from the pool
+            )
+        )
 
     @contextmanager
     def get_session(self):
@@ -65,7 +77,9 @@ class Database:
         try:
             yield session
         except Exception:
+            session.rollback()
             logger.exception("An error occurred while creating a session")
+            raise
         finally:
             session.close()
 
