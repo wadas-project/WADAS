@@ -193,6 +193,10 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
     if voltage is None:
         raise HTTPException(status_code=400, detail="Missing 'volt' in payload")
 
+    # We accept the possibility that temperature or humidity are null if sensor is not plugged
+    temperature = payload.get("payload", {}).get("temperature")
+    humidity = payload.get("payload", {}).get("humidity")
+
     # Timestamp set by server
     ts = datetime.datetime.now()
 
@@ -201,9 +205,21 @@ async def receive_battery_status(actuator_id: str, payload: dict = Body(...)):  
         actuator_id=actuator_id,
         voltage=voltage,
         time_stamp=ts,
+        temperature=temperature,
+        humidity=humidity,
     )
     actuator.battery_status = battery_status
-    logger.info("Received actuator %s battery status: %s", actuator_id, voltage)
+
+    if temperature and humidity:
+        logger.info(
+            "Received actuator %s battery status: %s V, temperature: %s °, humidity: %s %%",
+            actuator_id,
+            voltage,
+            temperature,
+            humidity,
+        )
+    else:
+        logger.info("Received actuator %s battery status: %s V.", actuator_id, voltage)
 
     # Persist in DB
     if db := DataBase.get_enabled_db():

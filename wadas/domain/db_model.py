@@ -208,6 +208,8 @@ class ActuatorBatteryStatus(Base):
     actuator_id = Column(Integer, ForeignKey("actuators.id"), primary_key=True, nullable=False)
     time_stamp = Column(MySQLDATETIME6(timezone=True), primary_key=True, nullable=False)
     voltage = Column(Float)
+    temperature = Column(Float, nullable=True)
+    humidity = Column(Float, nullable=True)
 
 
 class ActuatorTemperatureStatus(Base):

@@ -193,8 +193,8 @@ class DataBase(ABC):
                     if (DataBase.wadas_db.type == DataBase.DBTypes.SQLITE)
                     else create_engine(
                         DataBase.wadas_db.get_connection_string(),
-                        pool_recycle=1800,  # Recycle connection every 30 minutes
-                        pool_pre_ping=True,  # Check if connection is still valid
+                        pool_recycle=300,  # Recycle connection every 5 minutes (under MariaDB wait_timeout)
+                        pool_pre_ping=True,  # Check if connection is still valid before use
                     )
                 )
         return DataBase.wadas_db_engine
@@ -237,12 +237,18 @@ class DataBase(ABC):
             if engine := cls.get_engine():
                 # If db is not SQLite, check engine status (SQLite has no pre-existing sessions)
                 if DataBase.wadas_db.type != DataBase.DBTypes.SQLITE:
-                    with engine.connect() as connection:
-                        if connection.invalidated:
-                            logger.warning("Connection invalidated, disposing engine...")
-                            engine.dispose()
-                            DataBase.wadas_db_engine = None  # Force new engine
-                            engine = cls.get_engine()
+                    try:
+                        with engine.connect() as connection:
+                            if connection.invalidated:
+                                logger.warning("Connection invalidated, disposing engine...")
+                                engine.dispose()
+                                DataBase.wadas_db_engine = None  # Force new engine
+                                engine = cls.get_engine()
+                    except (InterfaceError, SQLAlchemyOperationalError, mariadbOperationalerror):
+                        logger.warning("Pre-ping connection check failed, disposing engine...")
+                        engine.dispose()
+                        DataBase.wadas_db_engine = None
+                        engine = cls.get_engine()
 
                 Session = sessionmaker(bind=engine)
                 return Session()
@@ -277,6 +283,8 @@ class DataBase(ABC):
                 return result[0] if result else None
             except Exception:
                 return None
+            finally:
+                session.close()
         else:
             return None
 
@@ -290,6 +298,8 @@ class DataBase(ABC):
                 return result[0] if result else None
             except Exception:
                 return None
+            finally:
+                session.close()
         else:
             return None
 
@@ -499,6 +509,14 @@ class DataBase(ABC):
                         """
                     )
                 )
+            elif cur_db_version <= "v1.0.0.a5":
+                DataBase.run_query(
+                    text("ALTER TABLE actuator_battery_status ADD COLUMN temperature FLOAT NULL;")
+                )
+                DataBase.run_query(
+                    text("ALTER TABLE actuator_battery_status ADD COLUMN humidity FLOAT NULL;")
+                )
+
             DataBase.run_query(text(f"UPDATE db_metadata SET version='{__dbversion__}';"))
             logger.info("Database updated from %s to %s", cur_db_version, __dbversion__)
         except Exception:
@@ -759,36 +777,40 @@ class DataBase(ABC):
 
         if cls.get_instance():
             logger.debug("Removing actuator %s from camera %s in db.", actuator.id, camera.id)
-            if cls.create_session():
-                # Retrieve camera and actuator db instances
-                camera_db_id = cls.get_camera_id(camera.id)
-                actuator_db_id = cls.get_actuator_id(actuator.id)
+            # Retrieve camera and actuator db instances
+            camera_db_id = cls.get_camera_id(camera.id)
+            actuator_db_id = cls.get_actuator_id(actuator.id)
 
-                stmt = delete(camera_actuator_association).where(
-                    and_(
-                        camera_actuator_association.c.actuator_id == actuator_db_id,
-                        camera_actuator_association.c.camera_id == camera_db_id,
-                    )
+            stmt = delete(camera_actuator_association).where(
+                and_(
+                    camera_actuator_association.c.actuator_id == actuator_db_id,
+                    camera_actuator_association.c.camera_id == camera_db_id,
                 )
-                cls.run_query(stmt)
-            else:
-                logger.debug("Could not create db session, skipping actuator association insert.")
+            )
+            cls.run_query(stmt)
+        else:
+            logger.debug("Could not create db session, skipping actuator association insert.")
 
     @classmethod
     def get_camera_id(cls, camera_id):
         """Method to return camera database id (primary key)"""
 
         if session := cls.create_session():
-            return (
-                session.query(ORMCamera.db_id)
-                .filter(
-                    and_(
-                        ORMCamera.camera_id == camera_id,
-                        ORMCamera.deletion_date.is_(None),  # Avoid to return id of deleted camera
+            try:
+                return (
+                    session.query(ORMCamera.db_id)
+                    .filter(
+                        and_(
+                            ORMCamera.camera_id == camera_id,
+                            ORMCamera.deletion_date.is_(
+                                None
+                            ),  # Avoid to return id of deleted camera
+                        )
                     )
-                )
-                .scalar()
-            )  # Use scalar() to retrieve the value directly
+                    .scalar()
+                )  # Use scalar() to retrieve the value directly
+            finally:
+                session.close()
         else:
             logger.debug(
                 "Could not get camera id %s since session has not been created.", camera_id
@@ -800,16 +822,21 @@ class DataBase(ABC):
         """Method to return actuator database id (primary key)"""
 
         if session := cls.create_session():
-            return (
-                session.query(ORMActuator.db_id)
-                .filter(
-                    and_(
-                        ORMActuator.actuator_id == actuator_id,
-                        ORMActuator.deletion_date.is_(None),  # Avoid to return id of deleted camera
+            try:
+                return (
+                    session.query(ORMActuator.db_id)
+                    .filter(
+                        and_(
+                            ORMActuator.actuator_id == actuator_id,
+                            ORMActuator.deletion_date.is_(
+                                None
+                            ),  # Avoid to return id of deleted camera
+                        )
                     )
+                    .scalar()
                 )
-                .scalar()
-            )
+            finally:
+                session.close()
         else:
             logger.debug(
                 "Could not get actuator id %s since session has not been created.", actuator_id
@@ -828,16 +855,19 @@ class DataBase(ABC):
             return None
 
         if session := cls.create_session():
-            return (
-                session.query(ORMDetectionEvent.db_id)
-                .filter(
-                    and_(
-                        ORMDetectionEvent.camera_id == camera_db_id,
-                        ORMDetectionEvent.time_stamp == detection_event.time_stamp,
+            try:
+                return (
+                    session.query(ORMDetectionEvent.db_id)
+                    .filter(
+                        and_(
+                            ORMDetectionEvent.camera_id == camera_db_id,
+                            ORMDetectionEvent.time_stamp == detection_event.time_stamp,
+                        )
                     )
-                )
-                .scalar()
-            )  # Use scalar() to retrieve the value directly
+                    .scalar()
+                )  # Use scalar() to retrieve the value directly
+            finally:
+                session.close()
         else:
             logger.error(
                 "Could not retrieve detection event id as connection could not be created."
@@ -950,6 +980,8 @@ class DataBase(ABC):
                 actuator_id=foreign_key[0],
                 time_stamp=domain_object.time_stamp,
                 voltage=domain_object.voltage,
+                temperature=domain_object.temperature,
+                humidity=domain_object.humidity,
             )
         elif isinstance(domain_object, ActuatorTemperatureStatus):
             return ORMActuatorTemperature(
@@ -1369,7 +1401,7 @@ class MySQLDataBase(DataBase):
             # Connect to MySQL server to check DB connection, credentials and db existence
             test_engine = create_engine(
                 f"mysql+pymysql://{self.username}:{self.get_password()}@{self.host}:{self.port}",
-                pool_recycle=1800,
+                pool_recycle=300,
                 pool_pre_ping=True,
             )
 
@@ -1429,7 +1461,7 @@ class MySQLDataBase(DataBase):
                 temp_engine = create_engine(
                     f"mysql+pymysql://{self.username}:{self.get_password()}"
                     f"@{self.host}:{self.port}",
-                    pool_recycle=1800,
+                    pool_recycle=300,
                     pool_pre_ping=True,
                 )
 
@@ -1453,7 +1485,7 @@ class MySQLDataBase(DataBase):
 
             # Recreate engine with correct database
             DataBase.wadas_db_engine = create_engine(
-                self.get_connection_string(), pool_recycle=1800, pool_pre_ping=True
+                self.get_connection_string(), pool_recycle=300, pool_pre_ping=True
             )
 
             # Create tables
@@ -1554,9 +1586,7 @@ class MariaDBDataBase(DataBase):
         if not self.database_name and not create:
             raise ValueError("Database name is required for MariaDB.")
 
-        base_string = (
-            f"mariadb+mariadbconnector://{self.username}:{password}@{self.host}:{self.port}"
-        )
+        base_string = f"mariadb+pymysql://{self.username}:{password}@{self.host}:{self.port}"
         return base_string if create else f"{base_string}/{self.database_name}"
 
     def create_database(self):
@@ -1568,7 +1598,7 @@ class MariaDBDataBase(DataBase):
         try:
             # Connect to MariaDB server to check DB connection, credentials and db existence
             test_engine = create_engine(
-                self.get_connection_string(create=True), pool_recycle=1800, pool_pre_ping=True
+                self.get_connection_string(create=True), pool_recycle=300, pool_pre_ping=True
             )
 
             with test_engine.connect() as conn:
@@ -1625,7 +1655,7 @@ class MariaDBDataBase(DataBase):
             try:
                 # Connect without specifying the database
                 temp_engine = create_engine(
-                    self.get_connection_string(create=True), pool_recycle=1800, pool_pre_ping=True
+                    self.get_connection_string(create=True), pool_recycle=300, pool_pre_ping=True
                 )
 
                 with temp_engine.connect() as conn:
@@ -1648,7 +1678,7 @@ class MariaDBDataBase(DataBase):
 
             # Recreate engine with correct database
             DataBase.wadas_db_engine = create_engine(
-                self.get_connection_string(create=False), pool_recycle=1800, pool_pre_ping=True
+                self.get_connection_string(create=False), pool_recycle=300, pool_pre_ping=True
             )
 
             # Create tables
