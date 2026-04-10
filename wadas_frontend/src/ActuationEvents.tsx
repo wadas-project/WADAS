@@ -10,7 +10,7 @@ import CustomSpinner from "./components/CustomSpinner";
 import ActuationsScrollableTable from "./components/ActuationsScrollableTable";
 import ActuationsMobileList from "./components/ActuationsMobileList";
 
-import { isMobile, tryWithRefreshing } from "./lib/utils";
+import { getErrorMessage, isMobile, isUnauthorizedError, tryWithRefreshing } from "./lib/utils";
 import {
   fetchActuationEvents,
   fetchActuatorTypes,
@@ -24,6 +24,7 @@ import {
   ActuatorTypesResponse,
   CommandsResponse,
 } from "./types/types";
+import { useErrorModal } from "./components/ErrorModal";
 
 type ActuatorTypeOption = {
   value: string;
@@ -34,9 +35,6 @@ type CommandOption = {
   value: string;
   label: string;
 };
-
-const getErrorMessage = (e: unknown) =>
-  e instanceof Error ? e.message : String(e);
 
 type Filters = {
   actuatorTypes: string[];
@@ -221,7 +219,7 @@ const ActuationEvents: React.FC = () => {
   >([]);
   const [selectedCommand, setSelectedCommand] = useState<MultiValue<CommandOption>>([]);
 
-  const [error, setError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState<boolean>(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -233,6 +231,7 @@ const ActuationEvents: React.FC = () => {
   const [mobileFlag, setMobileFlag] = useState(isMobile());
 
   const navigate = useNavigate();
+  const { showError } = useErrorModal();
 
   // Keep mobileFlag updated on resize/orientation changes
   useEffect(() => {
@@ -259,13 +258,12 @@ const ActuationEvents: React.FC = () => {
 
   const handleUnauthorizedOrGeneric = useCallback(
     (e: unknown, setter?: (msg: string) => void) => {
-      const msg = getErrorMessage(e);
-      if (msg.includes("Unauthorized")) {
+      if (isUnauthorizedError(e)) {
         console.error("Refresh token failed, redirecting to login...");
         navigate("/");
         return;
       }
-      setter?.(msg);
+      setter?.(getErrorMessage(e));
     },
     [navigate]
   );
@@ -285,7 +283,7 @@ const ActuationEvents: React.FC = () => {
       if (showGlobalSpinner) setLoading(true);
       else setTableLoading(true);
 
-      setError(null);
+      setLoadFailed(false);
 
       try {
         const actuationsResponse: ActuationEventResponse = await tryWithRefreshing(() =>
@@ -303,61 +301,17 @@ const ActuationEvents: React.FC = () => {
         setTotalPages(Math.ceil(actuationsResponse.total / pageSize));
         setCurrentPage(page);
       } catch (e) {
-        handleUnauthorizedOrGeneric(e, (msg) =>
-          setError(`Generic Error - ${msg}. Please contact the administrator.`)
-        );
+        handleUnauthorizedOrGeneric(e, (msg) => {
+          setLoadFailed(true);
+          showError(msg, "Unable to load actuation events");
+        });
       } finally {
         if (showGlobalSpinner) setLoading(false);
         else setTableLoading(false);
       }
     },
-    [currentFilters, handleUnauthorizedOrGeneric]
+    [currentFilters, handleUnauthorizedOrGeneric, showError]
   );
-
-  const loadStaticOptionsAndFirstPage = useCallback(async () => {
-    let cancelled = false;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [actuatorTypesResponse, commandsResponse]: [
-        ActuatorTypesResponse,
-        CommandsResponse
-      ] = await Promise.all([
-        tryWithRefreshing(fetchActuatorTypes),
-        tryWithRefreshing(fetchCommands),
-      ]);
-
-      if (cancelled) return;
-
-      setActuatorTypeOptions(
-        actuatorTypesResponse.data.map((x) => ({
-          value: x,
-          label: x,
-        }))
-      );
-
-      setCommandOptions(
-        commandsResponse.data.map((x) => ({
-          value: x,
-          label: x,
-        }))
-      );
-
-      await loadActuations({ page: 1, showGlobalSpinner: true });
-    } catch (e) {
-      handleUnauthorizedOrGeneric(e, (msg) =>
-        setError(`Generic Error - ${msg}. Please contact the administrator.`)
-      );
-    } finally {
-      if (!cancelled) setLoading(false);
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [handleUnauthorizedOrGeneric, loadActuations]);
 
   // Initial load
   useEffect(() => {
@@ -365,7 +319,7 @@ const ActuationEvents: React.FC = () => {
 
     (async () => {
       setLoading(true);
-      setError(null);
+      setLoadFailed(false);
 
       try {
         const [actuatorTypesResponse, commandsResponse]: [
@@ -385,9 +339,10 @@ const ActuationEvents: React.FC = () => {
 
         await loadActuations({ page: 1, showGlobalSpinner: true });
       } catch (e) {
-        handleUnauthorizedOrGeneric(e, (msg) =>
-          setError(`Generic Error - ${msg}. Please contact the administrator.`)
-        );
+        handleUnauthorizedOrGeneric(e, (msg) => {
+          setLoadFailed(true);
+          showError(msg, "Unable to load actuation events");
+        });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -396,8 +351,7 @@ const ActuationEvents: React.FC = () => {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [handleUnauthorizedOrGeneric, loadActuations, showError]);
 
   const handleChangeActuatorType = useCallback(
     (selected: MultiValue<ActuatorTypeOption>) => {
@@ -439,17 +393,18 @@ const ActuationEvents: React.FC = () => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      const msg = getErrorMessage(e);
-      if (msg.includes("Unauthorized")) {
+      if (isUnauthorizedError(e)) {
         console.error("Refresh token failed, redirecting to login...");
         navigate("/");
       } else {
-        setExportError("Problem exporting data");
+        const message = getErrorMessage(e);
+        setExportError(message);
+        showError(message, "Export failed");
       }
     } finally {
       setExportLoading(false);
     }
-  }, [currentFilters, navigate]);
+  }, [currentFilters, navigate, showError]);
 
   const content = useMemo(() => {
     if (loading) {
@@ -460,8 +415,8 @@ const ActuationEvents: React.FC = () => {
       );
     }
 
-    if (error) {
-      return <Alert variant="danger">{error}</Alert>;
+    if (loadFailed) {
+      return <Alert variant="secondary">Unable to load actuation events</Alert>;
     }
 
     if (!mobileFlag) {
@@ -566,7 +521,7 @@ const ActuationEvents: React.FC = () => {
     );
   }, [
     loading,
-    error,
+    loadFailed,
     mobileFlag,
     actuatorTypeOptions,
     commandOptions,

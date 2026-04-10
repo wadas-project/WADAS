@@ -216,6 +216,33 @@ async def download_image(
     return FileResponse(image_path, media_type=media_type, filename=f"{event_id}{ext}")
 
 
+@app.get("/api/v1/detections/{event_id}/media")
+async def download_media(
+    event_id: int,
+    x_access_token: Annotated[str | None, Header()] = None,
+    access_token: str | None = None,
+):
+    """Method used to download the media associated to the detection event."""
+    verify_token(x_access_token or access_token)
+    event = Database.instance.get_detection_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    media_path = Path(ServerConfig.WADAS_ROOT_DIR) / (
+        event.classification_img_path or event.detection_img_path
+    )
+
+    media_type = _get_media_type(media_path.suffix)
+    if not media_type:
+        logger.error("Media extension unknown for %s", media_path)
+        raise HTTPException(status_code=500, detail="Generic Error")
+
+    if not media_path.is_file():
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    return FileResponse(media_path, media_type=media_type, filename=f"{event_id}{media_path.suffix}")
+
+
 @app.get("/api/v1/detections/test_video")
 async def test_stream_video(
     request: Request,
@@ -260,6 +287,21 @@ async def test_stream_video(
         return StreamingResponse(
             iterfile(), media_type="video/mp4", headers={"Content-Length": str(file_size)}
         )
+
+
+def _get_media_type(extension: str) -> str | None:
+    extension = extension.lower()
+    media_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".mp4": "video/mp4",
+        ".avi": "video/x-msvideo",
+        ".mov": "video/quicktime",
+        ".mkv": "video/x-matroska",
+        ".wmv": "video/x-ms-wmv",
+    }
+    return media_types.get(extension)
 
 
 @app.get("/api/v1/detections/export")
@@ -315,26 +357,6 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
 frontend_path = Path(__file__).parent / "frontend"
 os.makedirs(frontend_path, exist_ok=True)
 
-
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    resolved_frontend_path = frontend_path.resolve()
-    requested_path = (frontend_path / full_path).resolve()
-
-    try:
-        requested_path.relative_to(resolved_frontend_path)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    if requested_path.exists() and requested_path.is_file():
-        return FileResponse(requested_path)
-
-    # serve index.html for every path to allow React to handle the routes
-    index_path = frontend_path / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-
-    return FileResponse(index_path)
 
 
 # Section related to API endpoints that requires WADAS to be up and running.
@@ -521,5 +543,25 @@ async def get_actuator_last_update(
     status_data = {
         "last_update": actuator.last_update.isoformat() if actuator.last_update else None,
     }
-
     return DataResponse(data=status_data)
+
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    resolved_frontend_path = frontend_path.resolve()
+    requested_path = (frontend_path / full_path).resolve()
+
+    try:
+        requested_path.relative_to(resolved_frontend_path)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if requested_path.exists() and requested_path.is_file():
+        return FileResponse(requested_path)
+
+    # serve index.html for every path to allow React to handle the routes
+    index_path = frontend_path / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
+    return FileResponse(index_path)

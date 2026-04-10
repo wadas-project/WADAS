@@ -30,6 +30,7 @@ from PytorchWildlife import utils as pw_utils
 
 from wadas.ai import DetectionPipeline
 from wadas.ai.object_tracker import ObjectTracker
+from wadas.domain.video_writer import create_browser_compatible_video_writer
 
 logger = logging.getLogger(__name__)
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -283,8 +284,11 @@ class AiModel:
 
         first = np.array(frames[0].convert("RGB"))
         height, width = first.shape[:2]
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(str(output_path), fourcc, self.video_fps, (width, height))
+        out = create_browser_compatible_video_writer(
+            output_path=str(output_path),
+            fps=self.video_fps,
+            frame_size=(width, height),
+        )
 
         for frame in frames:
             rgb_array = np.array(frame.convert("RGB"))

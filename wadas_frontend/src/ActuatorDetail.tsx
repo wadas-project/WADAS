@@ -1,86 +1,137 @@
-import * as React from "react";
 import { useEffect, useState } from "react";
-import { Alert, Container, Row, Col, Button } from "react-bootstrap";
+import { Alert, Button, Col, Container, Modal, Row } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
 
 import CustomNavbar from "./components/CustomNavbar";
 import CustomSpinner from "./components/CustomSpinner";
-
-import { tryWithRefreshing } from "./lib/utils";
-import { fetchActuatorDetail, postActuatorTest,fetchActuatorLogs } from "./lib/api";
-import { ActuatorDetailed, ActuatorLogsResponse } from "./types/types";
+import { fetchActuatorDetail, fetchActuatorLogs, postActuatorTest } from "./lib/api";
+import { getErrorMessage, isUnauthorizedError, tryWithRefreshing } from "./lib/utils";
+import { ActuatorDetailed } from "./types/types";
+import { useErrorModal } from "./components/ErrorModal";
 
 const ActuatorDetail = () => {
     const { actuatorId } = useParams<{ actuatorId: string }>();
     const navigate = useNavigate();
 
     const [actuator, setActuator] = useState<ActuatorDetailed | null>(null);
-    const [actuatorLogs, setActuatorLogs] = useState<string[]|null>(null);
+    const [actuatorLogs, setActuatorLogs] = useState<string[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const [logsLoading, setLogsLoading] = useState<boolean>(false);
+    const [testLoading, setTestLoading] = useState<boolean>(false);
+    const [showTestModal, setShowTestModal] = useState<boolean>(false);
+    const [testMessage, setTestMessage] = useState<string>("Waiting...");
+    const [loadFailed, setLoadFailed] = useState<boolean>(false);
+    const { showError } = useErrorModal();
 
+    const handleTest = async (currentActuatorId: string): Promise<void> => {
+        setShowTestModal(true);
+        setTestLoading(true);
+        setTestMessage("Waiting...");
+        try {
+            const response = await tryWithRefreshing(() =>
+                postActuatorTest(currentActuatorId)
+            );
+            setTestMessage(response?.data?.message ?? "Waiting...");
+        } catch (e) {
+            setShowTestModal(false);
+            if (isUnauthorizedError(e)) {
+                navigate("/");
+                return;
+            }
 
-    const handleTest = async (actuatorId: string): Promise<void> => {
-        await tryWithRefreshing(() =>
-            postActuatorTest(actuatorId)
-        );
+            showError(getErrorMessage(e), "Actuator test failed");
+        } finally {
+            setTestLoading(false);
+        }
     };
-   const handleRefreshLogs = async (actuatorId: string): Promise<void> => {
-        const response = await tryWithRefreshing(() =>
-            fetchActuatorLogs(actuatorId)
-        );
 
-          setActuatorLogs(response.data)
+    const handleRefreshLogs = async (currentActuatorId: string): Promise<void> => {
+        setLogsLoading(true);
+        try {
+            const response = await tryWithRefreshing(() =>
+                fetchActuatorLogs(currentActuatorId)
+            );
 
+            setActuatorLogs(response.data.log ?? []);
+        } catch (e) {
+            if (isUnauthorizedError(e)) {
+                navigate("/");
+                return;
+            }
+
+            showError(getErrorMessage(e), "Unable to refresh logs");
+        } finally {
+            setLogsLoading(false);
+        }
     };
+
     useEffect(() => {
-
-
         const loadPage = async () => {
             try {
                 if (!actuatorId) {
-                    setError("Invalid actuator id");
+                    setLoadFailed(true);
+                    showError("Invalid actuator id", "Unable to load actuator");
                     setLoading(false);
                     return;
                 }
 
-                const response = await tryWithRefreshing(() =>
+                const detailResponse = await tryWithRefreshing(() =>
                     fetchActuatorDetail(actuatorId)
                 );
 
-                setActuator(response);
-                setActuatorLogs(response.log ? response.log.split("\n") : []);
+                setActuator(detailResponse);
                 setLoading(false);
+                setLogsLoading(true);
 
-            } catch (e: any) {
-                if (e instanceof Error && e.message.includes("Unauthorized")) {
+                try {
+                    const logsResponse = await tryWithRefreshing(() =>
+                        fetchActuatorLogs(actuatorId)
+                    );
+                    setActuatorLogs(logsResponse.data.log ?? []);
+                } catch (e) {
+                    if (isUnauthorizedError(e)) {
+                        navigate("/");
+                        return;
+                    }
+
+                    showError(getErrorMessage(e), "Unable to load logs");
+                } finally {
+                    setLogsLoading(false);
+                }
+            } catch (e) {
+                if (isUnauthorizedError(e)) {
                     navigate("/");
                 } else {
-                    setError(`Generic Error - ${e.message}. Please contact the administrator.`);
+                    setLoadFailed(true);
+                    showError(getErrorMessage(e), "Unable to load actuator");
                     setLoading(false);
                 }
             }
         };
 
         loadPage();
-    }, [actuatorId]);
-
-
+    }, [actuatorId, navigate, showError]);
 
     return (
         <div className="padded-div">
             <CustomNavbar />
 
+            <Modal show={showTestModal} onHide={() => setShowTestModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Actuator test</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4">{testMessage}</Modal.Body>
+            </Modal>
+
             <Container className="mt-3">
                 {loading ? (
                     <CustomSpinner />
-                ) : error ? (
-                    <Alert variant="danger">{error}</Alert>
+                ) : loadFailed ? (
+                    <Alert variant="secondary">Unable to load actuator details</Alert>
                 ) : !actuator ? (
-                    <Alert variant="warning">Actuator not found</Alert>
+                    <Alert variant="warning">Wating...</Alert>
                 ) : (
                     <>
-                        {/* Header */}
                         <Row className="align-items-center mb-4">
                             <Col>
                                 <h4>Actuator: {actuator.actuator_id}</h4>
@@ -88,7 +139,7 @@ const ActuatorDetail = () => {
                                     Last connection:{" "}
                                     {actuator.last_update
                                         ? new Date(actuator.last_update).toLocaleString()
-                                        : "—"}
+                                        : "-"}
                                 </small>
                             </Col>
                             <Col className="text-end">
@@ -103,19 +154,27 @@ const ActuatorDetail = () => {
                             </Col>
                         </Row>
 
-                        {/* Commands */}
                         <Row className="mb-4">
                             <Col>
                                 <h6>Commands</h6>
                                 <div className="border p-3 d-flex gap-3">
-                                    <Button variant="info" onClick={() => handleTest(actuator.actuator_id)}>Test</Button>
-                                    {/* <Button variant="primary" >Reboot</Button> */}
-                                    <Button variant="info" onClick={() => handleRefreshLogs(actuator.actuator_id)}>Refresh log</Button>
+                                    <Button
+                                        variant="info"
+                                        onClick={() => handleTest(actuator.actuator_id)}
+                                        disabled={testLoading}
+                                    >
+                                        Test
+                                    </Button>
+                                    <Button
+                                        variant="info"
+                                        onClick={() => handleRefreshLogs(actuator.actuator_id)}
+                                    >
+                                        Refresh log
+                                    </Button>
                                 </div>
                             </Col>
                         </Row>
 
-                        {/* Telemetry */}
                         <Row className="mb-4">
                             <Col md={3}>
                                 <strong>Type</strong>
@@ -123,22 +182,24 @@ const ActuatorDetail = () => {
                             </Col>
                             <Col md={3}>
                                 <strong>Battery</strong>
-                                <div>{actuator.battery_status ?? "—"} V</div>
+                                <div>{actuator.battery_status ?? "-"} V</div>
                             </Col>
                             <Col md={3}>
                                 <strong>Temperature</strong>
-                                <div>{actuator.temperature ?? "—"} °C</div>
+                                <div>{actuator.temperature ?? "-"} °C</div>
                             </Col>
                             <Col md={3}>
                                 <strong>Humidity</strong>
-                                <div>{actuator.humidity ?? "—"} %</div>
+                                <div>{actuator.humidity ?? "-"} %</div>
                             </Col>
                         </Row>
 
-                        {/* Log */}
                         <Row>
                             <Col>
-                                <h6>Log</h6>
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 className="mb-0">Log</h6>
+                                    {logsLoading ? <small className="text-muted">Loading logs...</small> : null}
+                                </div>
                                 <div
                                     className="border p-3"
                                     style={{
@@ -149,7 +210,13 @@ const ActuatorDetail = () => {
                                         backgroundColor: "#f8f9fa",
                                     }}
                                 >
-                                    {actuator.log || "No log available"}
+                                    {logsLoading ? (
+                                        <div className="d-flex justify-content-center py-3">
+                                            <CustomSpinner />
+                                        </div>
+                                    ) : actuatorLogs.length > 0
+                                        ? actuatorLogs.join("\n")
+                                        : "No log available"}
                                 </div>
                             </Col>
                         </Row>

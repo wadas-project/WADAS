@@ -87,3 +87,12 @@ export interface ActuatorDetailed  {
 export interface ActuatorLogsResponse {
     data: string[];
 }
+
+export interface ActuatorTestResponse {
+    data: {
+        message: string;
+        payload: {
+            duration: number;
+        };
+    };
+}
