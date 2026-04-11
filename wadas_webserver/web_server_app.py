@@ -240,7 +240,9 @@ async def download_media(
     if not media_path.is_file():
         raise HTTPException(status_code=404, detail="Media not found")
 
-    return FileResponse(media_path, media_type=media_type, filename=f"{event_id}{media_path.suffix}")
+    return FileResponse(
+        media_path, media_type=media_type, filename=f"{event_id}{media_path.suffix}"
+    )
 
 
 @app.get("/api/v1/detections/test_video")
@@ -356,7 +358,6 @@ async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
 # Static pages mounted under the site root
 frontend_path = Path(__file__).parent / "frontend"
 os.makedirs(frontend_path, exist_ok=True)
-
 
 
 # Section related to API endpoints that requires WADAS to be up and running.
