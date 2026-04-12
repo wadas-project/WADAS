@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Badge, Button, Card } from "react-bootstrap";
+import { Button, Card } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/App.css"
 import { Actuator } from "../types/types";
