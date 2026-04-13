@@ -56,14 +56,25 @@ const CustomNavbar = () => {
                             >
                                 ACTUATION EVENTS
                             </Nav.Link>
-                            {role === "Admin" && (
-                                <Nav.Link
-                                    onClick={() => handleNavClick("/logs")}
-                                    className={currentPath === "/logs" ? "selected-menu-item" : ""}
-                                >
-                                    LOGS
-                                </Nav.Link>
+
+
+                            {role === "Viewer" && (
+                                <>
+                                    <Nav.Link
+                                        onClick={() => handleNavClick("/logs")}
+                                        className={currentPath === "/logs" ? "selected-menu-item" : ""}
+                                    >
+                                        LOGS
+                                    </Nav.Link>
+
+                                </>
                             )}
+                            <Nav.Link
+                                onClick={() => handleNavClick("/actuators")}
+                                className={currentPath === "/actuators" ? "selected-menu-item" : ""}
+                            >
+                                ACTUATORS
+                            </Nav.Link>
                         </Nav>
                     </Navbar.Collapse>
                 </Container>

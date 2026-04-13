@@ -1,22 +1,37 @@
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Container } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import CustomNavbar from "./components/CustomNavbar";
 import { fetchLogs } from "./lib/api";
+import { getErrorMessage, isUnauthorizedError, tryWithRefreshing } from "./lib/utils";
+import { useNavigate } from "react-router-dom";
+import { useErrorModal } from "./components/ErrorModal";
 
 const Logs: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
+  const hasShownErrorRef = useRef(false);
+  const navigate = useNavigate();
+  const { showError } = useErrorModal();
 
   // Fetch logs every second
   useEffect(() => {
     const fetchLogsData = async () => {
       try {
-        const response = await fetchLogs(); // { data: [...] }
+        const response = await tryWithRefreshing(fetchLogs);
         const newLogs = Array.isArray(response.data) ? response.data : [];
         setLogs(newLogs);
+        hasShownErrorRef.current = false;
       } catch (err) {
-        console.error("Fetch logs failed:", err);
+        if (isUnauthorizedError(err)) {
+          navigate("/");
+          return;
+        }
+
+        if (!hasShownErrorRef.current) {
+          showError(getErrorMessage(err), "Unable to load application logs");
+          hasShownErrorRef.current = true;
+        }
       }
     };
 
@@ -24,7 +39,7 @@ const Logs: React.FC = () => {
     const interval = setInterval(fetchLogsData, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [navigate, showError]);
 
   return (
     <div className="padded-div">

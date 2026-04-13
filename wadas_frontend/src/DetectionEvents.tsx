@@ -5,14 +5,15 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import CustomNavbar from "./components/CustomNavbar";
 import Select, {MultiValue} from "react-select";
 import DatePick from "./components/DatePick";
-import {isMobile, tryWithRefreshing} from "./lib/utils";
+import {getErrorMessage, isMobile, isUnauthorizedError, tryWithRefreshing} from "./lib/utils";
 import DetectionsScrollableTable from "./components/DetectionsScrollableTable";
 import DetectionsMobileList from "./components/DetectionsMobileList";
-import {useLocation, useNavigate, useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import CustomSpinner from "./components/CustomSpinner";
 import {Camera, DetectionEvent, DetectionEventResponse} from "./types/types";
 import {fetchAnimalsNames, fetchCameras, fetchDetectionEvents, fetchExportDetectionEvents} from "./lib/api";
 import EventDetails from "./EventDetails";
+import { useErrorModal } from "./components/ErrorModal";
 
 
 type CameraOption = {
@@ -38,7 +39,7 @@ const DetectionEvents = () => {
     const [exportLoading, setExportLoading] = useState<boolean>(false);
     const [selectedCameras, setSelectedCameras] = useState<MultiValue<CameraOption>>([]);
     const [selectedAnimals, setSelectedAnimals] = useState<MultiValue<AnimalOption>>([]);
-    const [error, setError] = useState<string | null>(null);
+    const [loadFailed, setLoadFailed] = useState<boolean>(false);
     const [exportError, setExportError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -46,7 +47,8 @@ const DetectionEvents = () => {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [currentEvent, setCurrentEvent] = useState<DetectionEvent | null>(null)
-    const [mobileFlag, setMobileFlag] = useState(isMobile());
+    const [mobileFlag] = useState(isMobile());
+    const { showError } = useErrorModal();
 
 
     const updateDateRange = (dates: [Date | null, Date | null]) => {
@@ -57,6 +59,7 @@ const DetectionEvents = () => {
 
     const updateDetectionData = async (page = 1) => {
         try {
+            setLoadFailed(false);
             const offset = (page - 1) * pageSize;
             const detectionsResponse: DetectionEventResponse = await tryWithRefreshing(() =>
                 fetchDetectionEvents(
@@ -73,11 +76,12 @@ const DetectionEvents = () => {
             setCurrentEvent(null);
             setLoading(false);
         } catch (e) {
-            if (e instanceof Error && e.message.includes("Unauthorized")) {
+            if (isUnauthorizedError(e)) {
                 console.error("Refresh token failed, redirecting to login...");
                 navigate("/");
             } else {
-                setError(`Generic Error - ${e.message}. Please contact the administrator.`);
+                setLoadFailed(true);
+                showError(getErrorMessage(e), "Unable to load detection events");
                 setLoading(false);
             }
         }
@@ -95,6 +99,7 @@ const DetectionEvents = () => {
 
     const exportResults = () => async () => {
         setExportLoading(true);
+        setExportError(null);
         try {
             const responseBlob: Blob = await tryWithRefreshing(() =>
                 fetchExportDetectionEvents(
@@ -114,11 +119,13 @@ const DetectionEvents = () => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (e) {
-            if (e instanceof Error && e.message.includes("Unauthorized")) {
+            if (isUnauthorizedError(e)) {
                 console.error("Refresh token failed, redirecting to login...");
                 navigate("/");
             } else {
-                setExportError("Problem exporting data");
+                const message = getErrorMessage(e);
+                setExportError(message);
+                showError(message, "Export failed");
             }
         } finally {
             setExportLoading(false);
@@ -156,11 +163,12 @@ const DetectionEvents = () => {
                 setOptionsAnimals(animalsResponse.data.map(animal => ({value: animal, label: animal})));
                 setLoading(false);
             } catch (e) {
-                if (e instanceof Error && e.message.includes("Unauthorized")) {
+                if (isUnauthorizedError(e)) {
                     console.error("Refresh token failed, redirecting to login...");
                     navigate("/");
                 } else {
-                    setError(`Generic Error - ${e.message}. Please contact the administrator.`);
+                    setLoadFailed(true);
+                    showError(getErrorMessage(e), "Unable to load filters");
                 }
             }
         };
@@ -178,8 +186,8 @@ const DetectionEvents = () => {
                     <Container style={{flex: 1, display: "flex", flexDirection: "column"}}>
                         <CustomSpinner/>
                     </Container>
-                ) : error ? (
-                    <Alert variant="danger">{error}</Alert>
+                ) : loadFailed ? (
+                    <Alert variant="secondary">Unable to load detection events</Alert>
                 ) : (
                     <>
                         {!mobileFlag ? (

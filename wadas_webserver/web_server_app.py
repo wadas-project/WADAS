@@ -216,6 +216,35 @@ async def download_image(
     return FileResponse(image_path, media_type=media_type, filename=f"{event_id}{ext}")
 
 
+@app.get("/api/v1/detections/{event_id}/media")
+async def download_media(
+    event_id: int,
+    x_access_token: Annotated[str | None, Header()] = None,
+    access_token: str | None = None,
+):
+    """Method used to download the media associated to the detection event."""
+    verify_token(x_access_token or access_token)
+    event = Database.instance.get_detection_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    media_path = Path(ServerConfig.WADAS_ROOT_DIR) / (
+        event.classification_img_path or event.detection_img_path
+    )
+
+    media_type = _get_media_type(media_path.suffix)
+    if not media_type:
+        logger.error("Media extension unknown for %s", media_path)
+        raise HTTPException(status_code=500, detail="Generic Error")
+
+    if not media_path.is_file():
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    return FileResponse(
+        media_path, media_type=media_type, filename=f"{event_id}{media_path.suffix}"
+    )
+
+
 @app.get("/api/v1/detections/test_video")
 async def test_stream_video(
     request: Request,
@@ -260,6 +289,21 @@ async def test_stream_video(
         return StreamingResponse(
             iterfile(), media_type="video/mp4", headers={"Content-Length": str(file_size)}
         )
+
+
+def _get_media_type(extension: str) -> str | None:
+    extension = extension.lower()
+    media_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".mp4": "video/mp4",
+        ".avi": "video/x-msvideo",
+        ".mov": "video/quicktime",
+        ".mkv": "video/x-matroska",
+        ".wmv": "video/x-ms-wmv",
+    }
+    return media_types.get(extension)
 
 
 @app.get("/api/v1/detections/export")
@@ -316,27 +360,6 @@ frontend_path = Path(__file__).parent / "frontend"
 os.makedirs(frontend_path, exist_ok=True)
 
 
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    resolved_frontend_path = frontend_path.resolve()
-    requested_path = (frontend_path / full_path).resolve()
-
-    try:
-        requested_path.relative_to(resolved_frontend_path)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    if requested_path.exists() and requested_path.is_file():
-        return FileResponse(requested_path)
-
-    # serve index.html for every path to allow React to handle the routes
-    index_path = frontend_path / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-
-    return FileResponse(index_path)
-
-
 # Section related to API endpoints that requires WADAS to be up and running.
 
 
@@ -345,23 +368,27 @@ async def get_actuators(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
     """Return the list of existing actuators (admin only)"""
-    user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    try:
+        user = verify_token(x_access_token)
+        if user.role != "Admin":
+            raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    # Get actuators from domain class
-    db_actuators = Database.instance.get_actuators()
+        # Get actuators from domain class
+        db_actuators = Database.instance.get_actuators()
 
-    # Fetch only Actuator's required fields
-    result = []
-    for db_act in db_actuators:
-        actuator = Actuator.actuators.get(db_act.actuator_id)
-        if actuator:
-            result.append(
-                ActuatorStatus(
-                    id=actuator.id, type=actuator.type.value, last_update=actuator.last_update
-                )
+        # Fetch only Actuator's required fields
+        result = [
+            ActuatorStatus(
+                id=actuator.id,
+                type=actuator.type.value,
+                last_update=actuator.last_update,
             )
+            for db_act in db_actuators
+            if (actuator := Actuator.actuators.get(db_act.name))
+        ]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unable to queue log request: {e}")
 
     return {"data": result}
 
@@ -371,28 +398,38 @@ async def get_actuator_detail(
     actuator_id: str,
     x_access_token: Annotated[str | None, Header()] = None,
 ):
-    """Return detailed info of a given actuator (admin only)"""
     user = verify_token(x_access_token)
     if user.role != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden: admin only")
 
-    # Retrieve the actuator from the in-memory registry
     actuator = Actuator.actuators.get(actuator_id)
     if actuator is None:
-        raise HTTPException(status_code=404, detail=f"Actuator '{actuator_id}' not found")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Actuator '{actuator_id}' not found",
+        )
 
-    battery_status = Database.get_last_battery_status(actuator_id)
-    temperature, humidity = Database.get_last_temperature_status(actuator_id)
+    try:
 
-    return ActuatorDetailed(
-        actuator_id=actuator.id,
-        type=actuator.type.value,
-        last_update=actuator.last_update,
-        log=actuator.log,
-        temperature=temperature,
-        humidity=humidity,
-        battery_status=battery_status,
-    )
+        battery_status = Database.instance.get_last_battery_status(actuator_id)
+        temp_data = Database.instance.get_last_temperature_status(actuator_id)
+        temperature, humidity = temp_data or (None, None)
+
+        return ActuatorDetailed(
+            actuator_id=actuator.id,
+            type=actuator.type.value,
+            last_update=actuator.last_update,
+            log=actuator.log,
+            temperature=temperature,
+            humidity=humidity,
+            battery_status=battery_status,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
 
 
 @app.post("/api/v1/actuators/{actuator_id}/log", response_model=DataResponse)
@@ -507,5 +544,25 @@ async def get_actuator_last_update(
     status_data = {
         "last_update": actuator.last_update.isoformat() if actuator.last_update else None,
     }
-
     return DataResponse(data=status_data)
+
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    resolved_frontend_path = frontend_path.resolve()
+    requested_path = (frontend_path / full_path).resolve()
+
+    try:
+        requested_path.relative_to(resolved_frontend_path)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if requested_path.exists() and requested_path.is_file():
+        return FileResponse(requested_path)
+
+    # serve index.html for every path to allow React to handle the routes
+    index_path = frontend_path / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
+    return FileResponse(index_path)

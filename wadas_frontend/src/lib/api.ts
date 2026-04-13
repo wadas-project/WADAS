@@ -1,35 +1,102 @@
-import {baseUrl} from "../config";
+import { baseUrl } from "../config";
 import {
     ActuationEventResponse,
+    ActuatorDetailed,
+    ActuatorLogsResponse,
+    ActuatorTestResponse,
+    ActuatorsResponse,
     ActuatorTypesResponse,
     AnimalsResponse,
     CamerasResponse,
     CommandsResponse,
     DetectionEventResponse
 } from "../types/types";
-import {DateTime} from "luxon";
+import { DateTime } from "luxon";
+import { AppError, buildHttpError, normalizeError } from "./errors";
 
 
 async function apiGET(url: string, onReceived: (response: Response) => Object): Promise<any> {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-        throw new Error("Token not found");
+        throw new AppError("Token not found", {
+            code: "AUTH_REQUIRED",
+            status: 401,
+            userMessage: "Session expired. Please log in again.",
+        });
     }
-    const response = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "x-access-token": token
-        }
-    });
-    if (response.ok) {
-        return onReceived(response);
-    } else {
-        if (response.status === 401) {
-            throw new Error("Unauthorized");
-        } else {
-            throw new Error(`Error Code: ${response.status}.`);
-        }
+
+    let response: Response;
+    try {
+        response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "x-access-token": token
+            }
+        });
+    } catch (error) {
+        throw new AppError("Network request failed", {
+            code: "NETWORK_ERROR",
+            userMessage: "Unable to contact the server. Check the connection and try again.",
+            cause: error,
+        });
+    }
+
+    if (!response.ok) {
+        throw await buildHttpError(response);
+    }
+
+    try {
+        return await onReceived(response);
+    } catch (error) {
+        throw new AppError("Response parsing failed", {
+            code: "PARSE_ERROR",
+            userMessage: "Server response is invalid. Please contact the administrator.",
+            cause: normalizeError(error),
+        });
+    }
+}
+
+
+async function apiPOST(url: string, onReceived: (response: Response) => Object): Promise<any> {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        throw new AppError("Token not found", {
+            code: "AUTH_REQUIRED",
+            status: 401,
+            userMessage: "Session expired. Please log in again.",
+        });
+    }
+
+    let response: Response;
+    try {
+        response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-access-token": token
+            }
+        });
+    } catch (error) {
+        throw new AppError("Network request failed", {
+            code: "NETWORK_ERROR",
+            userMessage: "Unable to contact the server. Check the connection and try again.",
+            cause: error,
+        });
+    }
+
+    if (!response.ok) {
+        throw await buildHttpError(response);
+    }
+
+    try {
+        return await onReceived(response);
+    } catch (error) {
+        throw new AppError("Response parsing failed", {
+            code: "PARSE_ERROR",
+            userMessage: "Server response is invalid. Please contact the administrator.",
+            cause: normalizeError(error),
+        });
     }
 }
 
@@ -57,10 +124,23 @@ export async function fetchCommands(): Promise<CommandsResponse> {
     })
 }
 
+
+export async function fetchActuators(): Promise<ActuatorsResponse> {
+    return await apiGET(baseUrl.concat("api/v1/actuators"), (response) => {
+        return response.json();
+    })
+}
+
+export async function fetchActuatorDetail(id: string): Promise<ActuatorDetailed> {
+    return await apiGET(baseUrl.concat("api/v1/actuators/" + id + "/detail"), (response) => {
+        return response.json();
+    })
+}
+
 function buildDetectionEventsParamString(filterCameras: string[],
-                                         filterAnimals: string[],
-                                         startDate: Date | null,
-                                         endDate: Date | null): URLSearchParams {
+    filterAnimals: string[],
+    startDate: Date | null,
+    endDate: Date | null): URLSearchParams {
 
     let params = new URLSearchParams();
     if (filterCameras) {
@@ -91,7 +171,6 @@ function buildDetectionEventsParamString(filterCameras: string[],
         }
     }
     return params;
-
 }
 
 export async function fetchDetectionEvents(
@@ -116,10 +195,10 @@ export async function fetchDetectionEvents(
 }
 
 function buildActuationEventsParamString(detectionId: number | null = null,
-                                         filterTypes: string[] = [],
-                                         filterCommands: string[] = [],
-                                         startDate: Date | null = null,
-                                         endDate: Date | null = null): URLSearchParams {
+    filterTypes: string[] = [],
+    filterCommands: string[] = [],
+    startDate: Date | null = null,
+    endDate: Date | null = null): URLSearchParams {
 
     let params = new URLSearchParams();
 
@@ -191,6 +270,15 @@ export async function downloadImage(
     })
 }
 
+export async function downloadDetectionMedia(
+    eventId: number
+): Promise<Blob> {
+    const url = baseUrl + "api/v1/detections/" + eventId + "/media";
+    return await apiGET(url, (response) => {
+        return response.blob();
+    })
+}
+
 export async function fetchExportDetectionEvents(
     filterCameras: string[],
     filterAnimals: string[],
@@ -237,4 +325,16 @@ export async function fetchLogs(): Promise<string[]> {
     });
 }
 
+
+export async function postActuatorTest(actuatorId: string): Promise<ActuatorTestResponse> {
+    return await apiPOST(baseUrl.concat("api/v1/actuators/" + actuatorId + "/test"), (response: any) => {
+        return response.json();
+    });
+}
+
+ export async function   fetchActuatorLogs(actuatorId : string): Promise<ActuatorLogsResponse> {
+    return await apiPOST(baseUrl.concat("api/v1/actuators/"+actuatorId+"/log"), (response : any) => {
+        return response.json();
+    });
+}
 

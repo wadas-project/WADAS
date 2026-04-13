@@ -436,6 +436,7 @@ class DataBase(ABC):
 
                 orm_object = DataBase.domain_to_orm(domain_object, foreign_key)
                 session.add(orm_object)
+                session.flush()
 
                 # If instance is a camera, handle relationship with actuators
                 if isinstance(domain_object, FTPCamera) or isinstance(domain_object, USBCamera):
@@ -445,6 +446,20 @@ class DataBase(ABC):
                         )
                         if orm_actuator:
                             orm_object.actuators.append(orm_actuator)
+
+                if isinstance(domain_object, DetectionEvent) and domain_object.classified_animals:
+                    for classified_animal in domain_object.classified_animals:
+                        classification = classified_animal.get("classification")
+                        if not classification:
+                            continue
+
+                        session.add(
+                            ORMClassifiedAnimals(
+                                detection_event_id=orm_object.db_id,
+                                classified_animal=classification[0],
+                                probability=classification[1],
+                            )
+                        )
 
                 session.commit()
                 logger.debug(
@@ -949,7 +964,10 @@ class DataBase(ABC):
         elif isinstance(domain_object, DetectionEvent):
             # Count detections before assignment as video classification does not provide this value
             detections = domain_object.detected_animals.get("detections")
-            num_detected = len(detections.xyxy) if detections is not None else 0
+            if detections is not None:
+                num_detected = len(detections.xyxy)
+            else:
+                num_detected = domain_object.detected_animals.get("count", 0)
 
             return ORMDetectionEvent(
                 camera_id=foreign_key[0],

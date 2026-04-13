@@ -5,18 +5,25 @@ import Cameras from "./Cameras";
 import DetectionEvents from "./DetectionEvents";
 import ActuationEvents from "./ActuationEvents";
 import Logs from "./Logs";
+import Actuators from "./components/Actuators";
+import ActuatorDetail from "./ActuatorDetail";
+import { ErrorModalProvider } from "./components/ErrorModal";
 
 function App() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<LoginPage />} />
-                <Route path="/homepage" element={<Cameras />} />
-                <Route path="/detections" element={<DetectionEvents />} />
-                <Route path="/actuations" element={<ActuationEvents />} />
-                <Route path="/logs" element={<Logs />} />
-            </Routes>
-        </Router>
+        <ErrorModalProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<LoginPage />} />
+                    <Route path="/homepage" element={<Cameras />} />
+                    <Route path="/detections" element={<DetectionEvents />} />
+                    <Route path="/actuations" element={<ActuationEvents />} />
+                    <Route path="/logs" element={<Logs />} />
+                    <Route path="/actuators" element={<Actuators />} />
+                    <Route path="/actuator/:actuatorId" element={<ActuatorDetail />} />
+                </Routes>
+            </Router>
+        </ErrorModalProvider>
     );
 }
 
