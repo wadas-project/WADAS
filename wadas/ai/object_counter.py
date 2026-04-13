@@ -13,6 +13,7 @@ from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_SOL_DICT, LOGGER
 from ultralytics.utils.checks import check_imshow
 
 from wadas.ai.ov_predictor import OVEncryptedYOLO, __model_folder__
+from wadas.domain.video_writer import create_browser_compatible_video_writer
 
 logger = logging.getLogger(__name__)
 
@@ -311,8 +312,11 @@ class ObjectCounter(solutions.ObjectCounter):
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             logger.info("Animals detected. Saving annotated video to %s", output_path)
 
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            out = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
+            out = create_browser_compatible_video_writer(
+                output_path=output_path,
+                fps=fps,
+                frame_size=frame_size,
+            )
 
             for annotated_frame in annotated_frames:
                 out.write(annotated_frame)

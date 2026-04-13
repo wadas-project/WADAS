@@ -6,20 +6,22 @@ import CustomNavbar from "./components/CustomNavbar";
 import CameraCard from "./components/CameraCard";
 import {Camera, CamerasResponse} from "./types/types";
 import {useNavigate} from 'react-router-dom';
-import {tryWithRefreshing} from './lib/utils';
+import {getErrorMessage, isUnauthorizedError, tryWithRefreshing} from './lib/utils';
 import CustomSpinner from "./components/CustomSpinner";
 import {fetchCameras} from "./lib/api";
 import ActuatorsModal from "./components/ActuatorsModal";
+import { useErrorModal } from "./components/ErrorModal";
 
 
 const Cameras = () => {
 
     const [cameras, setCameras] = useState<Camera[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const [loadFailed, setLoadFailed] = useState<boolean>(false);
     const [showActuatorsModal, setShowActuatorsModal] = useState<boolean>(false);
     const [clickedCamera, setClickedCamera] = useState<Camera | null>(null);
     const navigate = useNavigate();
+    const { showError } = useErrorModal();
 
 
     const handleActuatorsClick = (camera: Camera) => {
@@ -34,17 +36,18 @@ const Cameras = () => {
                 setCameras(cameraResponse.data);
                 setLoading(false);
             } catch (e) {
-                if (e instanceof Error && e.message.includes("Unauthorized")) {
+                if (isUnauthorizedError(e)) {
                     console.error("Refresh token failed, redirecting to login...");
                     navigate("/");
                 } else {
-                    setError(`Generic Error - ${e.message}. Please contact the administrator.`);
+                    setLoadFailed(true);
+                    showError(getErrorMessage(e), "Unable to load cameras");
                     setLoading(false);
                 }
             }
         };
         loadPage();
-    }, []);
+    }, [navigate, showError]);
 
     return (
         <div className={"padded-div"}>
@@ -53,8 +56,8 @@ const Cameras = () => {
             <Container className="mt-1">
                 {loading ? (
                     <CustomSpinner/>
-                ) : error ? (
-                    <Alert variant="danger">{error}</Alert>
+                ) : loadFailed ? (
+                    <Alert variant="secondary" className="text-center">Unable to load cameras</Alert>
                 ) : cameras !== null && cameras !== undefined && cameras.length === 0 ? (
                     <Alert variant="warning" className="text-center">No Enabled Camera found</Alert>
                 ) : (

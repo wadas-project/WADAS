@@ -161,6 +161,12 @@ class OperationMode(QObject):
             if video_path:
                 detection_path = video_path if not self.enable_classification else ""
                 classification_path = video_path if self.enable_classification else ""
+                tracked_animal_ids = {
+                    tracked_animal["id"]
+                    for frame_tracked_animals in tracked_animals
+                    for tracked_animal in frame_tracked_animals
+                    if tracked_animal.get("id") is not None
+                }
                 classified_animals = (
                     self.ai_model.classification_from_video_tracking(tracked_animals)
                     if tracked_animals
@@ -181,6 +187,7 @@ class OperationMode(QObject):
                     detection_media_path=detection_path,
                     detected_animals={
                         "detections": None,
+                        "count": len(tracked_animal_ids),
                         "img_id": "",
                         "labels": [],
                     },  # TODO: evaluate if store actual detection results in video processing

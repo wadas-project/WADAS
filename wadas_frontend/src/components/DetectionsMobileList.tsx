@@ -4,6 +4,7 @@ import {Card, Container} from "react-bootstrap";
 import {Camera, DetectionEvent} from "../types/types";
 import {DateTime} from "luxon";
 import PaginationBar from "./PaginationBar";
+import { getDisplayedDetectedAnimals } from "../lib/detectionEvents";
 
 const DetectionsMobileList = (props: {
     detections: DetectionEvent[];
@@ -50,7 +51,7 @@ const DetectionsMobileList = (props: {
                                         <strong>Camera:</strong> {camera?.name ?? "N/A"} <br/>
                                         <strong>Date:</strong> {DateTime.fromISO(item.timestamp).toFormat("yyyy-MM-dd HH:mm")}
                                         <br/>
-                                        <strong># Detected Animals:</strong> {item.detected_animals} <br/>
+                                        <strong># Detected Animals:</strong> {getDisplayedDetectedAnimals(item)} <br/>
                                         <strong># Classified Animals:</strong> {item.classified_animals.length}
                                         <br/>
                                         <strong>Classified Animals:</strong>{" "}

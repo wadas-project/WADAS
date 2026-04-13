@@ -4,6 +4,7 @@ import {Container, Table} from "react-bootstrap";
 import {Camera, DetectionEvent} from "../types/types";
 import {DateTime} from "luxon";
 import PaginationBar from "./PaginationBar";
+import { getDisplayedDetectedAnimals } from "../lib/detectionEvents";
 
 const DetectionsScrollableTable = (props: {
     detections: DetectionEvent[];
@@ -57,7 +58,7 @@ const DetectionsScrollableTable = (props: {
                                 <td>{item.id}</td>
                                 <td>{camera?.name ?? "N/A"}</td>
                                 <td>{DateTime.fromISO(item.timestamp).toFormat("yyyy-MM-dd HH:mm")}</td>
-                                <td>{item.detected_animals}</td>
+                                <td>{getDisplayedDetectedAnimals(item)}</td>
                                 <td>{item.classified_animals.length}</td>
                                 <td>
                                     {item.classified_animals

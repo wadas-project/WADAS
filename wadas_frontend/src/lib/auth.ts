@@ -1,4 +1,5 @@
 import {baseUrl} from "../config";
+import { AppError, buildHttpError, normalizeError } from "./errors";
 
 interface RefreshResponse {
     access_token: string;
@@ -9,19 +10,32 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
-            throw new Error("Refresh token non trovato nel localStorage");
+            throw new AppError("Refresh token not found", {
+                code: "AUTH_REQUIRED",
+                status: 401,
+                userMessage: "Session expired. Please log in again.",
+            });
         }
 
-        const response = await fetch(baseUrl.concat("api/v1/token/refresh"), {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ "refresh_token": refreshToken })
-        });
+        let response: Response;
+        try {
+            response = await fetch(baseUrl.concat("api/v1/token/refresh"), {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ "refresh_token": refreshToken })
+            });
+        } catch (error) {
+            throw new AppError("Token refresh request failed", {
+                code: "NETWORK_ERROR",
+                userMessage: "Unable to contact the server. Check the connection and try again.",
+                cause: error,
+            });
+        }
 
         if (!response.ok) {
-            throw new Error(`Error refreshing token: ${response.statusText}`);
+            throw await buildHttpError(response);
         }
 
         const data: RefreshResponse = await response.json();
@@ -29,7 +43,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 
         return data.access_token;
     } catch (error) {
-        console.error("Errore nel refresh del token:", error);
+        console.error("Token refresh failed:", normalizeError(error));
         return null;
     }
 };

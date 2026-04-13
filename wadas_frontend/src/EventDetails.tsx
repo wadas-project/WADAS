@@ -2,45 +2,60 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import 'react-datepicker/dist/react-datepicker.min.css';
 import {ActuationEvent, Camera, DetectionEvent} from "./types/types";
-import {tryWithRefreshing} from "./lib/utils";
-import {downloadImage, fetchActuationEvents} from "./lib/api";
+import {getErrorMessage, isUnauthorizedError, tryWithRefreshing} from "./lib/utils";
+import {downloadDetectionMedia, downloadImage, fetchActuationEvents} from "./lib/api";
 import {useNavigate} from "react-router-dom";
 import DetailsContainer from "./components/DetailsContainer";
 import DetailsOffcanvas from "./components/DetailsOffcanvas";
+import { useErrorModal } from "./components/ErrorModal";
+import { isVideoDetectionEvent } from "./lib/detectionEvents";
 
 const EventDetails = (props: {
     currentEvent: DetectionEvent | null,
     cameras: Camera[],
     onOffcanvasClose: () => void | null;
 }) => {
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [mediaUrl, setMediaUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
+    const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
 
     const [actuationEvents, setActuationEvents] = useState<ActuationEvent[]>([]);
     const navigate = useNavigate();
-    const [error, setError] = useState<string | null>(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+    const [isMobile] = useState(window.innerWidth < 1024);
     const [showCanvas, setShowCanvas] = useState(props.currentEvent !== null);
+    const { showError } = useErrorModal();
 
 
     useEffect(() => {
         const fillImage = async () => {
             if (!props.currentEvent) {
-                setImageUrl(null);
+                setMediaUrl(null);
+                setMediaType(null);
                 return;
             }
+
+            const isVideo = isVideoDetectionEvent(props.currentEvent);
+
+            setMediaType(isVideo ? "video" : "image");
 
             setLoading(true);
             try {
                 const eventId = props.currentEvent.id;
-                const downloadedBlob: Blob = await tryWithRefreshing(() => downloadImage(eventId));
-                setImageUrl(URL.createObjectURL(downloadedBlob));
+                if (isVideo) {
+                    const downloadedBlob: Blob = await tryWithRefreshing(() =>
+                        downloadDetectionMedia(eventId)
+                    );
+                    setMediaUrl(URL.createObjectURL(downloadedBlob));
+                } else {
+                    const downloadedBlob: Blob = await tryWithRefreshing(() => downloadImage(eventId));
+                    setMediaUrl(URL.createObjectURL(downloadedBlob));
+                }
             } catch (e) {
-                if (e instanceof Error && e.message.includes("Unauthorized")) {
+                if (isUnauthorizedError(e)) {
                     console.error("Refresh token failed, redirecting to login...");
                     navigate("/");
                 } else {
-                    setError(`Generic Error - ${e.message}. Please contact the administrator.`);
+                    showError(getErrorMessage(e), `Unable to load event ${isVideo ? "video" : "image"}`);
                 }
             } finally {
                 // Small delay to ensure ImageUrl is set
@@ -57,11 +72,11 @@ const EventDetails = (props: {
                         () => fetchActuationEvents(0, eventId));
                     setActuationEvents(actuationEventsResponse.data);
                 } catch (e) {
-                    if (e instanceof Error && e.message.includes("Unauthorized")) {
+                    if (isUnauthorizedError(e)) {
                         console.error("Refresh token failed, redirecting to login...");
                         navigate("/");
                     } else {
-                        setError(`Generic Error - ${e.message}. Please contact the administrator.`);
+                        showError(getErrorMessage(e), "Unable to load related actuation events");
                     }
                 } finally {
                     setLoading(false);
@@ -76,7 +91,15 @@ const EventDetails = (props: {
             setShowCanvas(true);
         }
 
-    }, [props.currentEvent, navigate]);
+    }, [props.currentEvent, navigate, showError]);
+
+    useEffect(() => {
+        return () => {
+            if (mediaUrl) {
+                URL.revokeObjectURL(mediaUrl);
+            }
+        };
+    }, [mediaUrl]);
 
 
     const closeOffcanvas = () => {
@@ -93,7 +116,8 @@ const EventDetails = (props: {
             currentEvent={props.currentEvent}
             cameras={props.cameras}
             actuationEvents={actuationEvents}
-            imageUrl={imageUrl}
+            mediaUrl={mediaUrl}
+            mediaType={mediaType}
             loading={loading}/>
     ) : (
         <DetailsOffcanvas
@@ -102,7 +126,8 @@ const EventDetails = (props: {
             currentEvent={props.currentEvent}
             cameras={props.cameras}
             actuationEvents={actuationEvents}
-            imageUrl={imageUrl}
+            mediaUrl={mediaUrl}
+            mediaType={mediaType}
             loading={loading}/>
     );
 };

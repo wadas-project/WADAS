@@ -12,7 +12,8 @@ const DetailsOffcanvas = (props: {
     currentEvent: DetectionEvent | null;
     cameras: Camera[];
     actuationEvents: ActuationEvent[];
-    imageUrl: string;
+    mediaUrl: string | null;
+    mediaType: "image" | "video" | null;
     loading: boolean;
 }) => {
     const [showImageModal, setShowImageModal] = useState<boolean>(false);
@@ -20,6 +21,8 @@ const DetailsOffcanvas = (props: {
 
     const handleImageClick = () => setShowImageModal(true);
     const handleActuationClick = () => setShowActuationModal(true);
+    const mediaDownloadName = getMediaDownloadName(props.currentEvent);
+    const mediaMimeType = getMediaMimeType(props.currentEvent);
 
     return (
         <>
@@ -85,9 +88,31 @@ const DetailsOffcanvas = (props: {
                             <Col xs={12} className="text-center">
                                 {props.loading ? (
                                     <CustomSpinner/>
-                                ) : props.imageUrl ? (
+                                ) : props.mediaType === "video" && props.mediaUrl ? (
+                                    <>
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            style={{maxWidth: "100%", maxHeight: "300px", cursor: "pointer"}}
+                                            onClick={handleImageClick}
+                                        >
+                                            <source src={props.mediaUrl} type={mediaMimeType ?? undefined}/>
+                                            Your browser does not support video playback.
+                                        </video>
+                                        <div className="mt-3">
+                                            <Button
+                                                as="a"
+                                                href={props.mediaUrl}
+                                                download={mediaDownloadName}
+                                                variant="outline-primary"
+                                            >
+                                                Download video
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : props.mediaUrl ? (
                                     <img
-                                        src={props.imageUrl}
+                                        src={props.mediaUrl}
                                         alt="Detection"
                                         style={{maxWidth: "100%", maxHeight: "300px", cursor: "pointer"}}
                                         onClick={handleImageClick}
@@ -103,8 +128,14 @@ const DetailsOffcanvas = (props: {
 
             <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered size="lg">
                 <Modal.Body className="d-flex justify-content-center">
-                    {props.imageUrl &&
-                        <img src={props.imageUrl} alt="Detection" style={{width: "100%", height: "auto"}}/>}
+                    {props.mediaType === "video" && props.mediaUrl ? (
+                        <video controls autoPlay style={{width: "100%", height: "auto"}}>
+                            <source src={props.mediaUrl} type={mediaMimeType ?? undefined}/>
+                            Your browser does not support video playback.
+                        </video>
+                    ) : props.mediaUrl ? (
+                        <img src={props.mediaUrl} alt="Detection" style={{width: "100%", height: "auto"}}/>
+                    ) : null}
                 </Modal.Body>
             </Modal>
 
@@ -115,3 +146,32 @@ const DetailsOffcanvas = (props: {
 };
 
 export default DetailsOffcanvas;
+
+function getMediaDownloadName(event: DetectionEvent | null): string {
+    if (!event) {
+        return "detection-media";
+    }
+
+    const mediaPath = event.classification_img_path || event.detection_img_path;
+    const extension = mediaPath?.split(".").pop();
+
+    return extension
+        ? `detection-event-${event.id}.${extension}`
+        : `detection-event-${event.id}`;
+}
+
+function getMediaMimeType(event: DetectionEvent | null): string | null {
+    if (!event) {
+        return null;
+    }
+
+    const mediaPath = (event.classification_img_path || event.detection_img_path).toLowerCase();
+
+    if (mediaPath.endsWith(".mp4")) return "video/mp4";
+    if (mediaPath.endsWith(".avi")) return "video/x-msvideo";
+    if (mediaPath.endsWith(".mov")) return "video/quicktime";
+    if (mediaPath.endsWith(".mkv")) return "video/x-matroska";
+    if (mediaPath.endsWith(".wmv")) return "video/x-ms-wmv";
+
+    return null;
+}
