@@ -377,6 +377,7 @@ class AiModel:
                 frames, filtered_detection_lists, AiModel.classification_threshold
             )
             if not any(classification_lists):
+                # No animal classified in entire video, abort processing.
                 logger.info("No animal classified.")
                 return [], "", ""
 
@@ -387,13 +388,18 @@ class AiModel:
                     logger.warning("Invalid frame while classifying video frames. Skipping it.")
                     continue
 
-                array = np.array(frame)
-                tracked_animal = tracker.update(classified_animals, array.shape[:2])
-                tracked_animals.append(tracked_animal)
+                if not classified_animals:
+                    # No animal detected in current frame, keep original frame for video dump
+                    classified_frame = frame
+                else:
+                    array = np.array(frame)
+                    tracked_animal = tracker.update(classified_animals, array.shape[:2])
+                    tracked_animals.append(tracked_animal)
 
-                classified_frame = self.build_classification_square(
-                    frame, classified_animals, "", True
-                )
+                    classified_frame = self.build_classification_square(
+                        frame, classified_animals, "", True
+                    )
+
                 if save_processed_video:
                     # If frame does not contain classification keep original frame
                     # to build output video
