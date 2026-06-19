@@ -150,6 +150,13 @@ class AiModel:
     def blur_image_bounding_boxes(self, img, results, img_path=None):
         # If blur_non_animal_detections is enabled and there are non-animal detections, blur them
 
+        if not img:
+            logger.warning("Invalid image while trying to blur. Skipping frame.")
+            return
+        if not results:
+            logger.warning("Invalid results while trying to blur. Skipping frame.")
+            return
+
         blurred_img = img.copy()
         if len(results["detections"].xyxy) > 0:
             # Get all detections that are not animals (class_id != 1)
