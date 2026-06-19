@@ -376,10 +376,17 @@ class AiModel:
             classification_lists = self.detection_pipeline.classify(
                 frames, filtered_detection_lists, AiModel.classification_threshold
             )
+            if not any(classification_lists):
+                logger.info("No animal classified.")
+                return [], "", ""
 
             for frame, detected_animals, classified_animals in zip(
                 frames, detection_lists, classification_lists
             ):
+                if not frame:
+                    logger.warning("Invalid frame while classifying video frames. Skipping it.")
+                    continue
+
                 array = np.array(frame)
                 tracked_animal = tracker.update(classified_animals, array.shape[:2])
                 tracked_animals.append(tracked_animal)
