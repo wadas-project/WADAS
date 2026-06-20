@@ -70,13 +70,24 @@ class Mp4Ext(IsoBmff):
         super().__init__(mime="video/mp4", extension="mp4")
 
     def match(self, buf):
-        major_brand, minor_version, compatible_brands = self._get_ftyp(buf)
+        try:
+            # Validate first that the buffer is actually an ISO-BMFF box with 'ftyp' signature.
+            # Without this check, non-MP4 files (e.g. JPG/PNG) still get passed to
+            # _get_ftyp, which interprets the first bytes as a box size: on images
+            # this produces huge values and a near-infinite loop.
+            if not (len(buf) > 16 and buf[4:8] == b"ftyp"):
+                return False
 
-        for brand in compatible_brands:
-            if brand in self.ADDITIONAL_MP4_BRANDS:
-                return True
+            major_brand, minor_version, compatible_brands = self._get_ftyp(buf)
 
-        return major_brand in self.ADDITIONAL_MP4_BRANDS
+            for brand in compatible_brands:
+                if brand in self.ADDITIONAL_MP4_BRANDS:
+                    return True
+
+            return major_brand in self.ADDITIONAL_MP4_BRANDS
+        except Exception:
+            logger.exception("Mp4Ext.match failed to parse buffer as ISO-BMFF", exc_info=True)
+            return False
 
 
 class TLS_FTP_WADAS_Handler(TLS_FTPHandler):

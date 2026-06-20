@@ -392,8 +392,8 @@ class AiModel:
                     # No animal detected in current frame, keep original frame for video dump
                     classified_frame = frame
                 else:
-                    array = np.array(frame)
-                    tracked_animal = tracker.update(classified_animals, array.shape[:2])
+                    array_ = np.array(frame)
+                    tracked_animal = tracker.update(classified_animals, array_.shape[:2])
                     tracked_animals.append(tracked_animal)
 
                     classified_frame = self.build_classification_square(
