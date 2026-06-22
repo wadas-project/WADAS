@@ -51,20 +51,9 @@ def initialize_fpts_logger():
 class Mp4Ext(IsoBmff):
     """Class to handle different MP4 formats. It extends IsoBmff filetype from 'filetype' lib"""
 
-    ADDITIONAL_MP4_BRANDS = [
-        "iso2",
-        "iso3",
-        "iso4",
-        "iso5",
-        "iso6",
-        "hvc1",
-        "avc1",
-        "mp71",
-        "msnv",
-        "dash",
-        "m4v ",
-        "MSNV",
-    ]
+    ADDITIONAL_MP4_BRANDS = frozenset(
+        ["iso2", "iso3", "iso4", "iso5", "iso6", "hvc1", "avc1", "mp71", "msnv", "dash", "m4v "]
+    )
 
     def __init__(self):
         super().__init__(mime="video/mp4", extension="mp4")
@@ -81,7 +70,7 @@ class Mp4Ext(IsoBmff):
             major_brand, minor_version, compatible_brands = self._get_ftyp(buf)
 
             for brand in compatible_brands:
-                if brand in self.ADDITIONAL_MP4_BRANDS:
+                if brand.lower() in self.ADDITIONAL_MP4_BRANDS:
                     return True
 
             return major_brand in self.ADDITIONAL_MP4_BRANDS
