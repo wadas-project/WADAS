@@ -785,7 +785,9 @@ class MainWindow(QMainWindow):
     def configure_notification_areas(self):
         """Method to configure notification areas"""
 
-        (ConfigureNotificationAreasDialog()).exec()
+        if (ConfigureNotificationAreasDialog()).exec():
+            logger.info("Notification area(s) configured!")
+            self.setWindowModified(True)
 
     def check_models(self):
         """Method to initialize classification model."""

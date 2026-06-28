@@ -144,7 +144,6 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
             self.ui.checkBox_enable_telegram_notifications.stateChanged.connect(self.enable_ok_button)
             self.ui.checkBox_enable_images.setChecked(self.telegram_notifier.allow_images)
             self.ui.checkBox_enable_images.stateChanged.connect(self.enable_ok_button)
-
         else:
             self.ui.checkBox_enable_telegram_notifications.setChecked(True)
 

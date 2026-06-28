@@ -223,6 +223,7 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
                 self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
                 return
             self.notification_areas[area_id] = NotificationArea(area_id)
+            self.selected_area_id = area_id
             self.refresh_notification_areas_list()
             self.ui.comboBox_select_notification_method.setEnabled(True)
             self.select_area(area_id)
@@ -373,9 +374,9 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
            the user is redirected to notifier configuration.
         3. At least one notification area must be configured.
         4. Each notification area must have at least one associated camera.
-        5. Each notification area must have at least one selected contact
-           FOR EACH available (configured) notification method - having a
-           contact for only one method is not enough.
+        5. Each notification area must have at least one selected contact,
+           across all notification methods (not required for every single
+           method).
         """
         error_message = ""
 
@@ -391,24 +392,12 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
         elif not self.notification_areas:
             error_message = "At least one notification area must be configured."
         else:
-            available_notifier_types = [
-                self.ui.comboBox_select_notification_method.itemData(i)
-                for i in range(self.ui.comboBox_select_notification_method.count())
-            ]
             for area_id, area in self.notification_areas.items():
                 if not area.camera_ids:
                     error_message = f"Notification area '{area_id}' has no camera associated."
                     break
-                missing_contacts_for = [
-                    notifier_type.value
-                    for notifier_type in available_notifier_types
-                    if not area.contacts.get(notifier_type.value)
-                ]
-                if missing_contacts_for:
-                    error_message = (
-                        f"Notification area '{area_id}' has no contact selected for: "
-                        f"{', '.join(missing_contacts_for)}."
-                    )
+                if not any(contacts for contacts in area.contacts.values()):
+                    error_message = f"Notification area '{area_id}' has no contact associated."
                     break
 
         self.ui.label_errorMessage.setText(error_message)

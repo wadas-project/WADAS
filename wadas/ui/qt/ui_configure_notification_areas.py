@@ -121,7 +121,7 @@ class Ui_ConfigureNotificationAreasDialog(object):
     # setupUi
 
     def retranslateUi(self, ConfigureNotificationAreasDialog):
-        ConfigureNotificationAreasDialog.setWindowTitle(QCoreApplication.translate("ConfigureNotificationAreasDialog", u"Dialog", None))
+        ConfigureNotificationAreasDialog.setWindowTitle(QCoreApplication.translate("ConfigureNotificationAreasDialog", u"Configure notification area(s)", None))
         self.pushButton_add_area.setText(QCoreApplication.translate("ConfigureNotificationAreasDialog", u"+", None))
         self.label_errorMessage.setText("")
         self.label_4.setText(QCoreApplication.translate("ConfigureNotificationAreasDialog", u"Notification contact(s)", None))
