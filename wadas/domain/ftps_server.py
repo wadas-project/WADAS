@@ -24,6 +24,7 @@ import threading
 from logging.handlers import RotatingFileHandler
 
 import filetype
+from filetype.types.isobmff import IsoBmff
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import TLS_FTPHandler
 from pyftpdlib.servers import ThreadedFTPServer
@@ -47,8 +48,42 @@ def initialize_fpts_logger():
     pyftpdlib_logger.propagate = False
 
 
+class Mp4Ext(IsoBmff):
+    """Class to handle different MP4 formats. It extends IsoBmff filetype from 'filetype' lib"""
+
+    ADDITIONAL_MP4_BRANDS = frozenset(
+        ["iso2", "iso3", "iso4", "iso5", "iso6", "hvc1", "avc1", "mp71", "msnv", "dash", "m4v "]
+    )
+
+    def __init__(self):
+        super().__init__(mime="video/mp4", extension="mp4")
+
+    def match(self, buf):
+        try:
+            # Validate first that the buffer is actually an ISO-BMFF box with 'ftyp' signature.
+            # Without this check, non-MP4 files (e.g. JPG/PNG) still get passed to
+            # _get_ftyp, which interprets the first bytes as a box size: on images
+            # this produces huge values and a near-infinite loop.
+            if not (len(buf) > 16 and buf[4:8] == b"ftyp"):
+                return False
+
+            major_brand, minor_version, compatible_brands = self._get_ftyp(buf)
+
+            for brand in compatible_brands:
+                if brand.lower() in self.ADDITIONAL_MP4_BRANDS:
+                    return True
+
+            return major_brand in self.ADDITIONAL_MP4_BRANDS
+        except Exception:
+            logger.exception("Mp4Ext.match failed to parse buffer as ISO-BMFF", exc_info=True)
+            return False
+
+
 class TLS_FTP_WADAS_Handler(TLS_FTPHandler):
     """Class to handle FTP communications with FTP Server"""
+
+    # register a new type to handle different MP4 formats
+    filetype.add_type(Mp4Ext())
 
     # .txt is allowed for testing purpose by Reolink cameras
     ALLOWED_EXTS = frozenset(
