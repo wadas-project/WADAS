@@ -21,6 +21,8 @@ import logging
 from abc import abstractmethod
 from enum import Enum
 
+from wadas.domain.notification_area import NotificationArea
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,10 +38,35 @@ class Notifier:
         [NotifierTypes.EMAIL.value, NotifierTypes.WHATSAPP.value, NotifierTypes.TELEGRAM.value]
     )
 
+    notification_areas: dict[str, NotificationArea] = {}
+
     def __init__(self, enabled=True, allow_images=True):
         self.type = None
         self.enabled = enabled
         self.allow_images = allow_images
+
+    @classmethod
+    def get_areas_for_camera(cls, camera_id):
+        """Return all NotificationArea instances that include the given camera_id."""
+        return [area for area in cls.notification_areas.values() if camera_id in area.camera_ids]
+
+    @classmethod
+    def get_recipients_for_camera(cls, camera_id, notifier_type):
+        """Return the de-duplicated list of contacts to notify for a given
+        camera_id and notifier_type, aggregating across all areas that
+        include camera_id. Returns an empty list if the camera is not
+        associated to any area (caller decides whether to fall back to the
+        full distribution list)."""
+
+        if camera_id is None:
+            return []
+        key = notifier_type.value if hasattr(notifier_type, "value") else notifier_type
+        recipients = []
+        for area in cls.get_areas_for_camera(camera_id):
+            for contact in area.contacts.get(key, []):
+                if contact not in recipients:
+                    recipients.append(contact)
+        return recipients
 
     @staticmethod
     def send_notifications(detection_event, message=""):
