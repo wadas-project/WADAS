@@ -585,6 +585,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfigure_database.setEnabled(not running)
         self.ui.actionconfigure_Tunnel.setEnabled(not running)
         self.ui.actionConfigure_privacy.setEnabled(not running)
+        self.ui.actionactionConfigureNotificationArea.setEnabled(not running)
 
     def update_info_widget(self):
         """Update information widget."""

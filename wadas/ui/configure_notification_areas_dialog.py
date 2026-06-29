@@ -257,13 +257,14 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
         area = self.notification_areas.get(self.selected_area_id) if self.selected_area_id else None
 
         for camera in cameras:
-            checkbox = QCheckBox(camera.id)
-            checkbox.setChecked(bool(area) and camera.id in area.camera_ids)
-            checkbox.setEnabled(area is not None)
-            checkbox.stateChanged.connect(
-                lambda state, cid=camera.id: self.on_camera_checkbox_changed(cid, state)
-            )
-            layout.addWidget(checkbox)
+            if camera.enabled:
+                checkbox = QCheckBox(camera.id)
+                checkbox.setChecked(bool(area) and camera.id in area.camera_ids)
+                checkbox.setEnabled(area is not None)
+                checkbox.stateChanged.connect(
+                    lambda state, cid=camera.id: self.on_camera_checkbox_changed(cid, state)
+                )
+                layout.addWidget(checkbox)
         layout.addStretch()
 
     def on_camera_checkbox_changed(self, camera_id, state):

@@ -50,20 +50,34 @@ class Notifier:
         """Return all NotificationArea instances that include the given camera_id."""
         return [area for area in cls.notification_areas.values() if camera_id in area.camera_ids]
 
+    @staticmethod
+    def get_recipients_for_area(area, notifier_type):
+        """Return the list of contacts configured in a single NotificationArea for
+        a given notifier_type."""
+        key = notifier_type.value if hasattr(notifier_type, "value") else notifier_type
+        return list(area.contacts.get(key, []))
+
     @classmethod
     def get_recipients_for_camera(cls, camera_id, notifier_type):
         """Return the de-duplicated list of contacts to notify for a given
-        camera_id and notifier_type, aggregating across all areas that
-        include camera_id. Returns an empty list if the camera is not
-        associated to any area (caller decides whether to fall back to the
-        full distribution list)."""
+        camera_id and notifier_type, aggregating Notifier.get_recipients_for_area
+        across all NotificationArea(s) that include camera_id.
 
-        if camera_id is None:
-            return []
-        key = notifier_type.value if hasattr(notifier_type, "value") else notifier_type
+        Returns None if no NotificationArea is configured at all.
+
+        Returns an empty list if at least one NotificationArea is
+        configured in the system: an empty list means either this camera is
+        not assigned to any area, or it is assigned but no contact was
+        selected for this specific notifier_type.
+
+        If camera is None we assume we are in test mode and return full recipient list.
+        """
+        if camera_id is None or not cls.notification_areas:
+            return None
+
         recipients = []
         for area in cls.get_areas_for_camera(camera_id):
-            for contact in area.contacts.get(key, []):
+            for contact in cls.get_recipients_for_area(area, notifier_type):
                 if contact not in recipients:
                     recipients.append(contact)
         return recipients
