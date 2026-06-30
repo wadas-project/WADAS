@@ -37,6 +37,7 @@ from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.ftp_camera import FTPCamera
 from wadas.domain.ftps_server import FTPsServer
+from wadas.domain.notification_area import NotificationArea
 from wadas.domain.notifier import Notifier
 from wadas.domain.operation_mode import OperationMode
 from wadas.domain.roadsign_actuator import RoadSignActuator
@@ -179,6 +180,12 @@ def load_configuration_from_file(file_path):
                     load_status["valid_telegram_keyring"] = False
                 else:
                     telegram_notifier.set_node_id()
+
+        # Notification area(s)
+        Notifier.notification_areas = {
+            key: NotificationArea.deserialize(value)
+            for key, value in wadas_config.get("notification_areas", {}).items()
+        }
 
         # FTP Server
         if FTPsServer.ftps_server and FTPsServer.ftps_server.server:
@@ -375,11 +382,16 @@ def save_configuration_to_file(file_, project_uuid):
 
     tunnels_to_dict = [tunnel.serialize() for tunnel in Tunnel.tunnels] if Tunnel.tunnels else []
 
+    notification_areas_to_dict = {
+        key: value.serialize() for key, value in Notifier.notification_areas.items()
+    }
+
     # Build data structure to serialize
     data = {
         "uuid": str(project_uuid),
         "version": __version__,
         "notification": notification or "",
+        "notification_areas": notification_areas_to_dict,
         "cameras": cameras_to_dict,
         "camera_detection_params": Camera.detection_params,
         "actuators": actuators,

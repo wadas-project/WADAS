@@ -136,8 +136,16 @@ class TelegramNotifier(Notifier):
             img_path = None
 
         try:
-            status, data = self.send_telegram_message(telegram_message, img_path=img_path)
-            if status == 200:
+            status, data = self.send_telegram_message(
+                telegram_message, detection_event.camera_id, img_path=img_path
+            )
+            if status == 600:
+                logger.info(
+                    "No Telegram recipient configured for camera '%s'. Skipping Telegram notification.",
+                    detection_event.camera_id,
+                )
+                return
+            elif status == 200:
                 if data["status"] == "ok":
                     logger.info("Telegram notification sent!")
                 else:
@@ -159,12 +167,23 @@ class TelegramNotifier(Notifier):
         except Exception as e:
             logger.error("Problem sending Telegram notifications: %s", str(type(e)))
 
-    def send_telegram_message(self, message, img_path=None):
+    def send_telegram_message(self, message, camera_id, img_path=None):
         """Method to send Telegram message notification."""
+
+        # contacts list is determined by area if notification areas are set, full list otherwise
+        contact_ids = Notifier.get_recipients_for_camera(camera_id, self.type)
+        user_ids = (
+            [recipient.recipient_id for recipient in self.recipients]
+            if contact_ids is None
+            else contact_ids
+        )
+
+        if not user_ids:
+            return 600, None
 
         data = {
             "node_id": int(self.node_id),
-            "user_ids": [recipient.recipient_id for recipient in self.recipients],
+            "user_ids": user_ids,
             "message": message,
         }
 

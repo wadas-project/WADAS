@@ -19,6 +19,7 @@ from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.ftp_camera import FTPCamera
 from wadas.domain.ftps_server import DummyAuthorizer, FTPsServer, TLS_FTP_WADAS_Handler
+from wadas.domain.notification_area import NotificationArea
 from wadas.domain.notifier import Notifier
 from wadas.domain.operation_mode import OperationMode
 from wadas.domain.roadsign_actuator import RoadSignActuator
@@ -29,6 +30,7 @@ from wadas.domain.usb_camera import USBCamera
 @pytest.fixture
 def init():
     Notifier.notifiers = {"Email": None, "WhatsApp": None, "Telegram": None}
+    Notifier.notification_areas = {}
     FTPsServer.ftps_server = None
     Actuator.actuators.clear()
     cameras.clear()
@@ -217,6 +219,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -415,6 +418,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -560,6 +564,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -679,6 +684,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -806,6 +812,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -1486,6 +1493,7 @@ cameras:
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -1734,6 +1742,7 @@ ftps_server:
   ssl_certificate: /Documents/ssl/eshare_crt.pem
   ssl_key: /Documents/ssl/eshare_key.pem
 notification: ''
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -2114,6 +2123,7 @@ notification:
     sender_email: development@wadas.org
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -2162,6 +2172,7 @@ notification:
     sender_email: development@wadas.org
     smtp_hostname: smtp.wadas.org
     smtp_port: 123
+notification_areas: {{}}
 operation_mode: ''
 privacy:
   blur_non_humans: true
@@ -2173,6 +2184,264 @@ uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
 version: {__version__}
 """
     )
+
+
+@patch(
+    "builtins.open",
+    new_callable=OpenStringMock,
+    read_data=f"""
+actuator_server:
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+cameras: []
+camera_detection_params: {{}}
+database: ''
+ftps_server: []
+notification: []
+notification_areas:
+  area1:
+    camera_ids:
+    - camera1
+    - camera2
+    contacts:
+      WhatsApp:
+      - '+391234567890'
+    id: area1
+  area2:
+    camera_ids:
+    - camera3
+    contacts:
+      Email:
+      - foo@wadas.org
+      - bar@wadas.org
+      Telegram:
+      - '111222'
+    id: area2
+operation_mode:
+privacy:
+  blur_non_humans: true
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+""",
+)
+def test_load_notification_areas_config(mock_file, init):
+    assert load_configuration_from_file("") == {
+        "errors_on_load": False,
+        "errors_log": "",
+        "config_version": Version(__version__),
+        "compatible_config": True,
+        "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
+        "valid_ftp_keyring": True,
+        "valid_email_keyring": True,
+        "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
+    }
+    assert sorted(Notifier.notification_areas.keys()) == ["area1", "area2"]
+
+    area1 = Notifier.notification_areas["area1"]
+    assert area1.id == "area1"
+    assert area1.camera_ids == ["camera1", "camera2"]
+    assert area1.contacts == {"WhatsApp": ["+391234567890"]}
+
+    area2 = Notifier.notification_areas["area2"]
+    assert area2.id == "area2"
+    assert area2.camera_ids == ["camera3"]
+    assert area2.contacts == {
+        "Email": ["foo@wadas.org", "bar@wadas.org"],
+        "Telegram": ["111222"],
+    }
+
+
+@patch("builtins.open", new_callable=OpenStringMock, create=True)
+def test_save_notification_areas_config(mock_file, init):
+    Notifier.notification_areas = {
+        "area1": NotificationArea("area1", ["camera1", "camera2"], {"WhatsApp": ["+391234567890"]}),
+        "area2": NotificationArea(
+            "area2",
+            ["camera3"],
+            {"Email": ["foo@wadas.org", "bar@wadas.org"], "Telegram": ["111222"]},
+        ),
+    }
+    save_configuration_to_file("", "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede")
+    assert (
+        mock_file.dump()
+        == f"""actuator_server: ''
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+camera_detection_params: {{}}
+cameras: []
+database: ''
+ftps_server: ''
+notification: ''
+notification_areas:
+  area1:
+    camera_ids:
+    - camera1
+    - camera2
+    contacts:
+      WhatsApp:
+      - '+391234567890'
+    id: area1
+  area2:
+    camera_ids:
+    - camera3
+    contacts:
+      Email:
+      - foo@wadas.org
+      - bar@wadas.org
+      Telegram:
+      - '111222'
+    id: area2
+operation_mode: ''
+privacy:
+  blur_non_humans: true
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+"""
+    )
+
+
+@patch("builtins.open", new_callable=OpenStringMock, create=True)
+def test_save_empty_notification_areas_config(mock_file, init):
+    """When no NotificationArea is configured, notification_areas must serialize to an
+    empty mapping ('{}'), not be omitted, so that round-tripping the file is unambiguous
+    (an empty dict, not a missing/None key)."""
+    save_configuration_to_file("", "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede")
+    assert "notification_areas: {}" in mock_file.dump()
+
+
+@patch(
+    "builtins.open",
+    new_callable=OpenStringMock,
+    read_data=f"""
+actuator_server:
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+cameras: []
+camera_detection_params: {{}}
+database: ''
+ftps_server: []
+notification: []
+operation_mode:
+privacy:
+  blur_non_humans: true
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+""",
+)
+def test_load_config_without_notification_areas_key(mock_file, init):
+    """Backward compatibility: older configuration files have no 'notification_areas'
+    key at all. Loading such a file must not error out, and must result in an empty
+    Notifier.notification_areas, preserving pre-NotificationArea behavior."""
+    assert load_configuration_from_file("") == {
+        "errors_on_load": False,
+        "errors_log": "",
+        "config_version": Version(__version__),
+        "compatible_config": True,
+        "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
+        "valid_ftp_keyring": True,
+        "valid_email_keyring": True,
+        "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
+    }
+    assert Notifier.notification_areas == {}
+
+
+@patch(
+    "builtins.open",
+    new_callable=OpenStringMock,
+    read_data=f"""
+actuator_server:
+actuators: []
+ai_model:
+  ai_class_threshold: 0
+  ai_classification_device: auto
+  ai_classification_model_version: DFv1.2
+  ai_detect_threshold: 0
+  ai_detection_device: auto
+  ai_detection_model_version: MDV5-yolov5
+  ai_language: ''
+  ai_tunnel_mode_detect_threshold: 0
+  ai_tunnel_mode_detection_device: auto
+  ai_tunnel_mode_detection_model_version: MDV6b-yolov9c
+  ai_video_fps: 1
+cameras: []
+camera_detection_params: {{}}
+database: ''
+ftps_server: []
+notification: []
+notification_areas: {{}}
+operation_mode:
+privacy:
+  blur_non_humans: true
+  remove_classification_img: false
+  remove_detection_img: false
+  remove_original_image: false
+tunnels: []
+uuid: 39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede
+version: {__version__}
+""",
+)
+def test_load_empty_notification_areas_config(mock_file, init):
+    """An explicit empty 'notification_areas: {}' must deserialize to an empty dict,
+    just like a missing key (see test_load_config_without_notification_areas_key)."""
+    assert load_configuration_from_file("") == {
+        "errors_on_load": False,
+        "errors_log": "",
+        "config_version": Version(__version__),
+        "compatible_config": True,
+        "uuid": "39f89e5c-56bb-4ab3-8cb0-dd8450cc8ede",
+        "valid_ftp_keyring": True,
+        "valid_email_keyring": True,
+        "valid_whatsapp_keyring": True,
+        "valid_telegram_keyring": True,
+    }
+    assert Notifier.notification_areas == {}
 
 
 @patch(
@@ -2272,6 +2541,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode:
   type: Test Model Mode
 privacy:
@@ -2365,6 +2635,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode:
   type: Animal Detection Mode
 privacy:
@@ -2460,6 +2731,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode:
   type: Animal Detection and Classification Mode
 privacy:
@@ -2558,6 +2830,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
@@ -2675,6 +2948,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode
@@ -2780,6 +3054,7 @@ cameras: []
 database: ''
 ftps_server: ''
 notification: ''
+notification_areas: {{}}
 operation_mode:
   custom_target_species: chamois
   type: Custom Species Classification Mode

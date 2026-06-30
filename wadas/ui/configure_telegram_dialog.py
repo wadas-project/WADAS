@@ -144,7 +144,6 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
             self.ui.checkBox_enable_telegram_notifications.stateChanged.connect(self.enable_ok_button)
             self.ui.checkBox_enable_images.setChecked(self.telegram_notifier.allow_images)
             self.ui.checkBox_enable_images.stateChanged.connect(self.enable_ok_button)
-
         else:
             self.ui.checkBox_enable_telegram_notifications.setChecked(True)
 
@@ -265,7 +264,7 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
         if self.telegram_notifier.recipients:
             message = "WADAS Test Message!"
             try:
-                status, data = self.telegram_notifier.send_telegram_message(message)
+                status, data = self.telegram_notifier.send_telegram_message(message, None)
                 if status == 200:
                     if data["status"] == "ok":
                         self.ui.plainTextEdit.setPlainText("Telegram notification sent!")
@@ -273,7 +272,7 @@ class DialogConfigureTelegram(QDialog, Ui_DialogConfigureTelegram):
                         self.ui.plainTextEdit.setPlainText("\n".join(data["error_msgs"]))
                 else:
                     self.ui.plainTextEdit.setPlainText(f"Error sending Test Message: {str(status)} - {data}")
-            except Exception:
-                self.ui.plainTextEdit.setPlainText(f"Error sending Test Message!")
+            except Exception as e:
+                self.ui.plainTextEdit.setPlainText(f"Error sending Test Message: {e}")
         else:
             self.ui.label_errorMessage.setText("No recipient configured")

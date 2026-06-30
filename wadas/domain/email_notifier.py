@@ -45,6 +45,18 @@ class EmailNotifier(Notifier):
         self.smtp_port = smtp_port
         self.recipients_email = recipients_email
 
+    def get_camera_recipients(self, camera_id):
+        """Return the list of email addresses to notify for the given camera_id.
+
+        Falls back to the full self.recipients_email list when no
+        NotificationArea-based routing applies for this camera (see
+        Notifier.get_recipients_for_camera): no NotificationArea configured
+        at all, or camera_id is None (no camera context, e.g. a generic
+        test send not tied to a DetectionEvent).
+        """
+        contact_ids = Notifier.get_recipients_for_camera(camera_id, self.type)
+        return self.recipients_email if contact_ids is None else contact_ids
+
     def send_email(self, detection_event, message=""):
         """Method to build email and send it."""
 
@@ -59,11 +71,19 @@ class EmailNotifier(Notifier):
             logger.debug("Email not configured. Skipping email notification.")
             return False
 
+        recipients = self.get_camera_recipients(detection_event.camera_id)
+        if not recipients:
+            logger.debug(
+                "No Email recipient configured for camera '%s'. Skipping Email notification.",
+                detection_event.camera_id,
+            )
+            return False
+
         email_message = MIMEMultipart()
         # Set email required fields.
         email_message["Subject"] = "WADAS detection alert"
         email_message["From"] = self.sender_email
-        email_message["To"] = ", ".join(self.recipients_email)
+        email_message["To"] = ", ".join(recipients)
 
         # Select image to attach to the notification: classification (if enabled) or detection image
         img_path = (
@@ -148,11 +168,12 @@ class EmailNotifier(Notifier):
             # Login to the SMTP server
             smtp_server.login(self.sender_email, credentials.password)
             # Send the email to all recipients.
-            for recipient in self.recipients_email:
+            for recipient in recipients:
                 smtp_server.sendmail(self.sender_email, recipient, email_message.as_string())
                 logger.debug("Email notification sent to recipient %s .", recipient)
             smtp_server.quit()
         logger.info("Email notification for %s sent!", img_path)
+        return True
 
     def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method specific for Email notifier."""

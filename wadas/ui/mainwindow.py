@@ -75,6 +75,7 @@ from wadas.ui.configure_db_dialog import ConfigureDBDialog
 from wadas.ui.configure_camera_for_tunnel_mode import DialogConfigureCameraForTunnelMode
 from wadas.ui.configure_email_dialog import DialogInsertEmail
 from wadas.ui.configure_ftp_cameras_dialog import DialogFTPCameras
+from wadas.ui.configure_notification_areas_dialog import ConfigureNotificationAreasDialog
 from wadas.ui.configure_privacy_dialog import DialogConfigurePrivacy
 from wadas.ui.configure_telegram_dialog import DialogConfigureTelegram
 from wadas.ui.configure_tunnels import DialogConfigureTunnels
@@ -197,6 +198,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfigure_web_interface.triggered.connect(self.configure_web_interface)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionConfigure_privacy.triggered.connect(self.configure_privacy)
+        self.ui.actionactionConfigureNotificationArea.triggered.connect(self.configure_notification_areas)
 
     def _connect_mode_ui_slots(self):
         """Function to connect UI slot with operation_mode signals."""
@@ -583,6 +585,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfigure_database.setEnabled(not running)
         self.ui.actionconfigure_Tunnel.setEnabled(not running)
         self.ui.actionConfigure_privacy.setEnabled(not running)
+        self.ui.actionactionConfigureNotificationArea.setEnabled(not running)
 
     def update_info_widget(self):
         """Update information widget."""
@@ -779,6 +782,13 @@ class MainWindow(QMainWindow):
         if (DialogConfigureTunnels()).exec():
             self.update_info_widget()
             logger.info("Tunnel configured.")
+
+    def configure_notification_areas(self):
+        """Method to configure notification areas"""
+
+        if (ConfigureNotificationAreasDialog()).exec():
+            logger.info("Notification area(s) configured!")
+            self.setWindowModified(True)
 
     def check_models(self):
         """Method to initialize classification model."""
