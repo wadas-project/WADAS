@@ -311,6 +311,14 @@ class MainWindow(QMainWindow):
         return frames, fps
 
     def play_video(self, video_path):
+        # Stop and dispose of any previous playback timer before starting a new
+        # one, so two videos never race on the shared frame buffer/timer.
+        previous_timer = getattr(self, "video_timer", None)
+        if previous_timer is not None:
+            previous_timer.stop()
+            previous_timer.timeout.disconnect(self.show_next_frame)
+            previous_timer.deleteLater()
+
         self.video_frames, fps  = self.get_video_frames(video_path)
         logger.debug("Playing video at %s FPS...", fps)
         self.video_timer = QTimer(self)
@@ -318,12 +326,16 @@ class MainWindow(QMainWindow):
         self.video_timer.start(1000 // fps)
 
     def show_next_frame(self):
+        # Operate on the timer that actually fired this slot (self.sender()),
+        # not on self.video_timer, which may already point to a different,
+        # newer timer if play_video() was called again in the meantime.
+        timer = self.sender()
         if self.video_frames:
             frame = self.video_frames.popleft()
             self.set_image(frame)
         else:
-            self.video_timer.stop()
-            self.video_timer.deleteLater()
+            timer.stop()
+            timer.deleteLater()
 
     def select_mode(self):
         """Slot for mode selection (toolbar button)"""
