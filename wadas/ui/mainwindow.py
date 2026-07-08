@@ -806,6 +806,7 @@ class MainWindow(QMainWindow):
         if (ConfigureNotificationAreasDialog()).exec():
             logger.info("Notification area(s) configured!")
             self.setWindowModified(True)
+            self.update_toolbar_status()
 
     def check_models(self):
         """Method to initialize classification model."""
