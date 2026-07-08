@@ -115,14 +115,14 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
             self.on_notification_method_changed
         )
 
-        # create working copy of notification_area attribute (deep copy so that
+        # Create working copy of notification_area attribute (deep copy so that
         # Cancel discards changes and does not mutate Notifier.notification_areas).
         self.notification_areas = copy.deepcopy(Notifier.notification_areas)
 
-        # state for the currently selected notification area
+        # State for the currently selected notification area
         self.selected_area_id = None
 
-        # notification area(s) list widget
+        # Notification area(s) list widget
         self.listWidget_notification_areas = QListWidget()
         areas_layout = QVBoxLayout(self.ui.scrollAreaWidgetContents_notification_areas)
         areas_layout.setContentsMargins(0, 0, 0, 0)
@@ -131,7 +131,7 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
             self.on_area_selection_changed
         )
 
-        # widgets layouts (created once, cleared/repopulated on refresh)
+        # Widgets layouts (created once, cleared/repopulated on refresh)
         self.ui.scrollAreaWidgetContents_cameras.setLayout(QVBoxLayout())
         self.ui.scrollAreaWidgetContents_contacts.setLayout(QVBoxLayout())
 
@@ -216,7 +216,7 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
         if dialog.exec() == QDialog.DialogCode.Accepted:
             area_id = dialog.get_area_id()
             if not area_id or area_id in self.notification_areas:
-                # should not happen given dialog validation, but guard anyway
+                # Should not happen given dialog validation, but guard anyway
                 self.ui.label_errorMessage.setText(
                     "Notification area name is empty or already exists."
                 )
@@ -269,8 +269,8 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
 
     def on_camera_checkbox_changed(self, camera_id, state):
         """Update the selected area's camera_ids when a camera checkbox is toggled."""
-        area = self.notification_areas.get(self.selected_area_id)
-        if not area:
+
+        if not (area:=self.notification_areas.get(self.selected_area_id)):
             return
         if state == Qt.CheckState.Checked.value:
             area.add_camera(camera_id)
@@ -291,11 +291,11 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
 
         Returns plain strings for Email/WhatsApp, TelegramRecipient objects for
         Telegram (handled by _contact_label_and_key)."""
-        notifier_instance = Notifier.notifiers.get(notifier_type.value)
-        if not notifier_instance:
+
+        if not (notifier_instance := Notifier.notifiers.get(notifier_type.value)):
             return []
-        attr = self._NOTIFIER_RECIPIENTS_ATTR.get(notifier_type)
-        if attr is None:
+
+        if (attr := self._NOTIFIER_RECIPIENTS_ATTR.get(notifier_type)) is None:
             return []
         return list(getattr(notifier_instance, attr, []) or [])
 
@@ -352,8 +352,8 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
 
     def on_contact_checkbox_changed(self, notifier_type, contact, state):
         """Update the selected area's contacts when a contact checkbox is toggled."""
-        area = self.notification_areas.get(self.selected_area_id)
-        if not area:
+
+        if not (area := self.notification_areas.get(self.selected_area_id)):
             return
         if state == Qt.CheckState.Checked.value:
             area.add_contact(notifier_type.value, contact)
@@ -421,6 +421,6 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
         """Remove and delete all widgets from a layout, keeping the layout itself."""
         while layout.count():
             item = layout.takeAt(0)
-            widget = item.widget()
-            if widget:
+
+            if widget := item.widget():
                 widget.deleteLater()
