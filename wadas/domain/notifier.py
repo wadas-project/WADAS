@@ -19,11 +19,26 @@
 
 import logging
 from abc import abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 
 from wadas.domain.notification_area import NotificationArea
 
 logger = logging.getLogger(__name__)
+
+# Single shared executor for all notification sends: keeps threads bounded and
+# avoids spawning one thread per event (which would pile up under load).
+# max_workers=4 covers Email + WhatsApp + Telegram with one spare; tune if more
+# notifier types are added.
+_notification_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="wadas-notify")
+
+
+def _on_notification_done(future):
+    """Callback invoked when a notification thread completes.
+    Logs any unhandled exception that escaped send_notification()."""
+    exc = future.exception()
+    if exc:
+        logger.error("Unhandled exception in notification thread: %s", exc, exc_info=exc)
 
 
 class Notifier:
@@ -63,14 +78,13 @@ class Notifier:
         camera_id and notifier_type, aggregating Notifier.get_recipients_for_area
         across all NotificationArea(s) that include camera_id.
 
-        Returns None if no NotificationArea is configured at all.
+        Returns None if no NotificationArea is configured at all, or if
+        camera_id is None (no camera context, e.g. a test send from the
+        configuration dialog): callers fall back to their full distribution
+        list in that case.
 
-        Returns an empty list if at least one NotificationArea is
-        configured in the system: an empty list means either this camera is
-        not assigned to any area, or it is assigned but no contact was
-        selected for this specific notifier_type.
-
-        If camera is None we assume we are in test mode and return full recipient list.
+        Returns a list (possibly empty) if at least one NotificationArea is
+        configured AND camera_id is provided.
         """
         if camera_id is None or not cls.notification_areas:
             return None
@@ -84,8 +98,12 @@ class Notifier:
 
     @staticmethod
     def send_notifications(detection_event, message=""):
-        """Method to send notification through enabled protocols."""
+        """Dispatch notifications through all enabled protocols.
 
+        Each notifier's send_notification() is submitted to a shared thread
+        pool so that network I/O (SMTP, Telegram API, WhatsApp API) does not
+        block the main detection/classification loop.
+        """
         configured_notifier = False
         enabled_notifier = False
         for notifier in Notifier.notifiers:
@@ -94,7 +112,12 @@ class Notifier:
                     configured_notifier = True
                     if Notifier.notifiers[notifier].enabled:
                         enabled_notifier = True
-                        Notifier.notifiers[notifier].send_notification(detection_event, message)
+                        future = _notification_executor.submit(
+                            Notifier.notifiers[notifier].send_notification,
+                            detection_event,
+                            message,
+                        )
+                        future.add_done_callback(_on_notification_done)
         if not configured_notifier:
             logger.warning("No notification protocol configured. Skipping notification.")
         elif not enabled_notifier:
@@ -103,8 +126,7 @@ class Notifier:
     @staticmethod
     def notifier_enabled():
         """Methods that returns bool value representing notifier(s) enablement status.
-        returns true if at least a notifier is enabled, false otherwise.
-        """
+        returns true if at least a notifier is enabled, false otherwise."""
 
         return any(
             notifier.is_configured and notifier.enabled

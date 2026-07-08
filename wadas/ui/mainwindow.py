@@ -35,6 +35,7 @@ import cv2
 from packaging.version import InvalidVersion, Version
 import keyring
 
+from shiboken6 import isValid
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import  Qt, QThread, QTimer, QSettings
 from PySide6.QtGui import QBrush, QImage, QPixmap
@@ -313,8 +314,12 @@ class MainWindow(QMainWindow):
     def play_video(self, video_path):
         # Stop and dispose of any previous playback timer before starting a new
         # one, so two videos never race on the shared frame buffer/timer.
+        # NOTE: the Python wrapper can be non-None even after its underlying
+        # C++ QTimer has already been destroyed (deleteLater() is processed
+        # asynchronously by the Qt event loop, and minutes can pass between
+        # videos), so we must check isValid(), not just "is not None".
         previous_timer = getattr(self, "video_timer", None)
-        if previous_timer is not None:
+        if previous_timer is not None and isValid(previous_timer):
             previous_timer.stop()
             previous_timer.timeout.disconnect(self.show_next_frame)
             previous_timer.deleteLater()
