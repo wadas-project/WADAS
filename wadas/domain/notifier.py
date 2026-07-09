@@ -69,7 +69,7 @@ class Notifier:
     def get_recipients_for_area(area, notifier_type):
         """Return the list of contacts configured in a single NotificationArea for
         a given notifier_type."""
-        key = notifier_type.value if hasattr(notifier_type, "value") else notifier_type
+        key = getattr(notifier_type, "value", notifier_type)
         return list(area.contacts.get(key, []))
 
     @classmethod

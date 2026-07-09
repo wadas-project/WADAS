@@ -297,7 +297,7 @@ class ConfigureNotificationAreasDialog(QDialog, Ui_ConfigureNotificationAreasDia
 
         if (attr := self._NOTIFIER_RECIPIENTS_ATTR.get(notifier_type)) is None:
             return []
-        return list(getattr(notifier_instance, attr, []) or [])
+        return list(getattr(notifier_instance, attr, []))
 
     def _contact_label_and_key(self, contact):
         """Return a (display_label, storage_key) pair for a contact.

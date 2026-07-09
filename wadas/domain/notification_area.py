@@ -35,7 +35,7 @@ class NotificationArea:
 
     def __init__(self, id, camera_ids=None, contacts=None):
         self.id = id
-        self.camera_ids = list(camera_ids) if camera_ids else []
+        self.camera_ids = list(camera_ids or [])
         # contacts: dict[str (notifier type value), list[str]]
         # e.g. {"WhatsApp": ["+391234567890"], "Telegram": ["123456"]}
         self.contacts = {k: list(v) for k, v in (contacts or {}).items()}

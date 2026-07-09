@@ -71,16 +71,18 @@ class AnimalDetectionAndClassificationMode(OperationMode):
                         if detection_event.classification_media_path:
                             message = (
                                 f"WADAS has classified '{self.last_classified_animals_str}' "
-                                f"animal from camera {cur_media['media_id']}!"
+                                f"animal from camera {cur_media['camera_id']}!"
                             )
                         else:
                             message = (
                                 "WADAS has detected but not classified any animal "
-                                f"from camera {cur_media['media_id']}"
+                                f"from camera {cur_media['camera_id']}"
                             )
                             self.enforce_privacy(detection_event)
                     else:
-                        message = "WADAS has detected an animal from camera %s!" % id
+                        message = (
+                            f"WADAS has detected an animal from camera {cur_media['camera_id']}!"
+                        )
 
                     # Notification
                     if self.is_notifier_enabled:
