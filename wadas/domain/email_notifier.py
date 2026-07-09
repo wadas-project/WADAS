@@ -138,7 +138,9 @@ class EmailNotifier(Notifier):
             # Open the image file in binary mode
             with open(detection_event.preview_image, "rb") as img:
                 # Attach the image file
-                msg_img = MIMEImage(img.read(), name=os.path.basename(img_path))
+                msg_img = MIMEImage(
+                    img.read(), name=os.path.basename(detection_event.preview_image)
+                )
                 # Define the Content-ID header to use in the HTML body
                 msg_img.add_header("Content-ID", "<image1>")
                 # Attach the image to the message
