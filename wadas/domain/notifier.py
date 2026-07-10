@@ -61,6 +61,21 @@ class Notifier:
         self.allow_images = allow_images
 
     @classmethod
+    def remove_camera_from_notification_areas(cls, camera_id):
+        """Remove a camera_id from all NotificationArea(s) that reference it.
+        To be called whenever a camera is removed from the system, so that
+        notification areas are kept consistent with the active camera list.
+        Areas that become empty after removal are kept (not auto-deleted):
+        the user may want to re-assign cameras to them later, and
+        ConfigureNotificationAreasDialog.validate() will flag them on next open.
+        """
+        if not cls.notification_areas:
+            return
+        for area in cls.notification_areas.values():
+            area.remove_camera(camera_id)
+        logger.debug("Camera '%s' removed from all notification areas.", camera_id)
+
+    @classmethod
     def get_areas_for_camera(cls, camera_id):
         """Return all NotificationArea instances that include the given camera_id."""
         return [area for area in cls.notification_areas.values() if camera_id in area.camera_ids]
