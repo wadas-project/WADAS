@@ -42,6 +42,7 @@ from wadas.domain.camera import Camera, cameras
 from wadas.domain.database import DataBase
 from wadas.domain.ftp_camera import FTPCamera
 from wadas.domain.ftps_server import FTPsServer
+from wadas.domain.notifier import Notifier
 from wadas.domain.utils import is_pem_certificate, is_pem_key
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_configure_ftp_cameras import Ui_DialogFTPCameras
@@ -242,6 +243,7 @@ class DialogFTPCameras(QDialog, Ui_DialogFTPCameras):
             )
             for camera in orphan_cameras:
                 cameras.remove(camera)
+                Notifier.remove_camera_from_notification_areas(camera.id)
                 # Set camera as deleted into db
                 if self.db_enabled:
                     DataBase.update_camera(camera, delete_camera=True)
@@ -249,6 +251,7 @@ class DialogFTPCameras(QDialog, Ui_DialogFTPCameras):
                 if camera.id in self.removed_cameras:
                     if camera.type == Camera.CameraTypes.FTP_CAMERA:
                         cameras.remove(camera)
+                        Notifier.remove_camera_from_notification_areas(camera.id)
                         # Set camera as deleted into db
                         if self.db_enabled:
                             DataBase.update_camera(camera, delete_camera=True)

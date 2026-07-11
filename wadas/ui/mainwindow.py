@@ -35,6 +35,7 @@ import cv2
 from packaging.version import InvalidVersion, Version
 import keyring
 
+from shiboken6 import isValid
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import  Qt, QThread, QTimer, QSettings
 from PySide6.QtGui import QBrush, QImage, QPixmap
@@ -75,6 +76,7 @@ from wadas.ui.configure_db_dialog import ConfigureDBDialog
 from wadas.ui.configure_camera_for_tunnel_mode import DialogConfigureCameraForTunnelMode
 from wadas.ui.configure_email_dialog import DialogInsertEmail
 from wadas.ui.configure_ftp_cameras_dialog import DialogFTPCameras
+from wadas.ui.configure_notification_areas_dialog import ConfigureNotificationAreasDialog
 from wadas.ui.configure_privacy_dialog import DialogConfigurePrivacy
 from wadas.ui.configure_telegram_dialog import DialogConfigureTelegram
 from wadas.ui.configure_tunnels import DialogConfigureTunnels
@@ -197,6 +199,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfigure_web_interface.triggered.connect(self.configure_web_interface)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionConfigure_privacy.triggered.connect(self.configure_privacy)
+        self.ui.actionactionConfigureNotificationArea.triggered.connect(self.configure_notification_areas)
 
     def _connect_mode_ui_slots(self):
         """Function to connect UI slot with operation_mode signals."""
@@ -311,8 +314,12 @@ class MainWindow(QMainWindow):
     def play_video(self, video_path):
         # Stop and dispose of any previous playback timer before starting a new
         # one, so two videos never race on the shared frame buffer/timer.
+        # NOTE: the Python wrapper can be non-None even after its underlying
+        # C++ QTimer has already been destroyed (deleteLater() is processed
+        # asynchronously by the Qt event loop, and minutes can pass between
+        # videos), so we must check isValid(), not just "is not None".
         previous_timer = getattr(self, "video_timer", None)
-        if previous_timer is not None:
+        if previous_timer is not None and isValid(previous_timer):
             previous_timer.stop()
             previous_timer.timeout.disconnect(self.show_next_frame)
             previous_timer.deleteLater()
@@ -595,6 +602,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfigure_database.setEnabled(not running)
         self.ui.actionconfigure_Tunnel.setEnabled(not running)
         self.ui.actionConfigure_privacy.setEnabled(not running)
+        self.ui.actionactionConfigureNotificationArea.setEnabled(not running)
 
     def update_info_widget(self):
         """Update information widget."""
@@ -791,6 +799,14 @@ class MainWindow(QMainWindow):
         if (DialogConfigureTunnels()).exec():
             self.update_info_widget()
             logger.info("Tunnel configured.")
+
+    def configure_notification_areas(self):
+        """Method to configure notification areas"""
+
+        if (ConfigureNotificationAreasDialog()).exec():
+            logger.info("Notification area(s) configured!")
+            self.setWindowModified(True)
+            self.update_toolbar_status()
 
     def check_models(self):
         """Method to initialize classification model."""

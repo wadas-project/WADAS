@@ -58,7 +58,7 @@ const CustomNavbar = () => {
                             </Nav.Link>
 
 
-                            {role === "Viewer" && (
+                            {role === "Admin" && (
                                 <>
                                     <Nav.Link
                                         onClick={() => handleNavClick("/logs")}

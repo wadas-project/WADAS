@@ -53,6 +53,18 @@ class WhatsAppNotifier(Notifier):
             and credentials.password
         )
 
+    def get_camera_recipients(self, camera_id):
+        """Return the list of WhatsApp numbers to notify for the given camera_id.
+
+        Falls back to the full self.recipient_numbers list when no
+        NotificationArea-based routing applies for this camera (see
+        Notifier.get_recipients_for_camera): no NotificationArea configured
+        at all, or camera_id is None (no camera context, e.g. a generic
+        test send not tied to a DetectionEvent).
+        """
+        contact_ids = Notifier.get_recipients_for_camera(camera_id, self.type)
+        return self.recipient_numbers if contact_ids is None else contact_ids
+
     def send_notification(self, detection_event: DetectionEvent, message=""):
         """Implementation of send_notification method for WhatsApp notifier."""
 
@@ -60,6 +72,14 @@ class WhatsAppNotifier(Notifier):
 
     def send_whatsapp_message(self, detection_event, message=""):
         """Method to send WhatsApp message notification."""
+
+        recipient_numbers = self.get_camera_recipients(detection_event.camera_id)
+        if not recipient_numbers:
+            logger.debug(
+                "No WhatsApp recipient configured for camera '%s'. Skipping WhatsApp notification.",
+                detection_event.camera_id,
+            )
+            return
 
         whatsapp_message = (
             f"WADAS: {message}\n\nAnimal detected from camera {detection_event.camera_id}!\n"
@@ -98,7 +118,7 @@ class WhatsAppNotifier(Notifier):
             else None
         )
 
-        for recipient_number in self.recipient_numbers:
+        for recipient_number in recipient_numbers:
             failed_txt_n_image = False
 
             if media_id:

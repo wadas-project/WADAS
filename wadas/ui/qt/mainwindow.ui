@@ -368,6 +368,7 @@
    <addaction name="actionConfigure_camera_to_actuator_associations"/>
    <addaction name="actionconfigure_Tunnel"/>
    <addaction name="separator"/>
+   <addaction name="actionactionConfigureNotificationArea"/>
    <addaction name="actionActionConfigureEmail"/>
    <addaction name="actionConfigure_WA"/>
    <addaction name="actionConfigure_Telegram"/>
@@ -702,6 +703,21 @@
    </property>
    <property name="toolTip">
     <string>Configure privacy</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="actionactionConfigureNotificationArea">
+   <property name="icon">
+    <iconset>
+     <normaloff>../../icons/notification_areas.png</normaloff>../../icons/notification_areas.png</iconset>
+   </property>
+   <property name="text">
+    <string>actionConfigureNotificationArea</string>
+   </property>
+   <property name="toolTip">
+    <string>Configure notification areas</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
