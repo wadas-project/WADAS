@@ -95,7 +95,7 @@ class DialogConfigureWebInterface(QDialog):
         self.ui_user_idx = 0
         self.removed_users = []
         self.removed_rows = set()
-        self.roles = ["Admin", "Viewer"]
+        self.roles = ["Admin", "Viewer", "Operator"]
         self.project_uuid = project_uuid
 
         # DB enablement status

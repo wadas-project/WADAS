@@ -69,12 +69,14 @@ const CustomNavbar = () => {
 
                                 </>
                             )}
-                            <Nav.Link
-                                onClick={() => handleNavClick("/actuators")}
-                                className={currentPath === "/actuators" ? "selected-menu-item" : ""}
-                            >
-                                ACTUATORS
-                            </Nav.Link>
+                            {(role === "Admin" || role === "Operator") && (
+                                <Nav.Link
+                                    onClick={() => handleNavClick("/actuators")}
+                                    className={currentPath === "/actuators" ? "selected-menu-item" : ""}
+                                >
+                                    ACTUATORS
+                                </Nav.Link>
+                            )}
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
