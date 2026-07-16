@@ -18,9 +18,6 @@
 # Description: Web interface users UI Module
 import base64
 import logging
-import subprocess
-import sys
-import threading
 import time
 from enum import Enum
 from pathlib import Path
@@ -35,7 +32,6 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QRadioButton,
     QScrollArea,
     QWidget,
@@ -43,10 +39,10 @@ from PySide6.QtWidgets import (
 from validators import email as valid_email
 
 from wadas.domain.database import DataBase, DBUser
+from wadas.domain.roles import WadasRoles
 from wadas.domain.webinterface_manager import WebInterfaceManager
 from wadas.ui.error_message_dialog import WADASErrorMessage
 from wadas.ui.qt.ui_configure_web_interface import Ui_DialogConfigureWebInterface
-
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +91,7 @@ class DialogConfigureWebInterface(QDialog):
         self.ui_user_idx = 0
         self.removed_users = []
         self.removed_rows = set()
-        self.roles = ["Admin", "Viewer", "Operator"]
+        self.roles = [r.value for r in WadasRoles]
         self.project_uuid = project_uuid
 
         # DB enablement status
@@ -161,7 +157,7 @@ class DialogConfigureWebInterface(QDialog):
                 email_ln.setText(email)
 
                 role_cb = self.findChild(QComboBox, f"comboBox_role_{i}")
-                role_txt = role if role in self.roles else "Viewer"
+                role_txt = role if role in self.roles else WadasRoles.VIEWER.value
                 role_cb.setCurrentText(role_txt)
         else:
             self.findChild(QLineEdit, "lineEdit_user_0").setEnabled(False)
@@ -172,7 +168,6 @@ class DialogConfigureWebInterface(QDialog):
             self.ui.pushButton_add_user.setEnabled(False)
             self.ui.pushButton_start_web_interface.setEnabled(False)
             self.ui.label_errorMessage.setText("Database not configured or enabled!")
-
 
     def catch_web_interface_status(self, status: WebInterfaceStatus):
         """Slot: update UI when status changes."""
@@ -220,7 +215,6 @@ class DialogConfigureWebInterface(QDialog):
             else WebInterfaceStatus.INACTIVE
         )
         self.update_web_interface_status()
-
 
     def add_user(self):
         """Method to add a user into the dialog"""

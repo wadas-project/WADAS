@@ -31,6 +31,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
 
 from wadas.domain.actuator import Actuator, Command
+from wadas.domain.roles import ACTUATOR_ROLES, ADMIN_ONLY_ROLES, WadasRoles
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
@@ -48,13 +49,6 @@ from wadas_webserver.view_model import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Roles allowed to access actuator-related endpoints (view status/detail and
-# issue commands). Admin keeps full access; Operator gets the same standard
-# read access as Viewer plus the Actuators page and its controls.
-ACTUATOR_ROLES = {"Admin", "Operator"}
-# Roles allowed to access admin-only endpoints (e.g. application logs).
-ADMIN_ONLY_ROLES = {"Admin"}
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -103,9 +97,14 @@ def verify_token(token, token_type="access") -> User:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 
-def require_role(user: User, allowed_roles: set[str]) -> None:
+def require_role(user: User, allowed_roles: set[WadasRoles]) -> None:
     """Raise a 403 if the given user's role is not among the allowed roles."""
-    if user.role not in allowed_roles:
+    try:
+        user_role = WadasRoles(user.role)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Forbidden: insufficient privileges") from None
+
+    if user_role not in allowed_roles:
         raise HTTPException(status_code=403, detail="Forbidden: insufficient privileges")
 
 
