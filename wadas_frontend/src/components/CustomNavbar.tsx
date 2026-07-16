@@ -12,7 +12,7 @@ const CustomNavbar = () => {
     const [currentPath, setCurrentPath] = useState<string>(location.pathname);
     const [expanded, setExpanded] = useState(false);
 
-    const role = localStorage.getItem("role"); // recupero ruolo utente
+    const role = localStorage.getItem("role"); // retrieve user role
 
     const handleNavClick = (path: string) => {
         navigate(path);
