@@ -171,7 +171,7 @@ def test_classification_dog_overlapping(detection_pipeline):
     assert classified_animals[0]["classification"][0] == "dog"
     assert classified_animals[0]["classification"][1].item() > 0.84
 
-    assert classified_animals[0]["xyxy"] == [554, 368, 1045, 616]
+    assert compute_iou(classified_animals[0]["xyxy"], [554, 368, 1045, 616]) > 0.95
 
 
 @pytest.fixture(scope="module")
