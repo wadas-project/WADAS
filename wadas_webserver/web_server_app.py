@@ -31,6 +31,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, Response, StreamingResponse
 
 from wadas.domain.actuator import Actuator, Command
+from wadas.domain.roles import ACTUATOR_ROLES, ADMIN_ONLY_ROLES, WadasRoles
 from wadas_webserver.database import Database
 from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
@@ -94,6 +95,17 @@ def verify_token(token, token_type="access") -> User:
     except JWTError as e:
         print(e)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+def require_role(user: User, allowed_roles: set[WadasRoles]) -> None:
+    """Raise a 403 if the given user's role is not among the allowed roles."""
+    try:
+        user_role = WadasRoles(user.role)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Forbidden: insufficient privileges") from None
+
+    if user_role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Forbidden: insufficient privileges")
 
 
 @app.post("/api/v1/login")
@@ -343,8 +355,7 @@ async def export_filtered_actuations(
 @app.get("/api/v1/logs")
 async def get_logs(x_access_token: Annotated[str | None, Header()] = None):
     user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    require_role(user, ADMIN_ONLY_ROLES)
 
     log_file_path = Path(ServerConfig.WADAS_ROOT_DIR) / "log" / "WADAS.log"
     if not log_file_path.exists():
@@ -367,12 +378,11 @@ os.makedirs(frontend_path, exist_ok=True)
 async def get_actuators(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
-    """Return the list of existing actuators (admin only)"""
-    try:
-        user = verify_token(x_access_token)
-        if user.role != "Admin":
-            raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    """Return the list of existing actuators (Admin and Operator roles)"""
+    user = verify_token(x_access_token)
+    require_role(user, ACTUATOR_ROLES)
 
+    try:
         # Get actuators from domain class
         db_actuators = Database.instance.get_actuators()
 
@@ -399,8 +409,7 @@ async def get_actuator_detail(
     x_access_token: Annotated[str | None, Header()] = None,
 ):
     user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    require_role(user, ACTUATOR_ROLES)
 
     actuator = Actuator.actuators.get(actuator_id)
     if actuator is None:
@@ -437,10 +446,9 @@ async def request_actuator_log(
     actuator_id: str,
     x_access_token: Annotated[str | None, Header()] = None,
 ):
-    """Ask an actuator to send back its log (admin only)."""
+    """Ask an actuator to send back its log (Admin and Operator roles)."""
     user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    require_role(user, ACTUATOR_ROLES)
 
     actuator = Actuator.actuators.get(actuator_id)
     if not actuator:
@@ -482,10 +490,9 @@ async def request_actuator_test(
     actuator_id: str,
     x_access_token: Annotated[str | None, Header()] = None,
 ):
-    """Ask an actuator to perform a short test actuation (admin only)."""
+    """Ask an actuator to perform a short test actuation (Admin and Operator roles)."""
     user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    require_role(user, ACTUATOR_ROLES)
 
     actuator = Actuator.actuators.get(actuator_id)
     if not actuator:
@@ -533,8 +540,7 @@ async def get_actuator_last_update(
 ):
     """Get current actuator status (last update, temperature, humidity)."""
     user = verify_token(x_access_token)
-    if user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Forbidden: admin only")
+    require_role(user, ACTUATOR_ROLES)
 
     actuator = Actuator.actuators.get(actuator_id)
     if not actuator:

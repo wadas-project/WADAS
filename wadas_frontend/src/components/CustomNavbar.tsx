@@ -12,7 +12,7 @@ const CustomNavbar = () => {
     const [currentPath, setCurrentPath] = useState<string>(location.pathname);
     const [expanded, setExpanded] = useState(false);
 
-    const role = localStorage.getItem("role"); // recupero ruolo utente
+    const role = localStorage.getItem("role"); // retrieve user role
 
     const handleNavClick = (path: string) => {
         navigate(path);
@@ -69,12 +69,14 @@ const CustomNavbar = () => {
 
                                 </>
                             )}
-                            <Nav.Link
-                                onClick={() => handleNavClick("/actuators")}
-                                className={currentPath === "/actuators" ? "selected-menu-item" : ""}
-                            >
-                                ACTUATORS
-                            </Nav.Link>
+                            {(role === "Admin" || role === "Operator") && (
+                                <Nav.Link
+                                    onClick={() => handleNavClick("/actuators")}
+                                    className={currentPath === "/actuators" ? "selected-menu-item" : ""}
+                                >
+                                    ACTUATORS
+                                </Nav.Link>
+                            )}
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
