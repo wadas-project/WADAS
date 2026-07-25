@@ -66,6 +66,12 @@ const ActuatorDetail = () => {
     };
 
     useEffect(() => {
+        const role = localStorage.getItem("role");
+        if (role !== "Admin" && role !== "Operator") {
+            navigate("/homepage");
+            return;
+        }
+
         const loadPage = async () => {
             try {
                 if (!actuatorId) {
