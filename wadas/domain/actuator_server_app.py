@@ -130,7 +130,7 @@ async def respond_actuator_command(
                 command.cmd,
                 command.time_stamp,
             )
-    elif "warning:" in command.response_message.lower():
+    elif command.response_message and "warning:" in command.response_message.lower():
         response_message = command.response_message.lower().replace("warning:", "", 1).strip()
         logger.warning(
             "Actuator %s responded to command '%s' (%s) with warning message: %s",
@@ -139,7 +139,7 @@ async def respond_actuator_command(
             command.time_stamp,
             response_message,
         )
-    elif "error:" in command.response_message.lower():
+    elif command.response_message and "error:" in command.response_message.lower():
         response_message = command.response_message.lower().replace("error:", "", 1).strip()
         logger.error(
             "Actuator %s responded to command '%s' (%s) with error message: %s",
@@ -149,14 +149,25 @@ async def respond_actuator_command(
             response_message,
         )
     else:
-        logger.error(
-            "Actuator %s responded to command '%s' (%s) with %s, payload=%s",
-            command.actuator_id,
-            command.cmd,
-            command.time_stamp,
-            command.response,
-            payload.get("payload"),
-        )
+        if command.response_message:
+            logger.error(
+                "Actuator %s responded to command '%s' (%s) with %s. Message: %s, payload=%s",
+                command.actuator_id,
+                command.cmd,
+                command.time_stamp,
+                command.response,
+                command.response_message,
+                payload.get("payload"),
+            )
+        else:
+            logger.error(
+                "Actuator %s responded to command '%s' (%s) with %s, payload=%s",
+                command.actuator_id,
+                command.cmd,
+                command.time_stamp,
+                command.response,
+                payload.get("payload"),
+            )
 
     # Insert actuation event into db, if enabled
     if db := DataBase.get_enabled_db():
