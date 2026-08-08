@@ -21,7 +21,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import bcrypt
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
@@ -37,8 +37,13 @@ from wadas_webserver.server_config import ServerConfig
 from wadas_webserver.utils import create_access_token, create_refresh_token
 from wadas_webserver.view_model import (
     ActuationsRequest,
+    ActuatorBatteryHistoryResponse,
+    ActuatorBatteryStatus,
     ActuatorDetailed,
     ActuatorStatus,
+    ActuatorTemperatureHistoryResponse,
+    ActuatorTemperaturePoint,
+    BatteryTemperaturePoint,
     DataResponse,
     DetectionsRequest,
     LoginRequest,
@@ -423,6 +428,7 @@ async def get_actuator_detail(
         battery_status = Database.instance.get_last_battery_status(actuator_id)
         temp_data = Database.instance.get_last_temperature_status(actuator_id)
         temperature, humidity = temp_data or (None, None)
+        voltage, battery_temperature, battery_humidity = battery_status or (None, None, None)
 
         return ActuatorDetailed(
             actuator_id=actuator.id,
@@ -431,9 +437,93 @@ async def get_actuator_detail(
             log=actuator.log,
             temperature=temperature,
             humidity=humidity,
-            battery_status=battery_status,
+            battery_status=voltage,
+            battery_temperature=battery_temperature,
+            battery_humidity=battery_humidity,
         )
 
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+
+@app.get("/api/v1/actuators/{actuator_id}/battery-history")
+async def get_actuator_battery_history(
+    actuator_id: str,
+    range: Annotated[
+        Literal["1d", "7d", "30d", "90d"],
+        Query(description="Time window for the battery history"),
+    ] = "7d",
+    x_access_token: Annotated[str | None, Header()] = None,
+) -> ActuatorBatteryHistoryResponse:
+    """Return battery voltage history for an actuator, filtered by time range."""
+    user = verify_token(x_access_token)
+    require_role(user, ACTUATOR_ROLES)
+
+    actuator = Actuator.actuators.get(actuator_id)
+    if actuator is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Actuator '{actuator_id}' not found",
+        )
+
+    days_by_range = {"1d": 1, "7d": 7, "30d": 30, "90d": 90}
+
+    try:
+        readings = Database.instance.get_battery_history(actuator_id, days_by_range[range])
+        return ActuatorBatteryHistoryResponse(
+            data=[
+                ActuatorBatteryStatus(voltage=r.voltage, timestamp=r.time_stamp) for r in readings
+            ]
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+
+@app.get("/api/v1/actuators/{actuator_id}/temperature-history")
+async def get_actuator_temperature_history(
+    actuator_id: str,
+    range: Annotated[
+        Literal["1d", "7d", "30d", "90d"],
+        Query(description="Time window for the temperature history"),
+    ] = "7d",
+    x_access_token: Annotated[str | None, Header()] = None,
+) -> ActuatorTemperatureHistoryResponse:
+    """Return temperature history for both the actuator (on-board sensor) and its
+    battery pack, filtered by time range."""
+    user = verify_token(x_access_token)
+    require_role(user, ACTUATOR_ROLES)
+
+    actuator = Actuator.actuators.get(actuator_id)
+    if actuator is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Actuator '{actuator_id}' not found",
+        )
+
+    days_by_range = {"1d": 1, "7d": 7, "30d": 30, "90d": 90}
+
+    try:
+        actuator_readings = Database.instance.get_temperature_history(
+            actuator_id, days_by_range[range]
+        )
+        battery_readings = Database.instance.get_battery_history(actuator_id, days_by_range[range])
+
+        return ActuatorTemperatureHistoryResponse(
+            actuator=[
+                ActuatorTemperaturePoint(temperature=r.temperature, timestamp=r.time_stamp)
+                for r in actuator_readings
+            ],
+            battery=[
+                BatteryTemperaturePoint(temperature=r.temperature, timestamp=r.time_stamp)
+                for r in battery_readings
+            ],
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,

@@ -20,6 +20,7 @@ import csv
 import io
 import logging
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from sqlalchemy import and_, create_engine, desc
@@ -312,8 +313,10 @@ class Database:
 
             return result.temperature, result.humidity
 
-    def get_last_battery_status(self, actuator_id: str) -> Optional[float]:
-        """Return the latest battery voltage for a given actuator (by name)."""
+    def get_last_battery_status(
+        self, actuator_id: str
+    ) -> Optional[Tuple[float, Optional[float], Optional[float]]]:
+        """Return the latest battery (voltage, temperature, humidity) for a given actuator (by name)."""
         with self.get_session() as session:
             # Step 1: find actuator db_id by its id
             db_actuator = (
@@ -322,7 +325,7 @@ class Database:
             if db_actuator is None:
                 return None  # actuator not found in the 'actuators' table
 
-            # Step 2: query the most recent battery voltage using db_id
+            # Step 2: query the most recent battery status using db_id
             result = (
                 session.query(DB_ActuatorBatteryStatus)
                 .filter(DB_ActuatorBatteryStatus.actuator_id == db_actuator.db_id)
@@ -334,7 +337,65 @@ class Database:
             if result is None:
                 return None  # no battery records found for this actuator
 
-            return result.voltage
+            return result.voltage, result.temperature, result.humidity
+
+    def get_battery_history(
+        self, actuator_id: str, since_days: int
+    ) -> List[DB_ActuatorBatteryStatus]:
+        """Return battery readings (voltage/temperature/humidity) for a given actuator
+        (by name), from `since_days` ago up to now, ordered chronologically."""
+        with self.get_session() as session:
+            # Step 1: find actuator db_id by its id
+            db_actuator = (
+                session.query(DB_Actuator).filter(DB_Actuator.actuator_id == actuator_id).first()
+            )
+            if db_actuator is None:
+                return []  # actuator not found in the 'actuators' table
+
+            # Step 2: query battery readings within the requested time window
+            since = datetime.now(timezone.utc) - timedelta(days=since_days)
+            results = (
+                session.query(DB_ActuatorBatteryStatus)
+                .filter(
+                    and_(
+                        DB_ActuatorBatteryStatus.actuator_id == db_actuator.db_id,
+                        DB_ActuatorBatteryStatus.time_stamp >= since,
+                    )
+                )
+                .order_by(DB_ActuatorBatteryStatus.time_stamp.asc())
+                .all()
+            )
+
+            return results
+
+    def get_temperature_history(
+        self, actuator_id: str, since_days: int
+    ) -> List[DB_ActuatorTemperatureStatus]:
+        """Return actuator (on-board sensor) temperature/humidity readings for a given
+        actuator (by name), from `since_days` ago up to now, ordered chronologically."""
+        with self.get_session() as session:
+            # Step 1: find actuator db_id by its id
+            db_actuator = (
+                session.query(DB_Actuator).filter(DB_Actuator.actuator_id == actuator_id).first()
+            )
+            if db_actuator is None:
+                return []  # actuator not found in the 'actuators' table
+
+            # Step 2: query temperature readings within the requested time window
+            since = datetime.now(timezone.utc) - timedelta(days=since_days)
+            results = (
+                session.query(DB_ActuatorTemperatureStatus)
+                .filter(
+                    and_(
+                        DB_ActuatorTemperatureStatus.actuator_id == db_actuator.db_id,
+                        DB_ActuatorTemperatureStatus.time_stamp >= since,
+                    )
+                )
+                .order_by(DB_ActuatorTemperatureStatus.time_stamp.asc())
+                .all()
+            )
+
+            return results
 
     def get_actuators(self) -> List[Actuator]:
         """Method to get all the enabled actuators"""
