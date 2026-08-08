@@ -1,12 +1,16 @@
 import csv
 import io
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from wadas.domain.db_model import ActuatorBatteryStatus as DB_ActuatorBatteryStatus
+from wadas.domain.db_model import (
+    ActuatorTemperatureStatus as DB_ActuatorTemperatureStatus,
+)
 from wadas.domain.db_model import Base
 from wadas_webserver.database import Database
 from wadas_webserver.view_model import (
@@ -229,3 +233,155 @@ def test_export_filtered_actuation_events(database):
     request = ActuationsRequest(commands=[command], date_from=datefrom, date_to=dateto)
     csv_string = database.export_actuation_events_as_csv(request)
     validate_csv_string(csv_string, 3)
+
+
+# ---------------------------------------------------------------------------
+# Battery / temperature telemetry tests
+# ---------------------------------------------------------------------------
+# Timestamps are generated relative to "now" (rather than reusing the fixed
+# dates in test_data.txt) so that day-range filtering (7d/30d/90d) behaves
+# consistently regardless of when the test suite is actually run.
+
+BATTERY_ACTUATOR_NAME = "1111"  # matches db_id=1 in test_data.txt
+UNKNOWN_ACTUATOR_NAME = "does-not-exist"
+
+
+@pytest.fixture
+def database_with_telemetry(database):
+    Session = sessionmaker(bind=database.engine)
+    session = Session()
+
+    now = datetime.now(timezone.utc)
+
+    battery_readings = [
+        # (age_in_days, voltage, temperature, humidity)
+        (0.1, 12.41, 27.6, 58.0),
+        (2, 12.55, 26.1, 55.0),
+        (10, 12.80, 24.0, 50.0),
+        (45, 11.90, 20.0, 60.0),
+    ]
+    for age_days, voltage, temperature, humidity in battery_readings:
+        session.add(
+            DB_ActuatorBatteryStatus(
+                actuator_id=1,
+                time_stamp=now - timedelta(days=age_days),
+                voltage=voltage,
+                temperature=temperature,
+                humidity=humidity,
+            )
+        )
+
+    temperature_readings = [
+        # (age_in_days, temperature, humidity)
+        (0.1, 31.2, 47.0),
+        (2, 29.0, 45.0),
+        (10, 25.0, 40.0),
+        (45, 18.0, 55.0),
+    ]
+    for age_days, temperature, humidity in temperature_readings:
+        session.add(
+            DB_ActuatorTemperatureStatus(
+                actuator_id=1,
+                time_stamp=now - timedelta(days=age_days),
+                temperature=temperature,
+                humidity=humidity,
+            )
+        )
+
+    session.commit()
+    session.close()
+
+    return database
+
+
+def test_get_last_battery_status(database_with_telemetry):
+    voltage, temperature, humidity = database_with_telemetry.get_last_battery_status(
+        BATTERY_ACTUATOR_NAME
+    )
+    # the most recent reading is the one inserted with age_days=0.1
+    assert voltage == pytest.approx(12.41)
+    assert temperature == pytest.approx(27.6)
+    assert humidity == pytest.approx(58.0)
+
+
+def test_get_last_battery_status_no_data(database):
+    # actuator '4444' (db_id=2) has no battery readings in test_data.txt
+    assert database.get_last_battery_status("4444") is None
+
+
+def test_get_last_battery_status_unknown_actuator(database_with_telemetry):
+    assert database_with_telemetry.get_last_battery_status(UNKNOWN_ACTUATOR_NAME) is None
+
+
+def test_get_battery_history_returns_readings_within_range(database_with_telemetry):
+    readings = database_with_telemetry.get_battery_history(BATTERY_ACTUATOR_NAME, since_days=7)
+
+    # only the readings with age_days 0.1 and 2 fall within the last 7 days
+    assert len(readings) == 2
+    assert all(r.voltage in (12.41, 12.55) for r in readings)
+
+
+def test_get_battery_history_24h_range_only_includes_last_day(database_with_telemetry):
+    readings = database_with_telemetry.get_battery_history(BATTERY_ACTUATOR_NAME, since_days=1)
+
+    # only the reading with age_days=0.1 falls within the last 24 hours
+    assert len(readings) == 1
+    assert readings[0].voltage == pytest.approx(12.41)
+
+
+def test_get_battery_history_wider_range_includes_older_readings(database_with_telemetry):
+    readings = database_with_telemetry.get_battery_history(BATTERY_ACTUATOR_NAME, since_days=90)
+
+    assert len(readings) == 4
+
+
+def test_get_battery_history_is_chronologically_ordered(database_with_telemetry):
+    readings = database_with_telemetry.get_battery_history(BATTERY_ACTUATOR_NAME, since_days=90)
+
+    timestamps = [r.time_stamp for r in readings]
+    assert timestamps == sorted(timestamps)
+
+
+def test_get_battery_history_unknown_actuator_returns_empty(database_with_telemetry):
+    readings = database_with_telemetry.get_battery_history(UNKNOWN_ACTUATOR_NAME, since_days=90)
+    assert readings == []
+
+
+def test_get_battery_history_no_data_returns_empty(database):
+    # actuator '4444' (db_id=2) has no battery readings in test_data.txt
+    readings = database.get_battery_history("4444", since_days=90)
+    assert readings == []
+
+
+def test_get_temperature_history_returns_readings_within_range(database_with_telemetry):
+    readings = database_with_telemetry.get_temperature_history(BATTERY_ACTUATOR_NAME, since_days=7)
+
+    # only the readings with age_days 0.1 and 2 fall within the last 7 days
+    assert len(readings) == 2
+    assert all(r.temperature in (31.2, 29.0) for r in readings)
+
+
+def test_get_temperature_history_24h_range_only_includes_last_day(database_with_telemetry):
+    readings = database_with_telemetry.get_temperature_history(BATTERY_ACTUATOR_NAME, since_days=1)
+
+    # only the reading with age_days=0.1 falls within the last 24 hours
+    assert len(readings) == 1
+    assert readings[0].temperature == pytest.approx(31.2)
+
+
+def test_get_temperature_history_wider_range_includes_older_readings(database_with_telemetry):
+    readings = database_with_telemetry.get_temperature_history(BATTERY_ACTUATOR_NAME, since_days=90)
+
+    assert len(readings) == 4
+
+
+def test_get_temperature_history_is_chronologically_ordered(database_with_telemetry):
+    readings = database_with_telemetry.get_temperature_history(BATTERY_ACTUATOR_NAME, since_days=90)
+
+    timestamps = [r.time_stamp for r in readings]
+    assert timestamps == sorted(timestamps)
+
+
+def test_get_temperature_history_unknown_actuator_returns_empty(database_with_telemetry):
+    readings = database_with_telemetry.get_temperature_history(UNKNOWN_ACTUATOR_NAME, since_days=90)
+    assert readings == []

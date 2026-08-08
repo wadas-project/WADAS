@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Alert, Button, Col, Container, Modal, Row } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
 
+import BatteryHistoryChart from "./components/BatteryHistoryChart";
 import CustomNavbar from "./components/CustomNavbar";
 import CustomSpinner from "./components/CustomSpinner";
+import TemperatureHistoryChart from "./components/TemperatureHistoryChart";
 import { fetchActuatorDetail, fetchActuatorLogs, postActuatorTest } from "./lib/api";
 import { getErrorMessage, isUnauthorizedError, tryWithRefreshing } from "./lib/utils";
 import { ActuatorDetailed } from "./types/types";
@@ -17,6 +19,7 @@ const ActuatorDetail = () => {
     const [actuatorLogs, setActuatorLogs] = useState<string[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [logsLoading, setLogsLoading] = useState<boolean>(false);
+    const [logsRequested, setLogsRequested] = useState<boolean>(false);
     const [testLoading, setTestLoading] = useState<boolean>(false);
     const [showTestModal, setShowTestModal] = useState<boolean>(false);
     const [testMessage, setTestMessage] = useState<string>("Waiting...");
@@ -45,7 +48,10 @@ const ActuatorDetail = () => {
         }
     };
 
+    // Logs are only ever fetched in response to the user pressing "Refresh log" -
+    // no request is sent when the page loads.
     const handleRefreshLogs = async (currentActuatorId: string): Promise<void> => {
+        setLogsRequested(true);
         setLogsLoading(true);
         try {
             const response = await tryWithRefreshing(() =>
@@ -87,23 +93,6 @@ const ActuatorDetail = () => {
 
                 setActuator(detailResponse);
                 setLoading(false);
-                setLogsLoading(true);
-
-                try {
-                    const logsResponse = await tryWithRefreshing(() =>
-                        fetchActuatorLogs(actuatorId)
-                    );
-                    setActuatorLogs(logsResponse.data.log ?? []);
-                } catch (e) {
-                    if (isUnauthorizedError(e)) {
-                        navigate("/");
-                        return;
-                    }
-
-                    showError(getErrorMessage(e), "Unable to load logs");
-                } finally {
-                    setLogsLoading(false);
-                }
             } catch (e) {
                 if (isUnauthorizedError(e)) {
                     navigate("/");
@@ -160,9 +149,27 @@ const ActuatorDetail = () => {
                             </Col>
                         </Row>
 
-                        <Row className="mb-4">
-                            <Col>
-                                <h6>Commands</h6>
+                        {/* SECTION 1: Actuator */}
+                        <div className="border rounded p-3 mb-4">
+                            <h6 className="border-bottom pb-2 mb-3">Actuator</h6>
+
+                            <Row className="mb-3">
+                                <Col md={4}>
+                                    <strong>Type</strong>
+                                    <div>{actuator.type}</div>
+                                </Col>
+                                <Col md={4}>
+                                    <strong>Temperature</strong>
+                                    <div>{actuator.temperature ?? "-"} °C</div>
+                                </Col>
+                                <Col md={4}>
+                                    <strong>Humidity</strong>
+                                    <div>{actuator.humidity ?? "-"} %</div>
+                                </Col>
+                            </Row>
+
+                            <div>
+                                <strong className="d-block mb-2">Commands</strong>
                                 <div className="border p-3 d-flex gap-3">
                                     <Button
                                         variant="info"
@@ -171,61 +178,75 @@ const ActuatorDetail = () => {
                                     >
                                         Test
                                     </Button>
-                                    <Button
-                                        variant="info"
-                                        onClick={() => handleRefreshLogs(actuator.actuator_id)}
-                                    >
-                                        Refresh log
-                                    </Button>
                                 </div>
-                            </Col>
-                        </Row>
+                            </div>
+                        </div>
 
-                        <Row className="mb-4">
-                            <Col md={3}>
-                                <strong>Type</strong>
-                                <div>{actuator.type}</div>
-                            </Col>
-                            <Col md={3}>
-                                <strong>Battery</strong>
-                                <div>{actuator.battery_status ?? "-"} V</div>
-                            </Col>
-                            <Col md={3}>
-                                <strong>Temperature</strong>
-                                <div>{actuator.temperature ?? "-"} °C</div>
-                            </Col>
-                            <Col md={3}>
-                                <strong>Humidity</strong>
-                                <div>{actuator.humidity ?? "-"} %</div>
-                            </Col>
-                        </Row>
+                        {/* SECTION 2: Battery */}
+                        <div className="border rounded p-3 mb-4">
+                            <h6 className="border-bottom pb-2 mb-3">Battery</h6>
 
-                        <Row>
-                            <Col>
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 className="mb-0">Log</h6>
-                                    {logsLoading ? <small className="text-muted">Loading logs...</small> : null}
-                                </div>
-                                <div
-                                    className="border p-3"
-                                    style={{
-                                        maxHeight: "300px",
-                                        overflowY: "auto",
-                                        whiteSpace: "pre-wrap",
-                                        fontSize: "0.85rem",
-                                        backgroundColor: "#f8f9fa",
-                                    }}
+                            <Row className="mb-3">
+                                <Col md={4}>
+                                    <strong>Voltage</strong>
+                                    <div>{actuator.battery_status ?? "-"} V</div>
+                                </Col>
+                                <Col md={4}>
+                                    <strong>Temperature</strong>
+                                    <div>{actuator.battery_temperature ?? "-"} °C</div>
+                                </Col>
+                                <Col md={4}>
+                                    <strong>Humidity</strong>
+                                    <div>{actuator.battery_humidity ?? "-"} %</div>
+                                </Col>
+                            </Row>
+
+                            <BatteryHistoryChart actuatorId={actuator.actuator_id} />
+                        </div>
+
+                        {/* SECTION 3: Temperature (actuator vs battery) */}
+                        <div className="border rounded p-3 mb-4">
+                            <TemperatureHistoryChart actuatorId={actuator.actuator_id} />
+                        </div>
+
+                        {/* SECTION 4: Log */}
+                        <div className="border rounded p-3 mb-4">
+                            <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <h6 className="mb-0">Log</h6>
+                                <Button
+                                    variant="info"
+                                    size="sm"
+                                    onClick={() => handleRefreshLogs(actuator.actuator_id)}
+                                    disabled={logsLoading}
                                 >
-                                    {logsLoading ? (
-                                        <div className="d-flex justify-content-center py-3">
-                                            <CustomSpinner />
-                                        </div>
-                                    ) : actuatorLogs.length > 0
-                                        ? actuatorLogs.join("\n")
-                                        : "No log available"}
-                                </div>
-                            </Col>
-                        </Row>
+                                    Refresh log
+                                </Button>
+                            </div>
+                            <div
+                                className="border p-3"
+                                style={{
+                                    maxHeight: "300px",
+                                    overflowY: "auto",
+                                    whiteSpace: "pre-wrap",
+                                    fontSize: "0.85rem",
+                                    backgroundColor: "#f8f9fa",
+                                }}
+                            >
+                                {logsLoading ? (
+                                    <div className="d-flex justify-content-center py-3">
+                                        <CustomSpinner />
+                                    </div>
+                                ) : !logsRequested ? (
+                                    <span className="text-muted fst-italic">
+                                        Press "Refresh log" to load the actuator log.
+                                    </span>
+                                ) : actuatorLogs.length > 0 ? (
+                                    actuatorLogs.join("\n")
+                                ) : (
+                                    "No log available"
+                                )}
+                            </div>
+                        </div>
                     </>
                 )}
             </Container>

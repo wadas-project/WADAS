@@ -82,10 +82,38 @@ export interface ActuatorDetailed  {
     temperature: number | null;
     humidity: number | null;
     battery_status: number | null;
+    battery_temperature: number | null;
+    battery_humidity: number | null;
 };
 
 export interface ActuatorLogsResponse {
     data: string[];
+}
+
+export type BatteryHistoryRange = "1d" | "7d" | "30d" | "90d";
+
+export interface ActuatorBatteryReading {
+    voltage: number | null;
+    timestamp: string;
+}
+
+export interface ActuatorBatteryHistoryResponse {
+    data: ActuatorBatteryReading[];
+}
+
+export interface ActuatorTemperaturePoint {
+    temperature: number | null;
+    timestamp: string;
+}
+
+export interface BatteryTemperaturePoint {
+    temperature: number | null;
+    timestamp: string;
+}
+
+export interface ActuatorTemperatureHistoryResponse {
+    actuator: ActuatorTemperaturePoint[];
+    battery: BatteryTemperaturePoint[];
 }
 
 export interface ActuatorTestResponse {

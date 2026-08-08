@@ -122,6 +122,8 @@ class ActuatorDetailed(BaseModel):
     temperature: float | None
     humidity: float | None
     battery_status: float | None
+    battery_temperature: float | None = None
+    battery_humidity: float | None = None
 
 
 class ActuatorStatus(BaseModel):
@@ -139,3 +141,22 @@ class ActuatorTemperatureStatus(BaseModel):
 class ActuatorBatteryStatus(BaseModel):
     voltage: Optional[float] = None
     timestamp: datetime
+
+
+class ActuatorBatteryHistoryResponse(BaseModel):
+    data: list[ActuatorBatteryStatus]
+
+
+class ActuatorTemperaturePoint(BaseModel):
+    temperature: Optional[float] = None
+    timestamp: datetime
+
+
+class BatteryTemperaturePoint(BaseModel):
+    temperature: Optional[float] = None
+    timestamp: datetime
+
+
+class ActuatorTemperatureHistoryResponse(BaseModel):
+    actuator: list[ActuatorTemperaturePoint]
+    battery: list[BatteryTemperaturePoint]

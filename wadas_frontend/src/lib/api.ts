@@ -1,12 +1,15 @@
 import { baseUrl } from "../config";
 import {
     ActuationEventResponse,
+    ActuatorBatteryHistoryResponse,
     ActuatorDetailed,
     ActuatorLogsResponse,
+    ActuatorTemperatureHistoryResponse,
     ActuatorTestResponse,
     ActuatorsResponse,
     ActuatorTypesResponse,
     AnimalsResponse,
+    BatteryHistoryRange,
     CamerasResponse,
     CommandsResponse,
     DetectionEventResponse
@@ -135,6 +138,32 @@ export async function fetchActuatorDetail(id: string): Promise<ActuatorDetailed>
     return await apiGET(baseUrl.concat("api/v1/actuators/" + id + "/detail"), (response) => {
         return response.json();
     })
+}
+
+export async function fetchActuatorBatteryHistory(
+    id: string,
+    range: BatteryHistoryRange
+): Promise<ActuatorBatteryHistoryResponse> {
+    const params = new URLSearchParams({ range });
+    return await apiGET(
+        baseUrl.concat("api/v1/actuators/" + id + "/battery-history?" + params.toString()),
+        (response) => {
+            return response.json();
+        }
+    )
+}
+
+export async function fetchActuatorTemperatureHistory(
+    id: string,
+    range: BatteryHistoryRange
+): Promise<ActuatorTemperatureHistoryResponse> {
+    const params = new URLSearchParams({ range });
+    return await apiGET(
+        baseUrl.concat("api/v1/actuators/" + id + "/temperature-history?" + params.toString()),
+        (response) => {
+            return response.json();
+        }
+    )
 }
 
 function buildDetectionEventsParamString(filterCameras: string[],
