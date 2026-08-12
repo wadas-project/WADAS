@@ -571,7 +571,7 @@ class OVMegaDetectorV6YOLO10(OVMegaDetectorV6):
 
 
 class Classifier:
-    """Classifier class for classification model"""
+    """Classifier class for classification model (DeepFaune)."""
 
     CROP_SIZE = 182
 
@@ -596,6 +596,10 @@ class Classifier:
             ]
         )
 
+    def get_labels(self, language: str) -> list[str]:
+        """Return the ordered list of class display names for this classifier and language."""
+        return txt_animalclasses[self.version][language]
+
     @staticmethod
     def check_model(version="DFv1.2"):
         """Check if classification model is initialized"""
@@ -616,7 +620,7 @@ class Classifier:
         return logits.softmax(dim=1) if withsoftmax else logits
 
     def preprocessImage(self, croppedimage):
-        """Preprocess the image for classification
+        """Preprocess the image for classification.
         The preprocessing consists of resizing, converting to tensor and normalizing the image.
         """
         preprocessimage = self.transforms(croppedimage)
@@ -627,6 +631,124 @@ class Classifier:
         if results["detections"].xyxy.shape[0] == 0:
             return
         """Predict on a single image"""
+        tensor = torch.concatenate(
+            [self.preprocessImage(img.crop(xyxy)) for xyxy in results["detections"].xyxy],
+            axis=0,
+        )
+        return self.predictOnBatch(tensor, withsoftmax=withsoftmax)
+
+
+class SpeciesNetClassifier:
+    """Classifier wrapping the OpenVINO-converted SpeciesNet model (Google cameratrapai).
+
+    Key differences from DeepFaune Classifier:
+    - Input: NHWC float32 [0, 1], size 480x480 (no ImageNet mean/std normalization).
+    - Labels: loaded from labels.txt alongside the IR; ~2000+ classes in English only.
+    - class_probs in classify() output is capped to TOP_K_CLASS_PROBS entries to avoid
+      bloating the DB and notification payloads.
+    - Language support: only "en" (SpeciesNet labels are English species names).
+    """
+
+    IMG_SIZE = 480
+    # Only the top-N scores are stored in class_probs to keep payloads manageable.
+    TOP_K_CLASS_PROBS = 10
+
+    def __init__(self, device, version="SpeciesNetV4"):
+        self.version = version
+        self.model = OVModel(
+            Path("classification", f"{version}_openvino_model", f"{version}.xml"), device
+        )
+        labels_path = (
+            Path(__file__).resolve().parents[2]
+            / "model"
+            / "classification"
+            / f"{version}_openvino_model"
+            / "labels.txt"
+        )
+        with open(labels_path, encoding="utf-8") as fp:
+            # Raw label format: "uuid;class;order;family;genus;species;common_name"
+            # We store the full raw label for traceability and expose display names via get_labels().
+            self._raw_labels = {idx: line.strip() for idx, line in enumerate(fp.readlines())}
+        # Precompute display names: last semicolon-separated field (common name / category).
+        self._display_labels = [label.split(";")[-1] for label in self._raw_labels.values()]
+
+    def get_labels(self, language: str) -> list[str]:
+        """Return ordered list of display names.  Language is ignored (always English)."""
+        return self._display_labels
+
+    @staticmethod
+    def check_model(version="SpeciesNetV4"):
+        """Check if the OpenVINO IR for SpeciesNet is present."""
+        return OVModel.check_model(
+            Path("classification", f"{version}_openvino_model", f"{version}.xml")
+        )
+
+    @staticmethod
+    def download_model(version="SpeciesNetV4", force: bool = False):
+        """Download and convert the SpeciesNet classifier to OpenVINO IR.
+
+        Requires: speciesnet, torch, openvino packages.
+        The model source identifier can be overridden via the SPECIESNET_MODEL_NAME env var
+        (default: kaggle source for SpeciesNet v4).
+        Run tools/convert_speciesnet_to_openvino.py for a standalone conversion workflow.
+        """
+        import os
+        import shutil
+
+        import openvino as ov
+        import torch
+        from speciesnet.utils import ModelInfo
+
+        model_name = os.environ.get(
+            "SPECIESNET_MODEL_NAME",
+            "kaggle:google/speciesnet/pyTorch/v4.0.1a",
+        )
+        model_info = ModelInfo(model_name)
+
+        torch_model = torch.load(model_info.classifier, map_location="cpu", weights_only=False)
+        torch_model.eval()
+        for p in torch_model.parameters():
+            p.requires_grad = False
+
+        example_input = torch.rand(
+            1,
+            SpeciesNetClassifier.IMG_SIZE,
+            SpeciesNetClassifier.IMG_SIZE,
+            3,
+            dtype=torch.float32,
+        )
+
+        ov_model = ov.convert_model(torch_model, example_input=example_input)
+
+        from wadas.ai.openvino_model import __model_folder__
+
+        out_dir = Path(__model_folder__) / "classification" / f"{version}_openvino_model"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        xml_path = out_dir / f"{version}.xml"
+        ov.save_model(ov_model, str(xml_path))
+
+        labels_dst = out_dir / "labels.txt"
+        shutil.copy(model_info.classifier_labels, labels_dst)
+
+        return str(xml_path)
+
+    def preprocessImage(self, croppedimage):
+        """Resize crop to IMG_SIZE x IMG_SIZE and scale to [0, 1]; output NHWC tensor."""
+        img = croppedimage.resize((self.IMG_SIZE, self.IMG_SIZE))
+        arr = np.asarray(img, dtype=np.float32) / 255.0  # HWC
+        return torch.from_numpy(arr).unsqueeze(0)  # -> [1, H, W, 3]
+
+    def predictOnBatch(self, batchtensor, withsoftmax=True):
+        """Run the compiled OV model on a [N, H, W, 3] NHWC batch."""
+        logits = self.model(batchtensor)
+        return logits.softmax(dim=-1) if withsoftmax else logits
+
+    def predictOnImages(self, request, withsoftmax=True) -> torch.Tensor:
+        """Crop each detected animal bbox, preprocess, and classify."""
+        img, results = request
+        if results["detections"].xyxy.shape[0] == 0:
+            return
         tensor = torch.concatenate(
             [self.preprocessImage(img.crop(xyxy)) for xyxy in results["detections"].xyxy],
             axis=0,

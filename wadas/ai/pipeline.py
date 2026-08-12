@@ -28,6 +28,7 @@ from wadas.ai.models import (
     OVMegaDetectorV5,
     OVMegaDetectorV6YOLO9,
     OVMegaDetectorV6YOLO10,
+    SpeciesNetClassifier,
     txt_animalclasses,
 )
 
@@ -37,6 +38,13 @@ NAME_TO_DETECTOR = {
     "MDV5-yolov5": OVMegaDetectorV5,
     "MDV6b-yolov9c": OVMegaDetectorV6YOLO9,
     "MDV6-yolov10n": OVMegaDetectorV6YOLO10,
+}
+
+NAME_TO_CLASSIFIER = {
+    "DFv1.2": Classifier,
+    "DFv1.3": Classifier,
+    "DFv1.4": Classifier,
+    "SpeciesNetV4": SpeciesNetClassifier,
 }
 
 
@@ -66,11 +74,16 @@ class DetectionPipeline:
         self.detection_model = self.initialize_model(
             detection_csl, device=self.detection_device, model_name=megadetector_version
         )
+
         # Load classification model
         logger.info("Loading classification model to device %s...", self.classification_device)
+        classifier_cls = NAME_TO_CLASSIFIER.get(deepfaune_version)
+        if classifier_cls is None:
+            raise ValueError("Invalid classifier version: " + deepfaune_version)
         self.classifier = self.initialize_model(
-            Classifier, device=self.classification_device, version=deepfaune_version
+            classifier_cls, device=self.classification_device, version=deepfaune_version
         )
+
         # Get the index of the animal class of the detection model
         self.animal_class_idx = next(
             key for key, value in OVMegaDetectorV5.CLASS_NAMES.items() if value == "animal"
@@ -93,9 +106,15 @@ class DetectionPipeline:
         return ray.get(result) if self.distributed_inference else result
 
     def set_language(self, language):
+        """Method to set the language for the classification labels."""
+        if isinstance(self.classifier, SpeciesNetClassifier):
+            # SpeciesNet labels are English-only; silently ignore language changes.
+            logger.info(
+                "SpeciesNetClassifier does not support language switching (labels are always en)."
+            )
+            return
         if language not in txt_animalclasses[self.classifier.version]:
             raise ValueError("Language not supported")
-        """Method to set the language for the classification labels."""
         self.language = language
 
     @staticmethod
@@ -108,7 +127,11 @@ class DetectionPipeline:
         if not (detection_model_status := detector.check_model()):
             logger.error("Detection model version '%s' not found on the system.", detection_model)
 
-        if not (classification_model_status := Classifier.check_model(classification_model)):
+        classifier_cls = NAME_TO_CLASSIFIER.get(classification_model)
+        if classifier_cls is None:
+            logger.error("Unknown classifier version: %s", classification_model)
+            return False
+        if not (classification_model_status := classifier_cls.check_model(classification_model)):
             logger.error(
                 "Classification model version '%s' not found on the system.", classification_model
             )
@@ -116,9 +139,12 @@ class DetectionPipeline:
         return detection_model_status and classification_model_status
 
     @staticmethod
-    def download_models(force: bool = False):
-        """Method to check if models are initialized."""
-        return OVMegaDetectorV5.download_model(force) and Classifier.download_model(force)
+    def download_models(classification_version="DFv1.2", force: bool = False):
+        """Method to download detection and classification models."""
+        classifier_cls = NAME_TO_CLASSIFIER.get(classification_version, Classifier)
+        return OVMegaDetectorV5.download_model(force) and classifier_cls.download_model(
+            classification_version, force
+        )
 
     def filter_animal_detections(self, results):
         """Method to filter out non-animal detections from results."""
@@ -174,17 +200,28 @@ class DetectionPipeline:
         class_request = tuple(zip(img, results))
 
         logits_lst = self.run_model(self.classifier.predictOnImages, class_request)
-        labels = txt_animalclasses[self.classifier.version][self.language]
+        labels = self.classifier.get_labels(self.language)
+
+        # For classifiers with many classes (e.g. SpeciesNet), cap class_probs entries.
+        top_k = getattr(self.classifier, "TOP_K_CLASS_PROBS", None)
+
         total_classification = []
         for logits, res in zip(logits_lst, results):
             classification_id = 0
             classified_animals = []
             for idx, xyxy in enumerate(res["detections"].xyxy):
-                # Cropping detection result(s) from original image leveraging detected boxes
-
                 crop_logits = logits[idx, :]
-                detections = {key: val.item() for key, val in zip(labels, crop_logits)}
-                classification_result = [labels[np.argmax(crop_logits)], max(crop_logits)]
+
+                if top_k is not None:
+                    # Build class_probs from top-k only (avoids huge dicts for SpeciesNet).
+                    top_indices = np.argsort(crop_logits.numpy())[-top_k:][::-1]
+                    detections = {labels[i]: crop_logits[i].item() for i in top_indices}
+                else:
+                    detections = {key: val.item() for key, val in zip(labels, crop_logits)}
+
+                best_idx = int(np.argmax(crop_logits))
+                classification_result = [labels[best_idx], crop_logits[best_idx]]
+
                 if max(crop_logits) < classification_threshold:
                     logger.info("Classification value under selected threshold.")
                 else:

@@ -48,7 +48,7 @@ class AiModel:
     video_fps = 1
     distributed_inference = False
     detection_model_version = "MDV5-yolov5"
-    classification_model_version = "DFv1.2"
+    classification_model_version = "DFv1.2"  # also: "DFv1.3", "DFv1.4", "SpeciesNetV4"
     tunnel_mode_detection_device = "cpu"
     tunnel_mode_detection_threshold = 0.5
     tunnel_mode_detection_model_version = "MDV6b-yolov9c"
