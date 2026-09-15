@@ -37,13 +37,16 @@ logger = logging.getLogger(__name__)
 class EmailNotifier(Notifier):
     """Email Notifier Class"""
 
-    def __init__(self, sender_email, smtp_hostname, smtp_port, recipients_email, enabled=True):
+    def __init__(
+        self, sender_email, smtp_hostname, smtp_port, recipients_email, enabled=True, username=""
+    ):
         super().__init__(enabled)
         self.type = Notifier.NotifierTypes.EMAIL
         self.sender_email = sender_email
         self.smtp_hostname = smtp_hostname
         self.smtp_port = smtp_port
         self.recipients_email = recipients_email
+        self.username = username if username else sender_email
 
     def get_camera_recipients(self, camera_id):
         """Return the list of email addresses to notify for the given camera_id.
@@ -168,7 +171,7 @@ class EmailNotifier(Notifier):
             context=context,
         ) as smtp_server:
             # Login to the SMTP server
-            smtp_server.login(self.sender_email, credentials.password)
+            smtp_server.login(self.username, credentials.password)
             # Send the email to all recipients.
             for recipient in recipients:
                 smtp_server.sendmail(self.sender_email, recipient, email_message.as_string())
