@@ -75,10 +75,18 @@ class ConfigureAiModel(QDialog, Ui_DialogConfigureAi):
     def populate_language_dropdown(self):
         """Populate the dropdown with the list of available actuators."""
         self.ui.comboBox_class_lang.clear()
-        for language in txt_animalclasses[AiModel.classification_model_version]:
-            self.ui.comboBox_class_lang.addItem(language)
-        if AiModel.language in txt_animalclasses[AiModel.classification_model_version]:
-            self.ui.comboBox_class_lang.setCurrentText(AiModel.language)
+        version = AiModel.classification_model_version
+        if version in txt_animalclasses:
+            for language in txt_animalclasses[version]:
+                self.ui.comboBox_class_lang.addItem(language)
+            if AiModel.language in txt_animalclasses[version]:
+                self.ui.comboBox_class_lang.setCurrentText(AiModel.language)
+            self.ui.comboBox_class_lang.setEnabled(True)
+        else:
+            # Classifier with fixed English-only labels (e.g. SpeciesNetV4)
+            self.ui.comboBox_class_lang.addItem("en")
+            self.ui.comboBox_class_lang.setCurrentText("en")
+            self.ui.comboBox_class_lang.setEnabled(False)
 
     def populate_ai_devices_dropdowns(self):
         """Method to populate Ai devices list dropdowns."""
