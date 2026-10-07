@@ -28,6 +28,7 @@ from queue import Empty, Queue
 from typing import Optional
 
 from wadas.domain.actuation_event import ActuationEvent
+from wadas.domain.mqtt_broker import MqttBroker
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,9 @@ class Actuator:
     """Base class of an actuator."""
 
     actuators = {}
+    MQTT_STATUS_TOPIC = "actuators/status"
+    MQTT_COMMAND_TOPIC = "actuators/{actuator_id}/command"
+    MQTT_RESPONSE_TOPIC = "actuators/{actuator_id}/response"
 
     class ActuatorTypes(Enum):
         ROADSIGN = "Road Sign"
@@ -137,10 +141,6 @@ class Actuator:
         self.responses: deque[dict] = deque(maxlen=50)  # Actuator responses FIFO
         self.log = None
 
-    @abstractmethod
-    def check_command(self):
-        """Method to check if a provided command is in the allowed pool"""
-
     @classmethod
     def build_command(
         self, actuator_id: str, cmd: Commands, time_stamp: datetime, payload: dict = None
@@ -150,14 +150,43 @@ class Actuator:
             actuator_id=actuator_id, cmd=cmd.value, time_stamp=time_stamp, payload=payload or {}
         )
 
+    @classmethod
+    def get_mqtt_status_topic(self):
+        return Actuator.MQTT_STATUS_TOPIC
+
+    def get_mqtt_command_topic(self):
+        return Actuator.MQTT_COMMAND_TOPIC.format(actuator_id=self.id)
+
+    def get_mqtt_response_topic(self):
+        return Actuator.MQTT_RESPONSE_TOPIC.format(actuator_id=self.id)
+
     def queue_response_command(self, response: dict):
         """Method to insert an actuator response into a dedicated queue"""
         self.responses.append(response)
         self.last_update = datetime.datetime.now()
 
-    @abstractmethod
     def send_command(self, command: Command):
         """Method to insert a command into the actuator queue"""
+        # Check that the ID is valid
+        if not command.actuator_id or not isinstance(command.actuator_id, str):
+            logger.error("Actuator %s received a command without valid ID.", command.actuator_id)
+            raise ValueError("Command must have a valid ID (non-empty string).")
+
+        # Check that the command is a valid enum member
+        if command.cmd not in {c.value for c in self.Commands}:
+            logger.error(
+                "Actuator %s with ID %s received an unknown command: %s.",
+                self.type,
+                command.actuator_id,
+                command.cmd,
+            )
+            raise ValueError("Unknown command.")
+
+        # Publish the command on the appropriate topic
+        MqttBroker.broker.publish_message(self.get_mqtt_command_topic(), command.to_json())
+
+        # Return command execution status
+        return True
 
     def get_command(self):
         """Method to get the last command of the queue"""
@@ -166,6 +195,9 @@ class Actuator:
             return self.cmd_queue.get(block=False)
         except Empty:
             return None  # if there are no commands, return None
+
+    def update_status(self, obj):
+        self.last_update = datetime.datetime.now()
 
     @abstractmethod
     def actuate(self, actuation_event: ActuationEvent):

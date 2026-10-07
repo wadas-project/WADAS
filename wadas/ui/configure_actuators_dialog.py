@@ -19,11 +19,12 @@ from PySide6.QtWidgets import (
 )
 from validators import ipv4
 
+from wadas.domain.mqtt_callbacks import actuators_mqtt_callback
 from wadas.domain.actuator import Actuator
 from wadas.domain.camera import cameras
 from wadas.domain.database import DataBase
 from wadas.domain.deterrent_actuator import DeterrentActuator
-from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer, initialize_fastapi_logger
+from wadas.domain.mqtt_broker import MqttBroker
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.roadsign_actuator import RoadSignActuator
 from wadas.domain.utils import is_pem_certificate, is_pem_key
@@ -42,7 +43,7 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
         self.ui = Ui_DialogConfigureActuators()
         self.ui_actuator_idx = 0
         self.removed_actuators = []
-        self.actuator_server = None
+        self.mqtt_broker = None
         self.actuator_server_thread = None
         self.removed_rows = set()
 
@@ -76,8 +77,8 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
         self.ui.lineEdit_actuator_timeout.textChanged.connect(self.validate)
         self.ui.lineEdit_server_ip.textChanged.connect(self.validate)
         self.ui.lineEdit_server_port.textChanged.connect(self.validate)
-        self.ui.pushButton_start_server.clicked.connect(self.start_actuator_server)
-        self.ui.pushButton_stop_server.clicked.connect(self.stop_actuator_server)
+        self.ui.pushButton_start_server.clicked.connect(self.start_mqtt_broker)
+        self.ui.pushButton_stop_server.clicked.connect(self.stop_mqtt_broker)
 
         # Init dialog
         self.initialize_dialog()
@@ -88,13 +89,12 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
     def initialize_dialog(self):
         """Method to initialize dialog with existing values (if any)."""
 
-        if FastAPIActuatorServer.actuator_server:
-            self.ui.lineEdit_actuator_timeout.setText(str(
-                FastAPIActuatorServer.actuator_server.actuator_timeout_threshold))
-            self.ui.lineEdit_server_ip.setText(str(FastAPIActuatorServer.actuator_server.ip))
-            self.ui.lineEdit_server_port.setText(str(FastAPIActuatorServer.actuator_server.port))
-            self.ui.label_key_file.setText(FastAPIActuatorServer.actuator_server.ssl_key)
-            self.ui.label_cert_file.setText(FastAPIActuatorServer.actuator_server.ssl_certificate)
+        if MqttBroker.broker:
+            self.ui.lineEdit_actuator_timeout.setText("30")
+            self.ui.lineEdit_server_ip.setText(str(MqttBroker.broker.ip))
+            self.ui.lineEdit_server_port.setText(str(MqttBroker.broker.port))
+            self.ui.label_key_file.setText(MqttBroker.broker.ssl_key)
+            self.ui.label_cert_file.setText(MqttBroker.broker.ssl_certificate)
         else:
             self.ui.lineEdit_actuator_timeout.setText("30")
             self.ui.lineEdit_server_ip.setText("0.0.0.0")
@@ -314,19 +314,21 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
     def accept_and_close(self):
         """When Ok is clicked, save Ai model config info before closing."""
 
-        if FastAPIActuatorServer.actuator_server:
-            FastAPIActuatorServer.actuator_server.actuator_timeout_threshold = int(
+        if MqttBroker.broker:
+            broker = MqttBroker.broker
+            broker.actuator_timeout_threshold = int(
                 self.ui.lineEdit_actuator_timeout.text())
-            FastAPIActuatorServer.actuator_server.ip = self.ui.lineEdit_server_ip.text()
-            FastAPIActuatorServer.actuator_server.port = int(self.ui.lineEdit_server_port.text())
-            FastAPIActuatorServer.actuator_server.ssl_certificate = self.ui.label_cert_file.text()
-            FastAPIActuatorServer.actuator_server.ssl_key = self.ui.label_key_file.text()
+            broker.ip = self.ui.lineEdit_server_ip.text()
+            broker.port = int(self.ui.lineEdit_server_port.text())
+            broker.ssl_certificate = self.ui.label_cert_file.text()
+            broker.ssl_key = self.ui.label_key_file.text()
         else:
-            FastAPIActuatorServer.actuator_server = FastAPIActuatorServer(
+            MqttBroker.broker = MqttBroker(
                 self.ui.lineEdit_server_ip.text(),
                 int(self.ui.lineEdit_server_port.text()),
                 self.ui.label_cert_file.text(),
                 self.ui.label_key_file.text(),
+                actuators_mqtt_callback,
                 int(self.ui.lineEdit_actuator_timeout.text())
             )
         if Actuator.actuators:
@@ -405,34 +407,35 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
         self.accept()
 
     def reject_and_close(self):
-        self._stop_actuator_server()
+        self._stop_mqtt_broker()
 
-    def start_actuator_server(self):
+    def start_mqtt_broker(self):
         """Method to start the Actuator server."""
 
-        if not self.actuator_server:
-            self.actuator_server = FastAPIActuatorServer(
+        if not self.mqtt_broker:
+            self.mqtt_broker = MqttBroker(
                 self.ui.lineEdit_server_ip.text(),
                 int(self.ui.lineEdit_server_port.text()),
                 self.ui.label_cert_file.text(),
                 self.ui.label_key_file.text(),
             )
         self._setup_logger()
-        self.ui.pushButton_stop_server.setEnabled(True)
-        self.ui.pushButton_start_server.setEnabled(False)
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+
         # Start the thread
-        self.actuator_server_thread = self.actuator_server.run()
+        self.actuator_server_thread = self.mqtt_broker.run()
+        if self.actuator_server_thread.started_successfully and self.actuator_server_thread.is_alive():
+            self.ui.pushButton_stop_server.setEnabled(True)
+            self.ui.pushButton_start_server.setEnabled(False)
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
 
-    def _stop_actuator_server(self):
+    def _stop_mqtt_broker(self):
         """Method to stop the Actuator server"""
-        if self.actuator_server and self.actuator_server_thread:
-            self.actuator_server.stop()
-            self.actuator_server_thread.join()
+        if self.mqtt_broker:
+            self.mqtt_broker.stop()
 
-    def stop_actuator_server(self):
+    def stop_mqtt_broker(self):
         """Method to stop the Actuator server and to show the appropriate buttons on the UI"""
-        self._stop_actuator_server()
+        self._stop_mqtt_broker()
         self.ui.pushButton_stop_server.setEnabled(False)
         self.ui.pushButton_start_server.setEnabled(True)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
@@ -440,7 +443,6 @@ class DialogConfigureActuators(QDialog, Ui_DialogConfigureActuators):
     def _setup_logger(self):
         """Initialize fastapi logger for UI logging."""
         log_textbox = QTextEditLogger(self.ui.plainTextEdit_test_server_log)
-        initialize_fastapi_logger(handler=log_textbox)
 
     def closeEvent(self, event):
-        self._stop_actuator_server()
+        self._stop_mqtt_broker()

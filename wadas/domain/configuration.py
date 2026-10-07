@@ -33,10 +33,11 @@ from wadas.domain.camera import Camera, cameras
 from wadas.domain.database import DataBase
 from wadas.domain.deterrent_actuator import DeterrentActuator
 from wadas.domain.email_notifier import EmailNotifier
-from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
 from wadas.domain.feeder_actuator import FeederActuator
 from wadas.domain.ftp_camera import FTPCamera
 from wadas.domain.ftps_server import FTPsServer
+from wadas.domain.mqtt_broker import MqttBroker
+from wadas.domain.mqtt_callbacks import actuators_mqtt_callback
 from wadas.domain.notification_area import NotificationArea
 from wadas.domain.notifier import Notifier
 from wadas.domain.operation_mode import OperationMode
@@ -253,12 +254,10 @@ def load_configuration_from_file(file_path):
                             load_status["valid_ftp_keyring"] = False
         Camera.detection_params = wadas_config["camera_detection_params"]
 
-        # FastAPI Actuator Server
-        FastAPIActuatorServer.actuator_server = (
-            FastAPIActuatorServer.deserialize(wadas_config["actuator_server"])
-            if wadas_config["actuator_server"]
-            else None
-        )
+        # Mqtt Broker
+        if "actuator_server" in wadas_config and wadas_config["actuator_server"]:
+            MqttBroker.broker = MqttBroker.deserialize(wadas_config["actuator_server"])
+            MqttBroker.broker.receiver_callback = actuators_mqtt_callback
 
         # Ai model
         available_ai_devices = ov.Core().get_available_devices()
@@ -410,11 +409,7 @@ def save_configuration_to_file(file_, project_uuid):
         },
         "operation_mode": operation_mode,
         "ftps_server": FTPsServer.ftps_server.serialize() if FTPsServer.ftps_server else "",
-        "actuator_server": (
-            FastAPIActuatorServer.actuator_server.serialize()
-            if FastAPIActuatorServer.actuator_server
-            else ""
-        ),
+        "actuator_server": (MqttBroker.broker.serialize() if MqttBroker.broker else ""),
         "database": db.serialize() if (db := DataBase.get_instance()) else "",
         "tunnels": tunnels_to_dict,
         "privacy": {

@@ -21,7 +21,7 @@ import logging
 from enum import Enum
 
 from wadas.domain.actuation_event import ActuationEvent
-from wadas.domain.actuator import Actuator, Command
+from wadas.domain.actuator import Actuator
 
 logger = logging.getLogger(__name__)
 
@@ -35,30 +35,6 @@ class RoadSignActuator(Actuator):
     def __init__(self, id, enabled):
         super().__init__(id, enabled)
         self.type = Actuator.ActuatorTypes.ROADSIGN
-
-    def send_command(self, command: Command):
-        """Send command to actuator queue with unique ID."""
-
-        # Check that the ID is valid
-        if not command.actuator_id or not isinstance(command.actuator_id, str):
-            logger.error("Actuator %s received a command without valid ID.", command.actuator_id)
-            raise ValueError("Command must have a valid ID (non-empty string).")
-
-        # Check that the command is a valid enum member
-        if command.cmd not in {c.value for c in RoadSignActuator.Commands}:
-            logger.error(
-                "Actuator %s with ID %s received an unknown command: %s.",
-                self.type,
-                command.actuator_id,
-                command.cmd,
-            )
-            raise ValueError("Unknown command.")
-
-        # Insert command in queue
-        self.cmd_queue.put(command.to_json())
-
-        # Return command execution status
-        return True
 
     def actuate(self, actuation_event: ActuationEvent):
         """Method to trigger the RoadSignActuator sending it the DISPLAY_ON Command"""
