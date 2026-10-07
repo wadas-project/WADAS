@@ -58,7 +58,7 @@ from wadas.domain.camera import cameras, Camera
 from wadas.domain.configuration import load_configuration_from_file, save_configuration_to_file
 from wadas.domain.custom_classification_mode import CustomClassificationMode
 from wadas.domain.database import DataBase
-from wadas.domain.fastapi_actuator_server import FastAPIActuatorServer
+from wadas.domain.mqtt_broker import MqttBroker
 from wadas.domain.ftps_server import initialize_fpts_logger
 from wadas.domain.notifier import Notifier
 from wadas.domain.operation_mode import OperationMode
@@ -236,6 +236,7 @@ class MainWindow(QMainWindow):
             os.path.join(os.getcwd(), "log", "WADAS.log"),
             maxBytes=10 * 1024 * 1024,
             backupCount=3,
+            encoding="utf-8"
         )
         file_handler.setLevel(logging_level)
         file_handler.setFormatter(formatter)
@@ -1030,17 +1031,17 @@ class MainWindow(QMainWindow):
 
     def update_en_actuator_list(self):
         """Method to list enabled actuator(s) in UI"""
-        threshold_time = FastAPIActuatorServer.actuator_server.actuator_timeout_threshold if FastAPIActuatorServer.actuator_server else 30
+        threshold_time = 30
         self.ui.listWidget_en_actuators.clear()
         for actuator in Actuator.actuators.values():
             if actuator.enabled:
-                if FastAPIActuatorServer.actuator_server.startup_time:
+                if MqttBroker.broker.startup_time:
                     # inactive actuator: connected at least once but unseen for {threshold_time} seconds
                     # or never connected within the first {threshold_time} seconds since server startup.
                     if (actuator.last_update is not None and (
                             datetime.datetime.now() - actuator.last_update > timedelta(seconds=threshold_time)) or
                             actuator.last_update is None and (
-                                    datetime.datetime.now() - FastAPIActuatorServer.actuator_server.startup_time > timedelta(
+                                    datetime.datetime.now() - MqttBroker.broker.startup_time > timedelta(
                                 seconds=threshold_time))):
 
                         text = f"({actuator.type.value}) {actuator.id} - inactive"

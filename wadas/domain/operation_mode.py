@@ -32,11 +32,8 @@ from wadas.domain.ai_model import AiModel
 from wadas.domain.camera import Camera, cameras
 from wadas.domain.database import DataBase
 from wadas.domain.detection_event import DetectionEvent
-from wadas.domain.fastapi_actuator_server import (
-    FastAPIActuatorServer,
-    initialize_fastapi_logger,
-)
 from wadas.domain.ftps_server import FTPsServer
+from wadas.domain.mqtt_broker import MqttBroker
 from wadas.domain.notifier import Notifier
 from wadas.domain.utils import get_precise_timestamp, is_image
 
@@ -289,7 +286,7 @@ class OperationMode(QObject):
                 if camera.type == Camera.CameraTypes.USB_CAMERA:
                     camera.stop_thread = True
 
-            self.stop_actuator_server()
+            self.stop_mqtt_broker()
 
             self.run_finished.emit()
             return
@@ -300,7 +297,7 @@ class OperationMode(QObject):
         if self.init_model():
             self.check_for_termination_requests()
             self._initialize_cameras()
-            self.start_actuator_server()
+            self.start_mqtt_broker()
         else:
             self.execution_completed()
 
@@ -388,13 +385,17 @@ class OperationMode(QObject):
             time.sleep(5)
             self.update_actuator_status.emit()
 
-    def start_actuator_server(self):
+    def start_mqtt_broker(self):
         """Method to start the HTTPS Actuator Server"""
 
-        if Actuator.actuators and FastAPIActuatorServer.actuator_server:
-            initialize_fastapi_logger()
-            logger.info("Instantiating HTTPS Actuator server...")
-            self.actuators_server_thread = FastAPIActuatorServer.actuator_server.run()
+        if Actuator.actuators and MqttBroker.broker:
+            logger.info("Instantiating MqttBroker...")
+
+            topics_to_subscribe = [Actuator.MQTT_STATUS_TOPIC] + [
+                x.get_mqtt_response_topic() for x in Actuator.actuators.values()
+            ]
+            MqttBroker.broker.set_subscribed_topics(topics_to_subscribe)
+            MqttBroker.broker.run()
             self.actuators_view_thread = self.start_update_actuators_thread()
         else:
             logger.info("No actuator or actuator server defined")
@@ -417,14 +418,12 @@ class OperationMode(QObject):
         if self.actuators_view_thread:
             self.actuators_view_thread.join()
 
-    def stop_actuator_server(self):
+    def stop_mqtt_broker(self):
         """Method to Stop HTTPS Actuator Server"""
 
-        if FastAPIActuatorServer.actuator_server:
+        if MqttBroker.broker:
             self.stop_update_actuators_thread()
-            FastAPIActuatorServer.actuator_server.stop()
-            if self.actuators_server_thread:
-                self.actuators_server_thread.join()
+            MqttBroker.broker.stop()
 
     @abstractmethod
     def run(self):

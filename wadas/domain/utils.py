@@ -66,7 +66,7 @@ def convert_to_timestamp_string(dt: datetime) -> str:
 def initialize_asyncio_logger(handler=None, level=logging.DEBUG):
     if not handler:
         handler = RotatingFileHandler(
-            os.path.join("log", "asyncio.log"), maxBytes=100000, backupCount=3
+            os.path.join("log", "asyncio.log"), maxBytes=100000, backupCount=3, encoding="utf-8"
         )
         formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S")
         handler.setFormatter(formatter)
